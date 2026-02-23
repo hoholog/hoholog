@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>꼬마 영웅 호야 타자 RPG</title>
+    <style>
+        /* 나눔고딕 폰트 적용 */
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+        
+        :root {
+            --primary-yellow: #ffd700;
+            --bg-dark: #1a1a1a;
+            --ui-white: rgba(255, 255, 255, 0.95);
+            --archer-color: #4caf50;
+            --wizard-color: #9c27b0;
+            --monster-red: #ff5252;
+            --fire-orange: #ff9100;
+            --fire-red: #d50000;
+            --radar-green: #00ff41;
+            --grass-green: #2d5a27;
+            --skin-tone: #ffdbac;
+            --hair-brown: #5d4037;
+            --hair-gray: #b0bec5;
+            --chest-gold: #ffc107;
+            --boss-purple: #9c27b0;
+            --hp-heart: #ff3d00;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px 0;
+            background-color: #f0f0f0;
+            font-family: 'Nanum Gothic', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            letter-spacing: -0.2px;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-color: var(--bg-dark);
+            border: 8px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        @media (max-width: 820px) {
+            #game-wrapper {
+                width: 95vw;
+                height: 71.25vw;
+            }
+        }
+
+        #game-view {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--grass-green);
+        }
+
+        #world-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        #object-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .entity {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .nature-obj {
+            position: absolute;
+            font-size: 24px;
+            user-select: none;
+            will-change: transform;
+            display: flex;
+            justify(center): center;
+            align-items: flex-end;
+        }
+        
+        .tree { font-size: 80px; width: 100px; height: 120px; } 
+        .flower { font-size: 24px; }
+        .grass { font-size: 20px; opacity: 0.6; }
+
+        #player-fixed {
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000; 
+        }
+
+        #hp-dots {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            z-index: 1100;
+        }
+
+        .hp-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--hp-heart);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .hp-dot.lost {
+            opacity: 0.2;
+            transform: scale(0.6);
+            background-color: #444;
+        }
+
+        .sd-character {
+            width: 60px;
+            height: 80px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: opacity 0.2s;
+        }
+
+        .sd-head {
+            width: 46px;
+            height: 42px;
+            background: var(--skin-tone);
+            border: 3px solid #2c2c2c;
+            border-radius: 20px;
+            position: relative;
+            z-index: 10;
+            box-shadow: inset -4px -4px 0 rgba(0,0,0,0.1);
+        }
+
+        .sd-hair {
+            position: absolute;
+            top: -6px; left: -3px; right: -3px; height: 25px;
+            background: var(--hair-brown);
+            border: 3px solid #2c2c2c;
+            border-radius: 20px 20px 5px 5px;
+        }
+
+        .sd-face {
+            position: absolute;
+            top: 22px; width: 100%;
+            display: flex; justify-content: space-around;
+            padding: 0 8px; box-sizing: border-box;
+        }
+
+        .sd-eye {
+            width: 6px; height: 8px;
+            background: #2c2c2c;
+            border-radius: 50%;
+            animation: blink 4s infinite;
+        }
+
+        @keyframes blink {
+            0%, 90%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.1); }
+        }
+
+        .sd-blush {
+            position: absolute; top: 28px; width: 8px; height: 4px;
+            background: #ff8a80; border-radius: 50%; opacity: 0.6;
+        }
+        .blush-l { left: 4px; } .blush-r { right: 4px; }
+
+        .sd-body-container {
+            position: relative;
+            width: 30px; height: 28px;
+            margin-top: -6px;
+            z-index: 5;
+        }
+
+        .sd-torso {
+            width: 100%; height: 100%;
+            background: #444;
+            border: 3px solid #2c2c2c;
+            border-radius: 8px 8px 12px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .archer .sd-torso { background: var(--archer-color); }
+        .archer .sd-hair { background: var(--hair-brown); }
+        .wizard .sd-torso { background: var(--wizard-color); }
+        .wizard .sd-hair { background: var(--hair-gray); }
+
+        .sd-arm {
+            position: absolute;
+            width: 10px; height: 18px;
+            background: var(--skin-tone);
+            border: 2px solid #2c2c2c;
+            border-radius: 5px;
+            top: 2px;
+            transform-origin: top center;
+        }
+        .arm-l { left: -8px; }
+        .arm-r { right: -8px; }
+
+        .sd-leg {
+            position: absolute;
+            width: 12px; height: 14px;
+            background: #333;
+            border: 2px solid #2c2c2c;
+            border-radius: 4px;
+            bottom: -10px;
+            transform-origin: top center;
+        }
+        .leg-l { left: 2px; }
+        .leg-r { right: 2px; }
+
+        .walking .sd-head { animation: head-bob 0.4s infinite alternate ease-in-out; }
+        .walking .arm-l { animation: arm-swing-l 0.4s infinite alternate ease-in-out; }
+        .walking .arm-r { animation: arm-swing-r 0.4s infinite alternate ease-in-out; }
+        .walking .leg-l { animation: leg-swing-l 0.4s infinite alternate ease-in-out; }
+        .walking .leg-r { animation: leg-swing-r 0.4s infinite alternate ease-in-out; }
+
+        @keyframes head-bob { from { transform: translateY(0); } to { transform: translateY(2px); } }
+        @keyframes arm-swing-l { from { transform: rotate(30deg); } to { transform: rotate(-30deg); } }
+        @keyframes arm-swing-r { from { transform: rotate(-30deg); } to { transform: rotate(30deg); } }
+        @keyframes leg-swing-l { from { transform: rotate(-35deg); } to { transform: rotate(35deg); } }
+        @keyframes leg-swing-r { from { transform: rotate(35deg); } to { transform: rotate(-35deg); } }
+
+        .mushroom-monster {
+            width: 45px; height: 45px;
+            position: relative; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; background: #f5f5f5; border-radius: 50% 50% 15px 15px;
+            border: 3px solid #795548; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .mushroom-cap {
+            position: absolute; top: -12px; width: 58px; height: 32px;
+            background: var(--monster-red); border-radius: 30px 30px 8px 8px;
+            border: 3px solid #b71c1c; display: flex; justify-content: space-around; padding-top: 5px;
+        }
+        .spot { width: 7px; height: 7px; background: white; border-radius: 50%; opacity: 0.8; }
+        
+        .monster.fire .mushroom-monster {
+            background: #fff3e0; border-color: #e65100; box-shadow: 0 0 15px var(--fire-orange);
+        }
+        .monster.fire .mushroom-cap {
+            background: linear-gradient(to top, var(--fire-red), var(--fire-orange));
+            border-color: #bf360c;
+            animation: fire-flicker 0.2s infinite alternate;
+        }
+        .monster.fire .fire-particle {
+            position: absolute; width: 8px; height: 8px; background: var(--fire-orange);
+            border-radius: 50%; top: -15px; animation: fire-rise 0.6s infinite;
+        }
+        .monster.fire .hp-indicator {
+            position: absolute; bottom: -20px; color: white; font-size: 10px; 
+            font-weight: 800; text-shadow: 0 0 4px red; display: flex; gap: 2px;
+        }
+        @keyframes fire-flicker { from { transform: scale(1); } to { transform: scale(1.1); } }
+        @keyframes fire-rise { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-25px); } }
+
+        .monster.boss .mushroom-monster {
+            width: 120px; height: 100px; border-width: 6px; border-color: #333;
+            box-shadow: 0 0 40px var(--boss-purple);
+        }
+        .monster.boss .mushroom-cap {
+            width: 160px; height: 80px; top: -45px; background: #4a148c; border-color: #2c003e;
+        }
+        .boss-hp-bar {
+            position: absolute; top: -130px; width: 140px; height: 12px;
+            background: #444; border: 2px solid #000; border-radius: 6px; overflow: hidden;
+        }
+        .boss-hp-fill { height: 100%; background: #ff5252; transition: width 0.3s; }
+        
+        .monster.big .mushroom-monster { transform: scale(1.5); border-color: #333; }
+        .monster.chasing .mushroom-cap { animation: chase-blink 0.4s infinite alternate; }
+        @keyframes chase-blink { 0% { background: var(--monster-red); } 100% { background: #ffea00; } }
+
+        .chest-container {
+            width: 50px; height: 40px;
+            background: #8d6e63;
+            border: 3px solid #4e342e;
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+            animation: bounce-small 2s infinite ease-in-out;
+        }
+        .chest-lid {
+            position: absolute; top: 12px; left: 0; right: 0; height: 4px;
+            background: #ffca28; border-top: 2px solid #4e342e; border-bottom: 2px solid #4e342e;
+        }
+        .chest-lock {
+            position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+            width: 10px; height: 12px; background: #333; border-radius: 2px;
+        }
+        @keyframes bounce-small { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        .typing-label {
+            position: absolute; top: -55px; background: var(--ui-white);
+            padding: 4px 14px; border-radius: 4px; font-weight: 800;
+            font-size: 1.1rem; color: #1a1a1a; white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #333; z-index: 20;
+        }
+        .monster.fire .typing-label { border-color: var(--fire-orange); color: #d84315; }
+        .monster.boss .typing-label {
+            font-size: 1.6rem; padding: 10px 25px; top: -110px; border-width: 3px; border-color: var(--boss-purple);
+        }
+        .chest .typing-label { border-color: var(--chest-gold); color: #d84315; }
+
+        #ui-overlay { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 5000; }
+        .stat-text { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+        .coin-text { color: var(--primary-yellow); }
+        .boss-timer-text { color: #ff5252; }
+
+        #wave-progress-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 5000;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 30px;
+            border-radius: 40px;
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+        }
+        .wave-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            opacity: 0.4;
+            transition: all 0.5s ease;
+        }
+        .wave-node.active { opacity: 1; transform: scale(1.15); }
+        .wave-node.cleared { opacity: 1; }
+        .wave-circle { width: 14px; height: 14px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .wave-node.active .wave-circle { background: var(--primary-yellow); box-shadow: 0 0 15px var(--primary-yellow); }
+        .wave-node.cleared .wave-circle { background: var(--archer-color); box-shadow: 0 0 10px var(--archer-color); }
+        .wave-label { color: white; font-size: 0.85rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .wave-line { width: 40px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+        .wave-line.cleared { background: var(--archer-color); }
+
+        #radar-container {
+            position: absolute; top: 20px; right: 20px; width: 140px; height: 140px;
+            background: rgba(0, 0, 0, 0.7); border: 2px solid var(--radar-green);
+            border-radius: 50%; z-index: 5000; overflow: hidden;
+        }
+        #radar-sweep {
+            position: absolute; top: 50%; left: 50%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(0, 255, 65, 0.2));
+            transform-origin: left top; animation: radar-spin 3s linear infinite;
+        }
+        @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .radar-dot { 
+            position: absolute; width: 5px; height: 5px; background: var(--monster-red); 
+            border-radius: 50%; transform: translate(-50%, -50%); transition: opacity 0.2s;
+        }
+        .radar-dot.chest-dot { background: var(--chest-gold); width: 8px; height: 8px; box-shadow: 0 0 5px var(--chest-gold); z-index: 2; }
+        .radar-dot.boss-dot { background: var(--boss-purple); width: 12px; height: 12px; box-shadow: 0 0 10px #fff; z-index: 3; animation: pulse 1s infinite; }
+        .radar-dot.fire-dot { background: var(--fire-orange); width: 7px; height: 7px; box-shadow: 0 0 5px orange; z-index: 2; }
+
+        /* 보스 방향 지시 화살표 */
+        #boss-pointer {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            z-index: 5100;
+            display: none;
+            pointer-events: none;
+        }
+        #boss-pointer svg {
+            fill: #ff0000;
+            filter: drop-shadow(0 0 5px rgba(255,0,0,0.8));
+            animation: arrow-blink 0.5s infinite alternate;
+        }
+        @keyframes arrow-blink { from { opacity: 0.5; } to { opacity: 1; } }
+
+        #input-box {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 14px 30px; font-size: 24px; border-radius: 8px;
+            border: 3px solid var(--primary-yellow); outline: none;
+            text-align: center; background: var(--ui-white);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.4); width: 340px;
+            font-family: inherit; font-weight: 700; z-index: 5100;
+        }
+        #input-box.error { border-color: #ff5252; background-color: #fff1f1; }
+
+        .fx-container { position: absolute; pointer-events: none; z-index: 2000; }
+        .arrow-fx { width: 35px; height: 6px; background: #fff; border-radius: 3px; box-shadow: 0 0 15px var(--archer-color); position: absolute; }
+        .magic-fx { width: 80px; height: 80px; background: radial-gradient(circle, #fff, var(--wizard-color), transparent); border-radius: 50%; position: absolute; transform: translate(-50%, -50%); animation: magic-pop 0.4s ease-out forwards; }
+        @keyframes magic-pop { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+
+        .overlay-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; color: white; text-align: center; }
+        .hidden { display: none !important; }
+        .title { font-size: 3rem; font-weight: 800; color: var(--primary-yellow); margin-bottom: 20px; letter-spacing: -1px; }
+        .btn-start { background: var(--primary-yellow); padding: 18px 70px; border-radius: 8px; font-size: 1.4rem; font-weight: 700; cursor: pointer; border: none; font-family: inherit; margin-top: 30px; transition: background 0.2s, transform 0.1s; color: #000; }
+        .btn-start:hover { background: #ffea00; }
+        .btn-start:active { transform: scale(0.98); }
+        .job-select { display: flex; gap: 20px; margin: 20px 0; }
+        .job-btn { background: rgba(255,255,255,0.05); padding: 20px 35px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; border: 2px solid rgba(255,255,255,0.2); transition: all 0.2s; }
+        .job-btn.active { background: rgba(255, 215, 0, 0.15); border-color: var(--primary-yellow); }
+        .job-btn span:last-child { margin-top: 10px; font-weight: 700; }
+
+        .loader {
+            border: 6px solid #333;
+            border-top: 6px solid var(--primary-yellow);
+            border-radius: 50%;
+            width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <div id="game-view">
+        <div id="world-bg"></div>
+        <div id="object-layer"></div>
+        
+        <div id="ui-overlay">
+            <div class="stat-text">획득 코인: <span id="coin-count" class="coin-text">0</span></div>
+            <div id="timer-container" class="stat-text">보스 등장: <span id="boss-timer-display" class="boss-timer-text">60</span>초 전</div>
+            <div id="boss-alert" class="stat-text" style="color:var(--boss-purple); display:none; animation: blink 1s infinite;">⚠️ 대왕 버섯 보스가 나타났습니다! ⚠️</div>
+        </div>
+
+        <div id="wave-progress-container">
+            <div class="wave-node" id="node-1"><div class="wave-circle"></div><div class="wave-label">1 웨이브</div></div>
+            <div class="wave-line" id="line-1"></div>
+            <div class="wave-node" id="node-2"><div class="wave-circle"></div><div class="wave-label">2 웨이브</div></div>
+            <div class="wave-line" id="line-2"></div>
+            <div class="wave-node" id="node-3"><div class="wave-circle"></div><div class="wave-label">최종장</div></div>
+        </div>
+
+        <div id="radar-container">
+            <div id="radar-sweep"></div>
+            <div id="radar-dots-container"></div>
+            <!-- 보스 지시 화살표 -->
+            <div id="boss-pointer">
+                <svg viewBox="0 0 10 10">
+                    <polygon points="5,0 10,10 5,7 0,10" />
+                </svg>
+            </div>
+            <div style="position:absolute; top:50%; left:50%; width:4px; height:4px; background:white; border-radius:50%; transform:translate(-50%,-50%);"></div>
+        </div>
+
+        <div id="detection-circle" style="position:absolute; left:50%; top:50%; border:2px dashed rgba(255,255,255,0.1); border-radius:50%; pointer-events:none; z-index:5; transform:translate(-50%,-50%); background:rgba(255,255,255,0.02);"></div>
+
+        <div id="player-fixed">
+            <div id="hp-dots">
+                <div class="hp-dot" id="hp-1"></div>
+                <div class="hp-dot" id="hp-2"></div>
+                <div class="hp-dot" id="hp-3"></div>
+                <div class="hp-dot" id="hp-4"></div>
+                <div class="hp-dot" id="hp-5"></div>
+            </div>
+            <div id="player-sprite" class="sd-character archer">
+                <div class="sd-head">
+                    <div class="sd-hair"></div>
+                    <div class="sd-face">
+                        <div class="sd-eye"></div>
+                        <div class="sd-eye"></div>
+                        <div class="sd-blush blush-l"></div>
+                        <div class="sd-blush blush-r"></div>
+                    </div>
+                </div>
+                <div class="sd-body-container">
+                    <div class="sd-torso"></div>
+                    <div class="sd-arm arm-l"></div>
+                    <div class="sd-arm arm-r"></div>
+                    <div class="sd-leg leg-l"></div>
+                    <div class="sd-leg leg-r"></div>
+                </div>
+            </div>
+        </div>
+
+        <input type="text" id="input-box" placeholder="단어를 입력하고 엔터!" autocomplete="off">
+
+        <div id="start-screen" class="overlay-screen">
+            <h1 class="title">🍄 꼬마 영웅 호야 타자 RPG</h1>
+            <p style="font-size: 1.1rem; opacity: 0.8; margin-top: -10px;">🔥 보스가 등장하면 오직 보스에게 집중하세요! 🔥</p>
+            <p style="font-size: 0.9rem; color: #ff5252; margin-top: 5px;">⚠️ 이동 키를 누르면 입력 중인 텍스트가 초기화됩니다! ⚠️</p>
+            <div class="job-select">
+                <div class="job-btn active" id="btn-archer" onclick="selectJob('archer')">
+                    <span style="font-size:2.5rem;">🏹</span>
+                    <span>궁수 호야</span>
+                </div>
+                <div class="job-btn" id="btn-wizard" onclick="selectJob('wizard')">
+                    <span style="font-size:2.5rem;">🧙</span>
+                    <span>마법사 호야</span>
+                </div>
+            </div>
+            <button class="btn-start" onclick="initGame()">모험 시작</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay-screen hidden">
+            <h1 class="title" style="color:#ff5252">💔 모험 실패... 💔</h1>
+            <p style="font-size: 1.4rem;">호야가 몬스터에게 당했습니다.</p>
+            <p style="font-size: 1.1rem; margin-top: 10px;">획득 코인: <span id="over-coins">0</span></p>
+            <button class="btn-start" onclick="restartGame()">다시 도전하기</button>
+        </div>
+
+        <div id="game-clear-screen" class="overlay-screen hidden">
+            <h1 class="title" style="color:var(--primary-yellow)">✨ 숲의 수호자 호야! ✨</h1>
+            <p style="font-size: 1.4rem; font-weight: 700;">모든 웨이브를 클리어했습니다!</p>
+            <p style="font-size: 1.1rem; margin-top: 10px;">획득 코인: <span id="clear-coins">0</span></p>
+            <button class="btn-start" onclick="restartGame()">처음부터 다시</button>
+        </div>
+
+        <div id="loading-screen" class="overlay-screen hidden">
+            <div class="loader"></div>
+            <h2 style="color: var(--primary-yellow); font-size: 1.5rem; font-weight: 800;">데이터 로딩 중...</h2>
+            <p style="font-size: 1rem; opacity: 0.7;">신비한 숲으로 이동하고 있습니다.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const EASY_CHARS = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하", "고", "노", "도", "로", "모", "보", "소", "오", "조", "초", "구", "누", "두", "루", "무", "부", "수", "우", "주", "추", "기", "니", "디", "리", "미", "비", "시", "이", "지", "치"];
+    const THEME_WORDS = ["호야", "버섯", "숲속", "마법", "화살", "용사", "모험", "영웅", "코인", "공격", "수호", "평화", "독초", "포자", "나무", "이끼", "전설", "의지", "희망", "태양", "달빛", "지혜", "동료", "우정", "성장", "강화"];
+    const CHEST_WORDS = ["황금상자", "비밀보물", "고대유물", "희귀장비", "영웅의검", "전설비약", "왕국유산", "신비조각", "축복의빛", "행운열쇠"];
+    const BOSS_WORDS = ["어둠의포자", "대왕버섯맨", "숲의파괴자", "진화한이끼", "전설적위협", "고대의공포", "심연의균열", "파멸의빛줄"];
+    const FIRE_WORDS = ["불꽃탄", "이글봄", "화염포", "태양꽃", "마그마", "불주먹", "활화산", "용암길", "불도저", "레드볼"];
+
+    const DETECTION_RANGE = 220;
+    const RADAR_SCAN_RANGE = 800;
+    const VIEW_W = 800;
+    const VIEW_H = 600;
+    const BOSS_SPAWN_INTERVAL = 60; 
+
+    const initialGameState = {
+        playing: false,
+        job: 'archer',
+        coins: 0,
+        hp: 3,         
+        maxHp: 5,      
+        worldPos: { x: 0, y: 0 },
+        monsters: [],
+        nature: [],
+        keys: {},
+        spawnTimer: 0,
+        fireSpawnTimer: 0,
+        bossTimer: BOSS_SPAWN_INTERVAL * 60,
+        gameLoopId: null,
+        errorTimeout: null,
+        isBossActive: false,
+        currentWave: 1,
+        totalWaves: 3
+    };
+
+    let state = JSON.parse(JSON.stringify(initialGameState));
+
+    const worldBg = document.getElementById('world-bg');
+    const objectLayer = document.getElementById('object-layer');
+    const playerSprite = document.getElementById('player-sprite');
+    const radarDotsContainer = document.getElementById('radar-dots-container');
+    const bossPointer = document.getElementById('boss-pointer');
+    const inputBox = document.getElementById('input-box');
+    const coinDisplay = document.getElementById('coin-count');
+    const bossTimerDisplay = document.getElementById('boss-timer-display');
+    const timerContainer = document.getElementById('timer-container');
+    const bossAlert = document.getElementById('boss-alert');
+    const loadingScreen = document.getElementById('loading-screen');
+
+    document.getElementById('detection-circle').style.width = (DETECTION_RANGE * 2) + 'px';
+    document.getElementById('detection-circle').style.height = (DETECTION_RANGE * 2) + 'px';
+
+    function generateSimpleHangul(length, type = 'normal') {
+        if (type === 'fire') return FIRE_WORDS[Math.floor(Math.random() * FIRE_WORDS.length)];
+        if (length === 4) {
+            if (state.bossTimer <= 0 || state.isBossActive) return BOSS_WORDS[Math.floor(Math.random() * BOSS_WORDS.length)];
+            return CHEST_WORDS[Math.floor(Math.random() * CHEST_WORDS.length)];
+        }
+        if (Math.random() > 0.5) {
+            const pool = THEME_WORDS.filter(w => w.length === length);
+            if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
+        }
+        let result = "";
+        for (let i = 0; i < length; i++) result += EASY_CHARS[Math.floor(Math.random() * EASY_CHARS.length)];
+        return result;
+    }
+
+    function selectJob(job) {
+        state.job = job;
+        document.querySelectorAll('.job-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + job).classList.add('active');
+    }
+
+    function updateWaveUI() {
+        for (let i = 1; i <= state.totalWaves; i++) {
+            const node = document.getElementById(`node-${i}`);
+            const line = document.getElementById(`line-${i}`);
+            node.className = 'wave-node';
+            if (i < state.currentWave) node.classList.add('cleared');
+            if (i === state.currentWave) node.classList.add('active');
+            if (line) {
+                line.className = 'wave-line';
+                if (i < state.currentWave) line.classList.add('cleared');
+            }
+        }
+    }
+
+    function updateHPDisplay() {
+        for(let i=1; i<=state.maxHp; i++) {
+            const dot = document.getElementById('hp-' + i);
+            if (i <= state.hp) dot.classList.remove('lost');
+            else dot.classList.add('lost');
+        }
+    }
+
+    function initGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-clear-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        loadingScreen.classList.remove('hidden');
+
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+            playerSprite.className = 'sd-character ' + state.job;
+            clearAllMonsters(); 
+            state.nature = [];
+            state.coins = 0;
+            state.hp = 3; 
+            state.worldPos = { x: 0, y: 0 };
+            state.bossTimer = BOSS_SPAWN_INTERVAL * 60;
+            state.isBossActive = false;
+            state.currentWave = 1;
+            state.fireSpawnTimer = 0;
+            coinDisplay.innerText = "0";
+            bossAlert.style.display = 'none';
+            bossPointer.style.display = 'none';
+            timerContainer.style.visibility = 'visible';
+            updateHPDisplay();
+            updateWaveUI();
+            for(let i=0; i<60; i++) spawnNature(true);
+            state.playing = true;
+            inputBox.value = '';
+            inputBox.focus();
+            if (state.gameLoopId) cancelAnimationFrame(state.gameLoopId);
+            state.gameLoopId = requestAnimationFrame(gameLoop);
+        }, 1200);
+    }
+
+    function restartGame() {
+        if (state.gameLoopId) cancelAnimationFrame(state.gameLoopId);
+        state.playing = false;
+        const currentJob = state.job;
+        state = JSON.parse(JSON.stringify(initialGameState));
+        state.job = currentJob;
+        initGame();
+    }
+
+    function clearAllMonsters() {
+        state.monsters.forEach(m => m.el.remove());
+        state.monsters = [];
+    }
+
+    function spawnNature(initial = false) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = initial ? Math.random() * 1200 : 900 + Math.random() * 400;
+        const x = state.worldPos.x + Math.cos(angle) * dist;
+        const y = state.worldPos.y + Math.sin(angle) * dist;
+        const el = document.createElement('div');
+        const roll = Math.random();
+        let type = 'grass';
+        if (roll < 0.2) { el.className = 'nature-obj tree'; el.innerText = '🌳'; type = 'tree'; }
+        else if (roll < 0.5) { el.className = 'nature-obj flower'; el.innerText = '🌸'; type = 'flower'; }
+        else { el.className = 'nature-obj grass'; el.innerText = '🌿'; type = 'grass'; }
+        objectLayer.appendChild(el);
+        state.nature.push({ x, y, el, type });
+    }
+
+    inputBox.addEventListener('input', (e) => {
+        if (!state.playing) return;
+        const val = e.target.value.trim();
+        if (val === '') { clearErrorState(); return; }
+        const idx = state.monsters.findIndex(m => m.word === val);
+        if (idx !== -1) {
+            const target = state.monsters[idx];
+            if (state.job === 'archer') createArrow(target);
+            else createMagicExplosion(target);
+            e.target.value = '';
+            clearErrorState();
+        } else {
+            const partialMatch = state.monsters.some(m => m.word.startsWith(val));
+            if (!partialMatch) {
+                inputBox.classList.add('error');
+                if (!state.errorTimeout) {
+                    state.errorTimeout = setTimeout(() => { inputBox.value = ''; clearErrorState(); }, 800);
+                }
+            } else {
+                clearErrorState();
+            }
+        }
+    });
+
+    function clearErrorState() {
+        inputBox.classList.remove('error');
+        if (state.errorTimeout) { clearTimeout(state.errorTimeout); state.errorTimeout = null; }
+    }
+
+    function createArrow(m) {
+        const arrow = document.createElement('div');
+        arrow.className = 'fx-container arrow-fx';
+        document.getElementById('game-view').appendChild(arrow);
+        let progress = 0;
+        function move() {
+            if (!state.playing) { arrow.remove(); return; }
+            progress += 0.1;
+            if (progress >= 1) { arrow.remove(); handleHit(m); return; }
+            const tx = m.x - state.worldPos.x + VIEW_W/2;
+            const ty = m.y - state.worldPos.y + VIEW_H/2;
+            const x = (VIEW_W/2) + (tx - VIEW_W/2) * progress;
+            const y = (VIEW_H/2) + (ty - VIEW_H/2) * progress;
+            arrow.style.left = x + 'px'; arrow.style.top = y + 'px';
+            arrow.style.transform = `translate(-50%, -50%) rotate(${Math.atan2(ty - VIEW_H/2, tx - VIEW_W/2) * 180 / Math.PI}deg)`;
+            requestAnimationFrame(move);
+        }
+        move();
+    }
+
+    function createMagicExplosion(m) {
+        const blast = document.createElement('div');
+        blast.className = 'fx-container magic-fx';
+        blast.style.left = (m.x - state.worldPos.x + VIEW_W/2) + 'px';
+        blast.style.top = (m.y - state.worldPos.y + VIEW_H/2) + 'px';
+        document.getElementById('game-view').appendChild(blast);
+        setTimeout(() => { blast.remove(); handleHit(m); }, 300);
+    }
+
+    function handleHit(m) {
+        const idx = state.monsters.indexOf(m);
+        if (idx === -1) return;
+        
+        if (m.isBoss) {
+            m.hp--;
+            if (m.hp > 0) {
+                m.word = generateSimpleHangul(4);
+                m.el.querySelector('.typing-label').innerText = m.word;
+                m.el.querySelector('.boss-hp-fill').style.width = (m.hp / (state.currentWave + 2) * 100) + '%';
+                return;
+            }
+            state.coins += 20 + (state.currentWave * 10);
+            bossAlert.style.display = 'none';
+            bossPointer.style.display = 'none';
+            state.isBossActive = false; 
+            clearAllMonsters();
+
+            if (state.currentWave < state.totalWaves) {
+                state.currentWave++;
+                state.bossTimer = BOSS_SPAWN_INTERVAL * 60;
+                timerContainer.style.visibility = 'visible';
+                updateWaveUI();
+            } else {
+                state.playing = false;
+                document.getElementById('clear-coins').innerText = state.coins;
+                document.getElementById('game-clear-screen').classList.remove('hidden');
+            }
+        } else if (m.isFire) {
+            m.hp--;
+            if (m.hp > 0) {
+                m.word = generateSimpleHangul(3, 'fire');
+                m.el.querySelector('.typing-label').innerText = m.word;
+                m.el.querySelector('.hp-indicator').innerHTML = "🔥".repeat(m.hp);
+                return;
+            }
+            
+            if (state.hp < state.maxHp) {
+                state.hp++;
+                updateHPDisplay();
+                state.coins += 20; 
+            } else {
+                state.coins += 30;
+            }
+            
+            m.el.remove();
+            state.monsters.splice(idx, 1);
+        } else if (m.isChest) {
+            state.coins += 10;
+            m.el.remove();
+            state.monsters.splice(idx, 1);
+        } else {
+            state.coins += m.isBig ? 3 : 1;
+            m.el.remove();
+            state.monsters.splice(idx, 1);
+        }
+        coinDisplay.innerText = state.coins;
+    }
+
+    function spawnFireMushroom() {
+        const angle = Math.random() * Math.PI * 2;
+        const spawnX = state.worldPos.x + Math.cos(angle) * 650;
+        const spawnY = state.worldPos.y + Math.sin(angle) * 650;
+        const word = generateSimpleHangul(3, 'fire');
+        const el = document.createElement('div');
+        el.className = 'entity monster fire';
+        el.innerHTML = `<div class="typing-label">${word}</div><div class="mushroom-monster"><div class="mushroom-cap"></div></div><div class="fire-particle" style="left:5px"></div><div class="fire-particle" style="left:20px; animation-delay:0.3s"></div><div class="hp-indicator">🔥🔥🔥</div>`;
+        objectLayer.appendChild(el);
+        state.monsters.push({ 
+            x: spawnX, y: spawnY, word, el, 
+            isBig: false, isChest: false, isBoss: false, isFire: true, 
+            hp: 3, vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, 
+            chasing: false
+        });
+    }
+
+    function spawnMonster(isBoss = false) {
+        if (isBoss) {
+            clearAllMonsters();
+            state.isBossActive = true;
+            timerContainer.style.visibility = 'hidden';
+            bossPointer.style.display = 'block';
+        }
+
+        const angle = Math.random() * Math.PI * 2;
+        const spawnX = state.worldPos.x + Math.cos(angle) * 650;
+        const spawnY = state.worldPos.y + Math.sin(angle) * 650;
+        
+        const rand = Math.random();
+        const isChest = !isBoss && rand < (0.1 + state.currentWave * 0.02);
+        const isBig = !isBoss && !isChest && rand < (0.1 + state.currentWave * 0.05);
+        
+        let wordLength = 1;
+        if (isBoss || isChest) wordLength = 4;
+        else if (isBig) wordLength = 3;
+        else if (Math.random() > 0.4) wordLength = 2;
+        
+        const word = generateSimpleHangul(wordLength);
+        const el = document.createElement('div');
+
+        if (isBoss) {
+            el.className = 'entity monster boss';
+            const maxHp = state.currentWave + 2; 
+            el.innerHTML = `<div class="boss-hp-bar"><div class="boss-hp-fill" style="width:100%"></div></div><div class="typing-label">${word}</div><div class="mushroom-monster"><div class="mushroom-cap"><div class="spot"></div><div class="spot"></div><div class="spot"></div></div>👑</div>`;
+            bossAlert.style.display = 'block';
+            objectLayer.appendChild(el);
+            state.monsters.push({ x: spawnX, y: spawnY, word, el, isBig, isChest, isBoss, isFire: false, hp: maxHp, vx: 0.3 + (state.currentWave * 0.1), vy: 0.3 + (state.currentWave * 0.1), chasing: false });
+        } else if (isChest) {
+            el.className = 'entity chest';
+            el.innerHTML = `<div class="typing-label">${word}</div><div class="chest-container"><div class="chest-lid"></div><div class="chest-lock"></div></div>`;
+            objectLayer.appendChild(el);
+            state.monsters.push({ x: spawnX, y: spawnY, word, el, isBig, isChest, isBoss, isFire: false, hp: 1, vx: 0, vy: 0, chasing: false });
+        } else {
+            el.className = 'entity monster' + (isBig ? ' big' : '');
+            el.innerHTML = `<div class="typing-label">${word}</div><div class="mushroom-monster"><div class="mushroom-cap"><div class="spot"></div><div class="spot"></div><div class="spot"></div></div>${isBig ? '👿' : '👁️'}</div>`;
+            objectLayer.appendChild(el);
+            const speedVar = 0.8 + (state.currentWave * 0.1);
+            state.monsters.push({ x: spawnX, y: spawnY, word, el, isBig, isChest, isBoss, isFire: false, hp: 1, vx: (Math.random() - 0.5) * speedVar, vy: (Math.random() - 0.5) * speedVar, chasing: false });
+        }
+    }
+
+    window.addEventListener('keydown', e => {
+        const key = e.key.toLowerCase();
+        state.keys[key] = true;
+
+        // 이동 키가 눌렸을 때 입력 필드 초기화 (보스전 한정이 아니라 게임 전체에 적용하여 일관성 유지)
+        if (state.playing && (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key))) {
+            if (inputBox.value !== '') {
+                inputBox.value = '';
+                clearErrorState();
+            }
+        }
+    });
+    window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
+
+    function gameLoop() {
+        if (!state.playing) return;
+        const speed = 4;
+        let moving = false;
+        if (state.keys['w'] || state.keys['arrowup']) { state.worldPos.y -= speed; moving = true; }
+        if (state.keys['s'] || state.keys['arrowdown']) { state.worldPos.y += speed; moving = true; }
+        if (state.keys['a'] || state.keys['arrowleft']) { state.worldPos.x -= speed; moving = true; }
+        if (state.keys['d'] || state.keys['arrowright']) { state.worldPos.x += speed; moving = true; }
+        
+        if (moving) {
+            playerSprite.classList.add('walking');
+        } else {
+            playerSprite.classList.remove('walking');
+        }
+
+        worldBg.style.backgroundPosition = `${-(state.worldPos.x % 50)}px ${-(state.worldPos.y % 50)}px`;
+        
+        if (!state.isBossActive) {
+            if (state.bossTimer > 0) { 
+                state.bossTimer--; 
+                bossTimerDisplay.innerText = Math.ceil(state.bossTimer / 60); 
+            } else { 
+                spawnMonster(true);
+            }
+
+            state.spawnTimer++;
+            let spawnDelay = 180; 
+            if (state.currentWave === 2) spawnDelay = 120; 
+            else if (state.currentWave >= 3) spawnDelay = 60; 
+            if (state.spawnTimer > spawnDelay) { 
+                spawnMonster(false); 
+                state.spawnTimer = 0; 
+            }
+
+            state.fireSpawnTimer++;
+            if (state.fireSpawnTimer >= 600) {
+                spawnFireMushroom();
+                state.fireSpawnTimer = 0;
+            }
+        }
+
+        for (let i = state.nature.length - 1; i >= 0; i--) {
+            const obj = state.nature[i];
+            const dx = obj.x - state.worldPos.x;
+            const dy = obj.y - state.worldPos.y;
+            if (Math.abs(dx) > 1500 || Math.abs(dy) > 1500) { obj.el.remove(); state.nature.splice(i, 1); continue; }
+            if (Math.abs(dx) < 600 && Math.abs(dy) < 450) {
+                obj.el.style.display = 'flex';
+                obj.el.style.transform = `translate(${dx + VIEW_W/2 - 50}px, ${dy + VIEW_H/2 - (obj.type === 'tree' ? 100 : 20)}px)`;
+                obj.el.style.zIndex = Math.floor(obj.y - state.worldPos.y + 1000);
+            } else { obj.el.style.display = 'none'; }
+        }
+        if (state.nature.length < 60) spawnNature();
+
+        radarDotsContainer.innerHTML = '';
+        let bossRef = null;
+
+        for (let i = state.monsters.length - 1; i >= 0; i--) {
+            const m = state.monsters[i];
+            const dx = state.worldPos.x - m.x;
+            const dy = state.worldPos.y - m.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (m.isBoss) bossRef = m;
+
+            if (!m.isChest) {
+                if (m.isBoss) {
+                    m.chasing = true; m.el.classList.add('chasing');
+                    m.x += (dx / dist) * (0.5 + state.currentWave * 0.15); m.y += (dy / dist) * (0.5 + state.currentWave * 0.15);
+                } else {
+                    const detectDist = DETECTION_RANGE + (state.currentWave * 10);
+                    if (dist < detectDist) {
+                        m.chasing = true; m.el.classList.add('chasing');
+                        const chaseSpeed = m.isFire ? (1.6 + state.currentWave * 0.15) : (m.isBig ? 1.0 : 1.5);
+                        m.x += (dx / dist) * chaseSpeed; 
+                        m.y += (dy / dist) * chaseSpeed;
+                    } else { 
+                        m.chasing = false; m.el.classList.remove('chasing'); 
+                        m.x += m.vx; m.y += m.vy; 
+                    }
+                }
+            }
+
+            m.el.style.transform = `translate(${m.x - state.worldPos.x + VIEW_W/2}px, ${m.y - state.worldPos.y + VIEW_H/2}px)`;
+            m.el.style.zIndex = Math.floor(m.y - state.worldPos.y + 1000);
+            
+            if (dist < RADAR_SCAN_RANGE) {
+                const dot = document.createElement('div');
+                let dotClass = 'radar-dot';
+                if (m.isBoss) dotClass += ' boss-dot'; 
+                else if (m.isChest) dotClass += ' chest-dot';
+                else if (m.isFire) dotClass += ' fire-dot';
+                dot.className = dotClass;
+                dot.style.left = 70 + ((-dx) / RADAR_SCAN_RANGE) * 70 + 'px';
+                dot.style.top = 70 + ((-dy) / RADAR_SCAN_RANGE) * 70 + 'px';
+                radarDotsContainer.appendChild(dot);
+            }
+
+            if (!m.isChest && dist < (m.isBoss ? 80 : (m.isBig ? 50 : 35))) {
+                state.hp--;
+                updateHPDisplay();
+                state.worldPos.x += (dx / dist) * 150;
+                state.worldPos.y += (dy / dist) * 150;
+                if (state.hp <= 0) {
+                    state.playing = false;
+                    document.getElementById('over-coins').innerText = state.coins;
+                    document.getElementById('game-over-screen').classList.remove('hidden');
+                }
+            }
+        }
+
+        // 보스 방향 포인터 업데이트
+        if (state.isBossActive && bossRef) {
+            const bdx = bossRef.x - state.worldPos.x;
+            const bdy = bossRef.y - state.worldPos.y;
+            const bdist = Math.sqrt(bdx*bdx + bdy*bdy);
+            
+            if (bdist > RADAR_SCAN_RANGE) {
+                bossPointer.style.display = 'block';
+                const angle = Math.atan2(bdy, bdx);
+                const px = 70 + Math.cos(angle) * 65;
+                const py = 70 + Math.sin(angle) * 65;
+                bossPointer.style.left = px + 'px';
+                bossPointer.style.top = py + 'px';
+                bossPointer.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI + 90}deg)`;
+            } else {
+                bossPointer.style.display = 'none';
+            }
+        } else {
+            bossPointer.style.display = 'none';
+        }
+
+        state.gameLoopId = requestAnimationFrame(gameLoop);
+    }
+</script>
+</body>
+</html>
