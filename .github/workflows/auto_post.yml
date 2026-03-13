@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: 📥 체크아웃
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🐍 Python 설치
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -26,4 +26,7 @@ jobs:
         env:
           BLOG_ID: ${{ secrets.BLOG_ID }}
           BLOGGER_TOKEN: ${{ secrets.BLOGGER_TOKEN }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: python scripts/create_post.py
