@@ -266,17 +266,38 @@ def build_chinese_post(c, today_str):
 # ─────────────────────────────────────────
 # Blogger 전송
 # ─────────────────────────────────────────
-BLOG_ID = os.environ.get("BLOG_ID","")
-TOKEN   = os.environ.get("BLOGGER_TOKEN","")
+BLOG_ID         = os.environ.get("BLOG_ID","")
+REFRESH_TOKEN   = os.environ.get("BLOGGER_REFRESH_TOKEN","")
+CLIENT_ID       = os.environ.get("GOOGLE_CLIENT_ID","")
+CLIENT_SECRET   = os.environ.get("GOOGLE_CLIENT_SECRET","")
+
+def get_access_token():
+    """Refresh Token으로 Access Token 자동 발급"""
+    resp = requests.post("https://oauth2.googleapis.com/token", data={
+        "grant_type":    "refresh_token",
+        "refresh_token": REFRESH_TOKEN,
+        "client_id":     CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+    })
+    if resp.status_code == 200:
+        token = resp.json().get("access_token","")
+        print("🔑 Access Token 자동 갱신 완료")
+        return token
+    else:
+        print(f"❌ Token 갱신 실패: {resp.text[:120]}")
+        return ""
+
+# 실행 시작시 토큰 1회 발급
+ACCESS_TOKEN = get_access_token() if REFRESH_TOKEN else os.environ.get("BLOGGER_TOKEN","")
 
 def post_blogger(title, content, labels, idx, total):
-    if not BLOG_ID or not TOKEN:
+    if not BLOG_ID or not ACCESS_TOKEN:
         print(f"[{idx:02d}/{total}] (테스트) {title[:50]}")
         return True
 
     url = f"https://www.googleapis.com/blogger/v3/blogs/{BLOG_ID}/posts/"
     resp = requests.post(url,
-        headers={"Authorization":f"Bearer {TOKEN}","Content-Type":"application/json"},
+        headers={"Authorization":f"Bearer {ACCESS_TOKEN}","Content-Type":"application/json"},
         json={"title":title,"content":content,"labels":labels}
     )
     ok = resp.status_code == 200
@@ -284,7 +305,7 @@ def post_blogger(title, content, labels, idx, total):
     print(f"[{idx:02d}/{total}] {status} {title[:45]}  →  {resp.status_code}")
     if not ok:
         print(f"        오류: {resp.text[:120]}")
-    time.sleep(1.2)   # API rate limit 방지
+    time.sleep(1.2)
     return ok
 
 
