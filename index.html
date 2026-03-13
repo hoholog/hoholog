@@ -17,6 +17,7 @@
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -236,11 +237,82 @@
                         </div>\`;
                     }
 
+                    // ── 선택 상태 ──
+                    let selectedZodiac = null;
+                    let selectedChinese = null;
+
+                    const ZODIACS_LIST = [
+                        {kr:'양자리',date:'3/21~4/19',emoji:'♈'},
+                        {kr:'황소자리',date:'4/20~5/20',emoji:'♉'},
+                        {kr:'쌍둥이자리',date:'5/21~6/21',emoji:'♊'},
+                        {kr:'게자리',date:'6/22~7/22',emoji:'♋'},
+                        {kr:'사자자리',date:'7/23~8/22',emoji:'♌'},
+                        {kr:'처녀자리',date:'8/23~9/22',emoji:'♍'},
+                        {kr:'천칭자리',date:'9/23~10/22',emoji:'♎'},
+                        {kr:'전갈자리',date:'10/23~11/21',emoji:'♏'},
+                        {kr:'사수자리',date:'11/22~12/21',emoji:'♐'},
+                        {kr:'염소자리',date:'12/22~1/19',emoji:'♑'},
+                        {kr:'물병자리',date:'1/20~2/18',emoji:'♒'},
+                        {kr:'물고기자리',date:'2/19~3/20',emoji:'♓'},
+                    ];
+                    const CHINESE_LIST = [
+                        {kr:'쥐띠',year:'1960,1972,1984,1996,2008,2020',emoji:'🐭'},
+                        {kr:'소띠',year:'1961,1973,1985,1997,2009,2021',emoji:'🐮'},
+                        {kr:'호랑이띠',year:'1962,1974,1986,1998,2010,2022',emoji:'🐯'},
+                        {kr:'토끼띠',year:'1963,1975,1987,1999,2011,2023',emoji:'🐰'},
+                        {kr:'용띠',year:'1964,1976,1988,2000,2012,2024',emoji:'🐲'},
+                        {kr:'뱀띠',year:'1965,1977,1989,2001,2013,2025',emoji:'🐍'},
+                        {kr:'말띠',year:'1966,1978,1990,2002,2014,2026',emoji:'🐴'},
+                        {kr:'양띠',year:'1967,1979,1991,2003,2015,2027',emoji:'🐑'},
+                        {kr:'원숭이띠',year:'1968,1980,1992,2004,2016,2028',emoji:'🐵'},
+                        {kr:'닭띠',year:'1969,1981,1993,2005,2017,2029',emoji:'🐓'},
+                        {kr:'개띠',year:'1970,1982,1994,2006,2018,2030',emoji:'🐶'},
+                        {kr:'돼지띠',year:'1971,1983,1995,2007,2019,2031',emoji:'🐷'},
+                    ];
+
+                    // ── 이미지 저장 ──
+                    function saveCard(elId, filename){
+                        const el = document.getElementById(elId);
+                        if(!el){ alert('저장할 카드가 없습니다'); return; }
+                        html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true}).then(canvas=>{
+                            const a = document.createElement('a');
+                            a.download = filename+'.png';
+                            a.href = canvas.toDataURL('image/png');
+                            a.click();
+                        });
+                    }
+
+                    // ── 운세 카드 HTML ──
+                    function makeCard(emoji, name, sub, fortune, color, num, rating, cardId){
+                        return \`<div id="\${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff;max-width:480px;margin:0 auto">
+                            <div style="text-align:center;margin-bottom:16px">
+                                <div style="font-size:48px">\${emoji}</div>
+                                <div style="font-size:22px;font-weight:900;margin:6px 0">\${name}</div>
+                                <div style="opacity:.8;font-size:13px">\${sub}</div>
+                                <div style="color:#fde68a;font-size:14px;margin-top:4px">\${rating}</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.8;margin-bottom:14px">
+                                \${fortune}
+                            </div>
+                            <div style="display:flex;gap:10px">
+                                <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                    <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
+                                    <div style="font-weight:900;font-size:16px">\${color}</div>
+                                </div>
+                                <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                    <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
+                                    <div style="font-weight:900;font-size:22px">\${num}</div>
+                                </div>
+                            </div>
+                            <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · \${todayStr()}</div>
+                        </div>\`;
+                    }
+
                     async function showFortune(type){
                         document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active-ftab'));
                         document.getElementById('tab-'+type).classList.add('active-ftab');
                         const c = document.getElementById('fortune-content');
-                        c.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">⏳ 블로그에서 운세를 불러오는 중...</div>';
+                        c.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">⏳ 불러오는 중...</div>';
 
                         if(type==='today'){
                             const posts = await fetchPosts('오늘의운세', 5);
@@ -257,29 +329,41 @@
                         }
 
                         else if(type==='zodiac'){
-                            const posts = await fetchPosts('별자리운세', 12);
-                            c.innerHTML = \`
-                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">✨ 별자리 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
+                            // 선택 UI
+                            const selHTML = \`
                                 <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 별자리 운세</div>
-                                    \${renderPosts(posts,'별자리운세')}
-                                    <div style="text-align:center;margin-top:16px">
-                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">✨ 별자리 운세 전체보기</a>
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">✨ 내 별자리 선택</div>
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px" id="zodiac-sel">
+                                        \${ZODIACS_LIST.map(z=>\`
+                                            <button onclick="selectZodiac('\${z.kr}')"
+                                                id="zsel-\${z.kr}"
+                                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;transition:all.2s;font-size:13px;font-weight:700">
+                                                \${z.emoji}<br>\${z.kr}<br><span style="font-size:10px;color:#aaa">\${z.date}</span>
+                                            </button>\`).join('')}
                                     </div>
-                                </div>\`;
+                                </div>
+                                <div id="zodiac-card-area"></div>\`;
+                            c.innerHTML = selHTML;
+                            if(selectedZodiac) selectZodiac(selectedZodiac);
                         }
 
                         else if(type==='chinese'){
-                            const posts = await fetchPosts('띠운세', 12);
-                            c.innerHTML = \`
-                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🐾 띠별 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
+                            // 선택 UI
+                            const selHTML = \`
                                 <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 띠 운세</div>
-                                    \${renderPosts(posts,'띠운세')}
-                                    <div style="text-align:center;margin-top:16px">
-                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">🐾 띠 운세 전체보기</a>
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">🐾 내 띠 선택</div>
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px" id="chinese-sel">
+                                        \${CHINESE_LIST.map(c=>\`
+                                            <button onclick="selectChinese('\${c.kr}')"
+                                                id="csel-\${c.kr}"
+                                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;transition:all.2s;font-size:13px;font-weight:700">
+                                                \${c.emoji}<br>\${c.kr}<br><span style="font-size:10px;color:#aaa">\${c.year.split(',').slice(0,2).join(',')}..</span>
+                                            </button>\`).join('')}
                                     </div>
-                                </div>\`;
+                                </div>
+                                <div id="chinese-card-area"></div>\`;
+                            c.innerHTML = selHTML;
+                            if(selectedChinese) selectChinese(selectedChinese);
                         }
 
                         else if(type==='weekly'){
@@ -309,6 +393,62 @@
                                     </div>
                                 </div>\`;
                         }
+                    }
+
+                    // ── 별자리 선택 ──
+                    function selectZodiac(kr){
+                        selectedZodiac = kr;
+                        document.querySelectorAll('[id^="zsel-"]').forEach(b=>{
+                            b.style.background='#f5f3ff';
+                            b.style.borderColor='transparent';
+                        });
+                        const btn = document.getElementById('zsel-'+kr);
+                        if(btn){ btn.style.background='#ede9fe'; btn.style.borderColor='#7c3aed'; }
+
+                        const z = ZODIACS_LIST.find(x=>x.kr===kr);
+                        const fortune = rnd(['오늘은 새로운 시작을 알리는 에너지가 강합니다. 적극적으로 움직이면 좋은 결과가 따라옵니다.','주변 사람들과의 소통이 큰 도움이 됩니다. 열린 마음으로 대화해보세요.','작은 노력이 큰 결실을 맺는 하루가 될 것입니다. 꾸준함이 핵심입니다.','예상치 못한 좋은 소식이 들려올 수 있습니다. 기대감을 가져보세요.','재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.']);
+                        const area = document.getElementById('zodiac-card-area');
+                        area.innerHTML = \`
+                            <div class="fcard">
+                                \${makeCard(z.emoji, z.kr, z.date, fortune, rnd(COLORS), rndN(), rnd(RATINGS), 'zcard')}
+                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                                    <button onclick="saveCard('zcard','별자리운세_\${kr}')"
+                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                                        📸 이미지 저장
+                                    </button>
+                                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">
+                                        📖 블로그에서 더보기
+                                    </a>
+                                </div>
+                            </div>\`;
+                    }
+
+                    // ── 띠 선택 ──
+                    function selectChinese(kr){
+                        selectedChinese = kr;
+                        document.querySelectorAll('[id^="csel-"]').forEach(b=>{
+                            b.style.background='#f5f3ff';
+                            b.style.borderColor='transparent';
+                        });
+                        const btn = document.getElementById('csel-'+kr);
+                        if(btn){ btn.style.background='#ede9fe'; btn.style.borderColor='#7c3aed'; }
+
+                        const ch = CHINESE_LIST.find(x=>x.kr===kr);
+                        const fortune = rnd(['오늘은 새로운 시작을 알리는 에너지가 강합니다. 적극적으로 움직이면 좋은 결과가 따라옵니다.','주변 사람들과의 소통이 큰 도움이 됩니다. 열린 마음으로 대화해보세요.','작은 노력이 큰 결실을 맺는 하루가 될 것입니다. 꾸준함이 핵심입니다.','예상치 못한 좋은 소식이 들려올 수 있습니다. 기대감을 가져보세요.','재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.']);
+                        const area = document.getElementById('chinese-card-area');
+                        area.innerHTML = \`
+                            <div class="fcard">
+                                \${makeCard(ch.emoji, ch.kr, ch.year.split(',').slice(0,3).join(',')+' ...', fortune, rnd(COLORS), rndN(), rnd(RATINGS), 'ccard')}
+                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                                    <button onclick="saveCard('ccard','띠운세_\${kr}')"
+                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                                        📸 이미지 저장
+                                    </button>
+                                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">
+                                        📖 블로그에서 더보기
+                                    </a>
+                                </div>
+                            </div>\`;
                     }
 
                     document.getElementById('fortune-date').textContent = todayStr();
