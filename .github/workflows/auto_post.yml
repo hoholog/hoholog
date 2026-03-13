@@ -1,0 +1,7 @@
+git clone https://github.com/내아이디/fortune-blogger.git
+cd fortune-blogger
+mkdir -p .github/workflows
+cp auto_post.yml .github/workflows/
+git add .
+git commit -m "Add workflows"
+git push origin main
