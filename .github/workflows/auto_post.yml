@@ -22,7 +22,7 @@ jobs:
       - name: 📦 패키지 설치
         run: pip install pandas requests
 
-      - name: 🌟 25개 운세 포스팅 실행
+      - name: 🌟 27개 운세 포스팅 실행
         env:
           BLOG_ID: ${{ secrets.BLOG_ID }}
           BLOGGER_TOKEN: ${{ secrets.BLOGGER_TOKEN }}
