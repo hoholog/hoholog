@@ -32,6 +32,7 @@
                     <button onclick="navigateTo('index')" class="text-slate-600 hover:text-indigo-600 font-bold transition">전체게임</button>
                     <button onclick="navigateTo('about')" class="text-slate-600 hover:text-indigo-600 font-bold transition">소개</button>
                     <button onclick="navigateTo('blog')" class="text-slate-600 hover:text-indigo-600 font-bold transition">커뮤니티</button>
+                    <button onclick="navigateTo('fortune')" class="text-purple-600 hover:text-purple-800 font-bold transition">🌟 운세</button>
                     <button onclick="navigateTo('guide')" class="text-slate-600 hover:text-indigo-600 font-bold transition">고객지원</button>
                 </div>
                 <button onclick="navigateTo('contact')" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">문의</button>
@@ -65,6 +66,7 @@
                 <ul class="space-y-3 font-medium">
                     <li><button onclick="navigateTo('index')" class="hover:text-white transition">홈으로</button></li>
                     <li><button onclick="navigateTo('about')" class="hover:text-white transition">플랫폼 소개</button></li>
+                    <li><button onclick="navigateTo('fortune')" class="hover:text-white transition">🌟 오늘의 운세</button></li>
                     <li><button onclick="navigateTo('privacy')" class="hover:text-white transition">개인정보처리방침</button></li>
                     <li><button onclick="navigateTo('guide')" class="hover:text-white transition">이용 가이드</button></li>
                 </ul>
@@ -143,6 +145,175 @@
                         <p class="text-slate-400 font-bold text-xl">아직 게시글이 없습니다.</p>
                         <p class="text-slate-300 text-base mt-2">공지 및 업데이트 소식을 준비 중입니다.</p>
                     </div>
+                </div>
+            `,
+            fortune: `
+                <div class="page-transition">
+                    <div class="text-center mb-10">
+                        <h1 class="text-4xl font-black mb-3">🌟 오늘의 운세</h1>
+                        <p class="text-slate-400" id="fortune-date"></p>
+                    </div>
+
+                    <!-- 탭 -->
+                    <div class="flex gap-3 mb-8 flex-wrap justify-center">
+                        <button onclick="showFortune('today')"   id="tab-today"   class="ftab active-ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌟 오늘운세</button>
+                        <button onclick="showFortune('zodiac')"  id="tab-zodiac"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">✨ 별자리</button>
+                        <button onclick="showFortune('chinese')" id="tab-chinese" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🐾 띠운세</button>
+                        <button onclick="showFortune('weekly')"  id="tab-weekly"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">📅 주간운세</button>
+                        <button onclick="showFortune('monthly')" id="tab-monthly" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌙 월간운세</button>
+                    </div>
+
+                    <div id="fortune-content"><div style="text-align:center;padding:60px;color:#aaa">⏳ 운세를 불러오는 중...</div></div>
+
+                    <style>
+                        .ftab{background:#f1f5f9;color:#64748b}
+                        .active-ftab{background:#7c3aed;color:#fff}
+                        .fhero{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:1.5rem;padding:2.5rem;text-align:center;margin-bottom:1.2rem}
+                        .fcard{background:#fff;border-radius:1.4rem;padding:1.6rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+                        .lucky-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
+                        .lucky-item{flex:1;min-width:120px;background:#f5f3ff;border-radius:1rem;padding:1rem;text-align:center}
+                        .lucky-label{font-size:11px;color:#888;margin-bottom:4px}
+                        .lucky-val{font-size:22px;font-weight:900;color:#7c3aed}
+                        .zgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+                        .zcard{background:#fff;border-radius:1.2rem;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #f1f5f9}
+                        .zhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+                        .stars{color:#f4a61e;font-size:12px;margin-left:auto}
+                        .pbox{background:#fffbf0;border-left:4px solid #f7b731;border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:14px;line-height:1.7}
+                        .blog-btn{display:inline-block;background:#4f46e5;color:#fff;padding:10px 22px;border-radius:12px;font-weight:bold;text-decoration:none;font-size:14px;margin-top:8px}
+                        .blog-btn:hover{background:#4338ca}
+                        .post-item{border-bottom:1px solid #f1f5f9;padding:16px 0;cursor:pointer}
+                        .post-item:hover .post-title{color:#7c3aed}
+                        .post-title{font-size:15px;font-weight:700;color:#333;margin-bottom:6px;line-height:1.5}
+                        .post-date{font-size:12px;color:#aaa}
+                        .post-snippet{font-size:13px;color:#666;margin-top:6px;line-height:1.6}
+                    </style>
+
+                    <script>
+                    const BLOG_ID  = '5608603268556826697';
+                    const API_KEY  = 'AIzaSyDBqlEZSs5HElZZYf0XyIMZOFpn10f0cu0';
+                    const BASE_URL = 'https://www.googleapis.com/blogger/v3';
+
+                    const RATINGS = ['★★★☆☆','★★★★☆','★★★★★','★★☆☆☆','★★★★☆'];
+                    const COLORS  = ['골드','라벤더','민트그린','스카이블루','코랄','퍼플','로즈핑크','버건디'];
+                    function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+                    function rndN(){return Math.floor(Math.random()*99)+1}
+                    function todayStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일'}
+                    function weekRange(){
+                        const d=new Date(),mon=new Date(d);
+                        mon.setDate(d.getDate()-d.getDay()+1);
+                        const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+                        return (mon.getMonth()+1)+'/'+mon.getDate()+' ~ '+(sun.getMonth()+1)+'/'+sun.getDate();
+                    }
+                    function monthStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월'}
+                    function fmtDate(s){const d=new Date(s);return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()}
+
+                    // Blogger API로 글 가져오기
+                    async function fetchPosts(label, maxResults=6){
+                        const url = BASE_URL+'/blogs/'+BLOG_ID+'/posts?key='+API_KEY+'&labels='+encodeURIComponent(label)+'&maxResults='+maxResults+'&fields=items(title,url,published,content)';
+                        try{
+                            const r = await fetch(url);
+                            const d = await r.json();
+                            return d.items || [];
+                        } catch(e){ return [] }
+                    }
+
+                    function renderPosts(posts, label){
+                        if(!posts.length) return '<p style="color:#aaa;text-align:center;padding:20px">아직 게시글이 없습니다</p>';
+                        return posts.map(p => {
+                            const snippet = p.content ? p.content.replace(/<[^>]+>/g,'').slice(0,80)+'...' : '';
+                            return \`<div class="post-item" onclick="window.open('\${p.url}','_blank')">
+                                <div class="post-title">\${p.title}</div>
+                                <div class="post-date">\${fmtDate(p.published)}</div>
+                                <div class="post-snippet">\${snippet}</div>
+                            </div>\`;
+                        }).join('');
+                    }
+
+                    function luckyRow(){
+                        return \`<div class="lucky-row">
+                            <div class="lucky-item"><div class="lucky-label">🎨 행운의 색</div><div class="lucky-val">\${rnd(COLORS)}</div></div>
+                            <div class="lucky-item"><div class="lucky-label">🔢 행운의 숫자</div><div class="lucky-val">\${rndN()}</div></div>
+                        </div>\`;
+                    }
+
+                    async function showFortune(type){
+                        document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active-ftab'));
+                        document.getElementById('tab-'+type).classList.add('active-ftab');
+                        const c = document.getElementById('fortune-content');
+                        c.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">⏳ 블로그에서 운세를 불러오는 중...</div>';
+
+                        if(type==='today'){
+                            const posts = await fetchPosts('오늘의운세', 5);
+                            c.innerHTML = \`
+                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌟 오늘의 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
+                                <div class="fcard">\${luckyRow()}</div>
+                                <div class="fcard">
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">📖 최신 오늘의 운세</div>
+                                    \${renderPosts(posts,'오늘의운세')}
+                                    <div style="text-align:center;margin-top:16px">
+                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/오늘의운세" target="_blank" class="blog-btn">📖 전체 운세 보기</a>
+                                    </div>
+                                </div>\`;
+                        }
+
+                        else if(type==='zodiac'){
+                            const posts = await fetchPosts('별자리운세', 12);
+                            c.innerHTML = \`
+                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">✨ 별자리 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
+                                <div class="fcard">
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 별자리 운세</div>
+                                    \${renderPosts(posts,'별자리운세')}
+                                    <div style="text-align:center;margin-top:16px">
+                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">✨ 별자리 운세 전체보기</a>
+                                    </div>
+                                </div>\`;
+                        }
+
+                        else if(type==='chinese'){
+                            const posts = await fetchPosts('띠운세', 12);
+                            c.innerHTML = \`
+                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🐾 띠별 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
+                                <div class="fcard">
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 띠 운세</div>
+                                    \${renderPosts(posts,'띠운세')}
+                                    <div style="text-align:center;margin-top:16px">
+                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">🐾 띠 운세 전체보기</a>
+                                    </div>
+                                </div>\`;
+                        }
+
+                        else if(type==='weekly'){
+                            const posts = await fetchPosts('주간운세', 6);
+                            c.innerHTML = \`
+                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">📅 이번 주 운세</h2><p style="opacity:.85">\${weekRange()}</p></div>
+                                <div class="fcard">\${luckyRow()}</div>
+                                <div class="fcard">
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 주간 운세</div>
+                                    \${renderPosts(posts,'주간운세')}
+                                    <div style="text-align:center;margin-top:16px">
+                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/주간운세" target="_blank" class="blog-btn">📅 주간 운세 전체보기</a>
+                                    </div>
+                                </div>\`;
+                        }
+
+                        else if(type==='monthly'){
+                            const posts = await fetchPosts('월간운세', 6);
+                            c.innerHTML = \`
+                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌙 \${monthStr()} 월간운세</h2><p style="opacity:.85">한달 운세 총정리</p></div>
+                                <div class="fcard">\${luckyRow()}</div>
+                                <div class="fcard">
+                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 월간 운세</div>
+                                    \${renderPosts(posts,'월간운세')}
+                                    <div style="text-align:center;margin-top:16px">
+                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/월간운세" target="_blank" class="blog-btn">🌙 월간 운세 전체보기</a>
+                                    </div>
+                                </div>\`;
+                        }
+                    }
+
+                    document.getElementById('fortune-date').textContent = todayStr();
+                    showFortune('today');
+                    <\/script>
                 </div>
             `,
             guide: `
