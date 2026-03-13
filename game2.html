@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>호야타자rpg - hohologgame</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .page-transition { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 5px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <a href="index.html" class="flex items-center gap-3 cursor-pointer">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-indigo-200 shadow-xl">H</div>
+                    <span class="text-2xl font-black tracking-tighter text-indigo-600 uppercase">hohologgame</span>
+                </a>
+                <div class="hidden md:flex space-x-10">
+                    <a href="index.html" class="text-slate-600 hover:text-indigo-600 font-bold transition">전체게임</a>
+                    <a href="index.html#about" class="text-slate-600 hover:text-indigo-600 font-bold transition">소개</a>
+                    <a href="index.html#blog" class="text-slate-600 hover:text-indigo-600 font-bold transition">커뮤니티</a>
+                    <a href="index.html#guide" class="text-slate-600 hover:text-indigo-600 font-bold transition">고객지원</a>
+                </div>
+                <a href="index.html#contact" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">문의</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 py-8">
+        <div class="page-transition space-y-12">
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <a href="index.html" class="text-indigo-600 font-black mb-3 flex items-center gap-2 hover:opacity-70 transition">
+                        <span class="text-xl">←</span> 전체 리스트로 이동
+                    </a>
+                    <h1 class="text-5xl font-black text-slate-900 tracking-tight">호야타자rpg</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold text-sm shadow-lg shadow-indigo-100">타이핑 액션</span>
+                    <span class="bg-slate-200 text-slate-600 px-5 py-2 rounded-full font-bold text-sm">v1.0.0</span>
+                </div>
+            </div>
+
+            <section>
+                <div class="overflow-hidden w-full flex justify-center">
+                    <!-- ↓↓↓ 이 주석을 지우고 게임 소스를 여기에 삽입하세요 ↓↓↓ -->
+                   <!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>속담 타자왕</title>
+    <!-- 외부 라이브러리 최소화 (애니메이션만 유지) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        /* 폰트 및 기본 초기화 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+        .proverb-game-wrapper {
+            font-family: 'Noto Sans KR', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+            background-color: transparent; /* 블로그 배경색 유지 */
+        }
+
+        /* 게임 메인 컨테이너: 중앙 정렬 및 고정 최대 너비 */
+        #game-container {
+            width: 100%;
+            max-width: 650px;
+            background-color: #1e293b;
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            position: relative;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        /* 유틸리티 클래스 */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+
+        /* 시작 화면 */
+        .title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .desc { color: #94a3b8; margin-bottom: 30px; font-size: 1rem; }
+
+        .btn-start {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn-start:hover { background-color: #3b82f6; transform: scale(1.05); }
+
+        /* 게임 상단 정보바 */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .info-item { text-align: center; }
+        .info-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .info-value { font-size: 1.5rem; font-weight: 700; }
+        .round-badge { background: #334155; padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; }
+        .combo-value { color: #fbbf24; }
+
+        /* 타이머 바 */
+        .timer-container {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+        #timer-progress {
+            width: 100%;
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.1s linear;
+        }
+
+        /* 문제 영역 */
+        .question-area {
+            min-height: 120px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #target-proverb { font-size: 2rem; font-weight: 700; margin-bottom: 10px; line-height: 1.4; word-break: keep-all; }
+        #target-hint { color: #64748b; font-style: italic; font-size: 1.1rem; }
+
+        /* 입력창 */
+        .input-container { position: relative; }
+        #input-box {
+            width: 100%;
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #input-box:focus { border-color: #3b82f6; }
+        #input-box.correct { border-color: #22c55e; }
+        #input-box.wrong { border-color: #ef4444; }
+
+        #feedback {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            width: 100%;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .text-green { color: #4ade80; }
+        .text-red { color: #f87171; }
+
+        /* 결과 화면 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+            text-align: left;
+        }
+        .result-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .result-label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 5px; }
+        .result-value { font-size: 1.3rem; font-weight: 700; }
+
+        .btn-restart {
+            background: #ffffff;
+            color: #0f172a;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* 오답 시 흔들림 애니메이션 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.2s ease-in-out 2; }
+
+        @media (max-width: 500px) {
+            #target-proverb { font-size: 1.5rem; }
+            .info-value { font-size: 1.2rem; }
+            #game-container { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="proverb-game-wrapper">
+    <div id="game-container">
+        
+        <!-- 시작 화면 -->
+        <div id="screen-start" class="text-center">
+            <h1 class="title animate__animated animate__fadeInDown">속담 타자왕</h1>
+            <p class="desc">제한 시간 내에 속담을 입력하세요!</p>
+            <button onclick="startGame()" class="btn-start">게임 시작</button>
+        </div>
+
+        <!-- 게임 진행 화면 -->
+        <div id="screen-play" class="hidden">
+            <div class="info-bar">
+                <div class="info-item">
+                    <div class="info-label">Score</div>
+                    <div id="display-score" class="info-value">0</div>
+                </div>
+                <div id="display-round" class="round-badge">ROUND 1 / 10</div>
+                <div class="info-item">
+                    <div class="info-label">Combo</div>
+                    <div id="display-combo" class="info-value combo-value">0</div>
+                </div>
+            </div>
+
+            <div class="timer-container">
+                <div id="timer-progress"></div>
+            </div>
+
+            <div class="question-area text-center">
+                <div id="target-proverb"></div>
+                <div id="target-hint"></div>
+            </div>
+
+            <div class="input-container">
+                <input type="text" id="input-box" autocomplete="off" placeholder="문장을 입력하고 엔터를 누르세요">
+                <div id="feedback" class="text-center"></div>
+            </div>
+        </div>
+
+        <!-- 결과 화면 -->
+        <div id="screen-result" class="hidden text-center">
+            <h2 style="font-size: 1.8rem; margin-bottom: 10px;">게임 종료!</h2>
+            <div id="rank-emoji" style="font-size: 4rem; margin: 20px 0;" class="animate__animated animate__bounceIn">🏆</div>
+            
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="result-label">최종 점수</div>
+                    <div id="final-score" class="result-value">0</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">정확도</div>
+                    <div id="final-accuracy" class="result-value">0%</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">최대 콤보</div>
+                    <div id="final-combo" class="result-value combo-value">0</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">평균 속도</div>
+                    <div id="final-speed" class="result-value">0.0s</div>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="btn-restart">다시 도전</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const proverbs = [
+        { text: "가는 말이 고와야 오는 말이 곱다", hint: "내가 남에게 잘해야 남도 나에게 잘한다" },
+        { text: "공든 탑이 무너지랴", hint: "정성을 다해 한 일은 헛되지 않는다" },
+        { text: "낮말은 새가 듣고 밤말은 쥐가 듣는다", hint: "아무도 안 듣는 것 같아도 말조심해야 한다" },
+        { text: "돌다리도 두들겨 보고 건너라", hint: "잘 아는 일이라도 세심하게 주의하라" },
+        { text: "등잔 밑이 어둡다", hint: "가까운 곳에서 일어난 일을 오히려 모른다" },
+        { text: "마른 하늘에 날벼락", hint: "뜻밖에 당하는 불행" },
+        { text: "백지장도 맞들면 낫다", hint: "아무리 쉬운 일이라도 협력하면 더 쉽다" },
+        { text: "세 살 버릇 여든까지 간다", hint: "어릴 때 습관은 고치기 어렵다" },
+        { text: "소 잃고 외양간 고친다", hint: "이미 일을 그르친 뒤에 후회해도 소용없다" },
+        { text: "천 리 길도 한 걸음부터", hint: "무엇이든 시작이 중요하다" },
+        { text: "호랑이도 제 말 하면 온다", hint: "그 자리에 없는 사람 이야기를 하면 나타나기 쉽다" },
+        { text: "고래 싸움에 새우 등 터진다", hint: "강한 자들의 싸움에 약한 자가 피해를 본다" }
+    ];
+
+    let state = {
+        isPlaying: false,
+        round: 0,
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        correctCount: 0,
+        totalRounds: 10,
+        currentProverb: null,
+        timer: null,
+        startTime: null,
+        solveTimes: []
+    };
+
+    const dom = {
+        screens: {
+            start: document.getElementById('screen-start'),
+            play: document.getElementById('screen-play'),
+            result: document.getElementById('screen-result')
+        },
+        input: document.getElementById('input-box'),
+        target: document.getElementById('target-proverb'),
+        hint: document.getElementById('target-hint'),
+        score: document.getElementById('display-score'),
+        round: document.getElementById('display-round'),
+        combo: document.getElementById('display-combo'),
+        progress: document.getElementById('timer-progress'),
+        feedback: document.getElementById('feedback')
+    };
+
+    function showScreen(key) {
+        Object.keys(dom.screens).forEach(k => {
+            dom.screens[k].classList.toggle('hidden', k !== key);
+        });
+    }
+
+    function startGame() {
+        state = { isPlaying: true, round: 0, score: 0, combo: 0, maxCombo: 0, correctCount: 0, totalRounds: 10, solveTimes: [] };
+        updateUI();
+        showScreen('play');
+        nextRound();
+        dom.input.focus();
+    }
+
+    function nextRound() {
+        if (state.round >= state.totalRounds) {
+            endGame();
+            return;
+        }
+        state.round++;
+        state.currentProverb = proverbs[Math.floor(Math.random() * proverbs.length)];
+        
+        dom.target.textContent = state.currentProverb.text;
+        dom.hint.textContent = state.currentProverb.hint;
+        dom.input.value = '';
+        dom.input.className = ''; 
+        dom.feedback.textContent = '';
+        
+        updateUI();
+        startTimer();
+        state.startTime = Date.now();
+    }
+
+    function startTimer() {
+        clearInterval(state.timer);
+        const baseTime = 5000 + (state.currentProverb.text.length * 450);
+        let currentMs = baseTime;
+
+        state.timer = setInterval(() => {
+            currentMs -= 100;
+            dom.progress.style.width = (currentMs / baseTime * 100) + '%';
+            if (currentMs <= 0) handleWrong("시간 초과!");
+        }, 100);
+    }
+
+    function handleCorrect() {
+        clearInterval(state.timer);
+        const timeTaken = (Date.now() - state.startTime) / 1000;
+        state.solveTimes.push(timeTaken);
+        state.correctCount++;
+        state.combo++;
+        state.maxCombo = Math.max(state.maxCombo, state.combo);
+        
+        const bonus = Math.max(0, Math.floor(100 - timeTaken * 10));
+        const addedScore = 100 + (state.combo * 10) + bonus;
+        state.score += addedScore;
+
+        dom.input.classList.add('correct');
+        showFeedback(`정답! +${addedScore}`, "text-green");
+        setTimeout(nextRound, 800);
+    }
+
+    function handleWrong(msg) {
+        clearInterval(state.timer);
+        state.combo = 0;
+        dom.input.classList.add('wrong');
+        dom.input.parentElement.classList.add('shake');
+        setTimeout(() => dom.input.parentElement.classList.remove('shake'), 400);
+        showFeedback(msg || "오타가 있어요!", "text-red");
+        setTimeout(nextRound, 1200);
+    }
+
+    function showFeedback(text, colorClass) {
+        dom.feedback.textContent = text;
+        dom.feedback.className = `text-center font-bold animate__animated animate__fadeInUp ${colorClass}`;
+    }
+
+    function updateUI() {
+        dom.score.textContent = state.score.toLocaleString();
+        dom.round.textContent = `ROUND ${state.round} / ${state.totalRounds}`;
+        dom.combo.textContent = state.combo;
+    }
+
+    function endGame() {
+        state.isPlaying = false;
+        showScreen('result');
+        const avgSpeed = state.solveTimes.length > 0 ? (state.solveTimes.reduce((a,b)=>a+b)/state.solveTimes.length).toFixed(1) : "0.0";
+        const accuracy = Math.round((state.correctCount / state.totalRounds) * 100);
+
+        document.getElementById('final-score').textContent = state.score.toLocaleString();
+        document.getElementById('final-accuracy').textContent = accuracy + "%";
+        document.getElementById('final-combo').textContent = state.maxCombo;
+        document.getElementById('final-speed').textContent = avgSpeed + "s";
+
+        let emoji = "🥉";
+        if (accuracy >= 90) emoji = "🏆";
+        else if (accuracy >= 70) emoji = "🥇";
+        else if (accuracy >= 40) emoji = "🥈";
+        document.getElementById('rank-emoji').textContent = emoji;
+    }
+
+    function restartGame() { showScreen('start'); }
+
+    dom.input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && state.isPlaying) {
+            if (dom.input.value.trim() === state.currentProverb.text) handleCorrect();
+            else handleWrong();
+        }
+    });
+
+    // 티스토리 내부 클릭 시 포커스 유지
+    document.addEventListener('click', (e) => {
+        if (state.isPlaying && e.target.id !== 'input-box') dom.input.focus();
+    });
+</script>
+
+</body>
+</html>
+                    <!-- ↑↑↑ 게임 소스 삽입 끝 ↑↑↑ -->
+</div><!-- /game-wrapper-outer -->
+                </div>
+            </section>
+
+            <!-- 탭 구조 -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                <!-- 탭 버튼 -->
+                <div class="flex border-b border-slate-100">
+                    <button onclick="switchTab('desc')" id="tab-desc"
+                        class="tab-btn flex-1 py-5 font-black text-base transition-all border-b-4 border-indigo-600 text-indigo-600">
+                        게임 설명
+                    </button>
+                    <button onclick="switchTab('guide')" id="tab-guide"
+                        class="tab-btn flex-1 py-5 font-black text-base transition-all border-b-4 border-transparent text-slate-400 hover:text-slate-600">
+                        조작 가이드
+                    </button>
+                    <button onclick="switchTab('info')" id="tab-info"
+                        class="tab-btn flex-1 py-5 font-black text-base transition-all border-b-4 border-transparent text-slate-400 hover:text-slate-600">
+                        시스템 정보
+                    </button>
+                </div>
+
+                <!-- 탭 내용: 게임 설명 -->
+                <div id="panel-desc" class="tab-panel p-10">
+                    <p class="text-slate-600 text-xl leading-relaxed font-medium">
+                        속담 타이핑을 10번 완료하세요.<br><br>
+                        호호로그게임에서 정교하게 제작된 이 게임은 뛰어난 조작감과 시각적 피드백을 제공합니다.
+                    </p>
+                </div>
+
+                <!-- 탭 내용: 조작 가이드 -->
+                <div id="panel-guide" class="tab-panel p-10 hidden">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="font-black text-xl text-slate-800">이동 조작</span>
+                            <div class="flex flex-col items-center gap-1">
+                                <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center text-lg">↑</kbd>
+                                <div class="flex gap-1">
+                                    <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center text-lg">←</kbd>
+                                    <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center text-lg">↓</kbd>
+                                    <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center text-lg">→</kbd>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="font-black text-xl text-slate-800">스킬</span>
+                            <div class="flex gap-2 items-center">
+                                <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center">z</kbd>
+                                <span class="text-slate-400">또는</span>
+                                <kbd class="w-10 h-10 bg-indigo-600 text-white rounded-lg font-black shadow flex items-center justify-center">x</kbd>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="font-black text-xl text-slate-800">테스트 취소</span>
+                            <kbd class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-black shadow">Esc</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 내용: 시스템 정보 -->
+                <div id="panel-info" class="tab-panel p-10 hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div><span class="text-slate-400 font-bold text-xs block mb-2 uppercase tracking-widest">제작사</span><p class="text-xl font-black text-slate-800">호호로그게임</p></div>
+                        <div><span class="text-slate-400 font-bold text-xs block mb-2 uppercase tracking-widest">엔진</span><p class="text-xl font-black text-slate-800">캔버스 / 자바스크립트</p></div>
+                        <div><span class="text-slate-400 font-bold text-xs block mb-2 uppercase tracking-widest">버전</span><p class="text-xl font-black text-slate-800">1.0.0</p></div>
+                        <div><span class="text-slate-400 font-bold text-xs block mb-2 uppercase tracking-widest">이용 등급</span><p class="text-xl font-black text-emerald-500">전체 이용가</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function switchTab(tab) {
+                    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('border-indigo-600', 'text-indigo-600');
+                        b.classList.add('border-transparent', 'text-slate-400');
+                    });
+                    document.getElementById('panel-' + tab).classList.remove('hidden');
+                    const btn = document.getElementById('tab-' + tab);
+                    btn.classList.add('border-indigo-600', 'text-indigo-600');
+                    btn.classList.remove('border-transparent', 'text-slate-400');
+                }
+            </script>
+
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-16">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left">
+            <div class="col-span-1 md:col-span-2">
+                <h4 class="text-white font-black text-2xl mb-6 uppercase tracking-wider">hohologgame</h4>
+                <p class="text-lg leading-relaxed mb-6">로그인 없이 즐기는 무한한 즐거움, hohologgame은 웹 표준 기술을 이용한 고성능 브라우저 게임 플랫폼입니다.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-6">사이트 맵</h4>
+                <ul class="space-y-3 font-medium">
+                    <li><a href="index.html" class="hover:text-white transition">홈으로</a></li>
+                    <li><a href="index.html#about" class="hover:text-white transition">플랫폼 소개</a></li>
+                    <li><a href="index.html#privacy" class="hover:text-white transition">개인정보처리방침</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-6">고객 센터</h4>
+                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="abc7d2c39b929992c6ebccc6cac2c785c8c4c6">[email&#160;protected]</a></p>
+                <p>위치: Seoul, Korea</p>
+            </div>
+  
