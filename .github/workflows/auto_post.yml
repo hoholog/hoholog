@@ -2,7 +2,7 @@ name: 🌟 Daily Fortune 27 Posts
 
 on:
   schedule:
-    - cron: '1 0 * * *'
+    - cron: '1 15 * * *'
   workflow_dispatch:
 
 jobs:
