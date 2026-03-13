@@ -1,10 +1,12 @@
 """
-운세 자동화 - 하루 25개 포스팅
+운세 자동화 - 하루 27개 포스팅
   1개  : 오늘의 운세 (종합)
- 12개  : 별자리 운세 (양자리 ~ 물고기자리)
- 12개  : 띠 운세 (쥐띠 ~ 돼지띠)
+ 12개  : 별자리 운세
+ 12개  : 띠 운세
+  1개  : 주간 운세
+  1개  : 월간 운세
 ────────────────────────────────
- 25개/일 × 30일 = 750개/월
+ 27개/일 × 30일 = 810개/월
 """
 
 import os, random, time
@@ -12,9 +14,6 @@ import pandas as pd
 import requests
 from datetime import datetime, date
 
-# ─────────────────────────────────────────
-# 경로 설정
-# ─────────────────────────────────────────
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, '..', 'data')
 
@@ -27,18 +26,26 @@ def csv(name):
 # ─────────────────────────────────────────
 # CSV 로드
 # ─────────────────────────────────────────
-fortune_emotion  = csv("fortune_emotion_5000.csv")
-fortune_1000     = csv("fortune_sentences_1000.csv")
-fortune_4000     = csv("fortune_sentences_4000.csv")
-daily_365        = csv("daily_fortunes_365.csv")
-fortune_365      = csv("fortune_365_days.csv")
-zodiac_kr        = csv("zodiac_fortune_1000.csv")
-zodiac12         = csv("zodiac12_fortune_1000.csv")
-chinese_zodiac   = csv("chinese_zodiac_fortunes.csv")
-colors_200       = csv("lucky_colors_200.csv")
-numbers_500      = csv("lucky_numbers_500.csv")
-seo_keywords     = csv("fortune_seo_keywords_3000.csv")
-seo_patterns     = csv("seo_patterns.csv")
+fortune_emotion   = csv("fortune_emotion_5000.csv")
+fortune_1000      = csv("fortune_sentences_1000.csv")
+fortune_4000      = csv("fortune_sentences_4000.csv")
+daily_365         = csv("daily_fortunes_365.csv")
+fortune_365       = csv("fortune_365_days.csv")
+zodiac_kr         = csv("zodiac_fortune_1000.csv")
+zodiac12          = csv("zodiac12_fortune_1000.csv")
+chinese_zodiac    = csv("chinese_zodiac_fortunes.csv")
+colors_200        = csv("lucky_colors_200.csv")
+numbers_500       = csv("lucky_numbers_500.csv")
+seo_keywords      = csv("fortune_seo_keywords_3000.csv")
+seo_patterns      = csv("seo_patterns.csv")
+
+# 주간/월간 CSV
+weekly_500        = csv("weekly_fortune_500.csv")
+monthly_500       = csv("monthly_fortune_500.csv")
+zodiac_weekly     = csv("zodiac_weekly_1000.csv")
+zodiac_monthly    = csv("zodiac_monthly_1000.csv")
+chinese_weekly    = csv("chinese_weekly_1000.csv")
+chinese_monthly   = csv("chinese_monthly_1000.csv")
 
 # ─────────────────────────────────────────
 # 정적 데이터
@@ -59,18 +66,18 @@ ZODIACS = [
 ]
 
 CHINESE = [
-    {"en":"rat",     "kr":"쥐띠",    "year":"1924,1936,1948,1960,1972,1984,1996,2008,2020","emoji":"🐭"},
-    {"en":"ox",      "kr":"소띠",    "year":"1925,1937,1949,1961,1973,1985,1997,2009,2021","emoji":"🐮"},
-    {"en":"tiger",   "kr":"호랑이띠","year":"1926,1938,1950,1962,1974,1986,1998,2010,2022","emoji":"🐯"},
-    {"en":"rabbit",  "kr":"토끼띠",  "year":"1927,1939,1951,1963,1975,1987,1999,2011,2023","emoji":"🐰"},
-    {"en":"dragon",  "kr":"용띠",    "year":"1928,1940,1952,1964,1976,1988,2000,2012,2024","emoji":"🐲"},
-    {"en":"snake",   "kr":"뱀띠",    "year":"1929,1941,1953,1965,1977,1989,2001,2013,2025","emoji":"🐍"},
-    {"en":"horse",   "kr":"말띠",    "year":"1930,1942,1954,1966,1978,1990,2002,2014,2026","emoji":"🐴"},
-    {"en":"sheep",   "kr":"양띠",    "year":"1931,1943,1955,1967,1979,1991,2003,2015,2027","emoji":"🐑"},
-    {"en":"monkey",  "kr":"원숭이띠","year":"1932,1944,1956,1968,1980,1992,2004,2016,2028","emoji":"🐵"},
-    {"en":"rooster", "kr":"닭띠",    "year":"1933,1945,1957,1969,1981,1993,2005,2017,2029","emoji":"🐓"},
-    {"en":"dog",     "kr":"개띠",    "year":"1934,1946,1958,1970,1982,1994,2006,2018,2030","emoji":"🐶"},
-    {"en":"pig",     "kr":"돼지띠",  "year":"1935,1947,1959,1971,1983,1995,2007,2019,2031","emoji":"🐷"},
+    {"en":"rat",     "kr":"쥐띠",    "year":"1960,1972,1984,1996,2008,2020","emoji":"🐭"},
+    {"en":"ox",      "kr":"소띠",    "year":"1961,1973,1985,1997,2009,2021","emoji":"🐮"},
+    {"en":"tiger",   "kr":"호랑이띠","year":"1962,1974,1986,1998,2010,2022","emoji":"🐯"},
+    {"en":"rabbit",  "kr":"토끼띠",  "year":"1963,1975,1987,1999,2011,2023","emoji":"🐰"},
+    {"en":"dragon",  "kr":"용띠",    "year":"1964,1976,1988,2000,2012,2024","emoji":"🐲"},
+    {"en":"snake",   "kr":"뱀띠",    "year":"1965,1977,1989,2001,2013,2025","emoji":"🐍"},
+    {"en":"horse",   "kr":"말띠",    "year":"1966,1978,1990,2002,2014,2026","emoji":"🐴"},
+    {"en":"sheep",   "kr":"양띠",    "year":"1967,1979,1991,2003,2015,2027","emoji":"🐑"},
+    {"en":"monkey",  "kr":"원숭이띠","year":"1968,1980,1992,2004,2016,2028","emoji":"🐵"},
+    {"en":"rooster", "kr":"닭띠",    "year":"1969,1981,1993,2005,2017,2029","emoji":"🐓"},
+    {"en":"dog",     "kr":"개띠",    "year":"1970,1982,1994,2006,2018,2030","emoji":"🐶"},
+    {"en":"pig",     "kr":"돼지띠",  "year":"1971,1983,1995,2007,2019,2031","emoji":"🐷"},
 ]
 
 RATINGS = ["★★★☆☆","★★★★☆","★★★★★","★★☆☆☆","★★★★☆","★★★☆☆"]
@@ -109,6 +116,18 @@ def chinese_fortune(en_name):
             return m.sample(1).iloc[0]['fortune']
     return sentence()
 
+def weekly_fortune_general():
+    if not weekly_500.empty and 'sentence' in weekly_500.columns:
+        row = weekly_500.sample(1).iloc[0]
+        return row['sentence'], row.get('advice', '')
+    return sentence(), ""
+
+def monthly_fortune_general():
+    if not monthly_500.empty and 'sentence' in monthly_500.columns:
+        row = monthly_500.sample(1).iloc[0]
+        return row['sentence'], row.get('advice', '')
+    return sentence(), ""
+
 def pick_color():
     if not colors_200.empty and 'color' in colors_200.columns:
         return colors_200.sample(1).iloc[0]['color']
@@ -125,7 +144,7 @@ def seo_title(target):
         return p.replace("{대상}", target)
     return f"{target} 오늘의 운세"
 
-def seo_keywords_str(n=8):
+def seo_kw(n=8):
     if not seo_keywords.empty and 'keyword' in seo_keywords.columns:
         return ", ".join(seo_keywords.sample(n)['keyword'].tolist())
     return ""
@@ -133,9 +152,21 @@ def seo_keywords_str(n=8):
 def stars():
     return random.choice(RATINGS)
 
+def get_week_range():
+    today = date.today()
+    mon = today.strftime("%m/%d")
+    sun_day = today.toordinal() - today.weekday() + 6
+    sun = date.fromordinal(sun_day).strftime("%m/%d")
+    return f"{mon} ~ {sun}"
+
+def get_month():
+    return datetime.now().strftime("%Y년 %m월")
+
+# ─────────────────────────────────────────
+# 공통 CSS
+# ─────────────────────────────────────────
 def style():
-    return """
-<style>
+    return """<style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding:16px}
 .wrap{max-width:720px;margin:auto}
@@ -143,17 +174,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 .hero h1{font-size:26px;margin-bottom:8px}
 .hero p{opacity:.85;font-size:15px}
 .card{background:#fff;border-radius:14px;padding:22px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.07)}
-.card h2{font-size:18px;margin-bottom:12px;color:#5b2d8e}
 .card p{font-size:15px;line-height:1.85;color:#444}
-.badge{display:inline-block;background:#f0eaff;color:#6c3483;padding:3px 10px;border-radius:20px;font-size:12px;margin-bottom:8px}
+.badge{display:inline-block;background:#f0eaff;color:#6c3483;padding:3px 10px;border-radius:20px;font-size:12px;margin-bottom:10px}
 .lucky{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .lucky-box{flex:1;min-width:120px;background:#f8f0ff;border-radius:10px;padding:14px;text-align:center}
 .lucky-box .lbl{font-size:12px;color:#888;margin-bottom:4px}
 .lucky-box .val{font-size:20px;font-weight:700;color:#6c3483}
-.stars{color:#f4a61e;font-size:13px;margin-left:6px}
 .meta{color:#aaa;font-size:12px;text-align:center;padding:20px 0}
 .tag-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .tag{background:#eef2ff;color:#5c6bc0;padding:4px 10px;border-radius:20px;font-size:11px}
+.week-day{background:#fff9e6;border-left:4px solid #f7b731;padding:12px 16px;border-radius:8px;margin-bottom:10px;font-size:14px;line-height:1.7}
 </style>"""
 
 # ─────────────────────────────────────────
@@ -161,59 +191,42 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 # ─────────────────────────────────────────
 
 def build_today_post(today_str):
-    """① 오늘의 운세 종합 1개"""
     f1 = daily_fortune()
     f2 = sentence()
     color = pick_color()
     number = pick_number()
-    kw = seo_keywords_str(12)
+    kw = seo_kw(12)
     title = seo_title(f"{today_str} 오늘의 운세")
     tags = [t.strip() for t in kw.split(",")][:10]
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in tags)
 
-    content = f"""
-{style()}
+    content = f"""{style()}
 <div class="wrap">
-  <div class="hero">
-    <h1>🌟 오늘의 운세</h1>
-    <p>{today_str}</p>
-  </div>
+  <div class="hero"><h1>🌟 오늘의 운세</h1><p>{today_str}</p></div>
   <div class="card">
     <span class="badge">📖 오늘의 메시지</span>
-    <p>{f1}</p>
-    <br>
-    <p>{f2}</p>
+    <p>{f1}</p><br><p>{f2}</p>
     <div class="lucky">
       <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
-  <div class="card">
-    <span class="badge">🔍 관련 키워드</span>
-    <div class="tag-cloud">{tag_html}</div>
-  </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매일 자정 업데이트</div>
 </div>"""
     return title, content, ["오늘의운세","daily","운세"]
 
 
 def build_zodiac_post(z, today_str):
-    """② 별자리 운세 12개"""
     fortune = zodiac_fortune(z['kr'])
-    color   = pick_color()
-    number  = pick_number()
-    rating  = stars()
-    kw      = seo_keywords_str(6)
-    target  = f"{z['kr']} {today_str}"
-    title   = seo_title(target)
+    color = pick_color()
+    number = pick_number()
+    rating = stars()
+    title = seo_title(f"{z['kr']} {today_str}")
 
-    content = f"""
-{style()}
+    content = f"""{style()}
 <div class="wrap">
-  <div class="hero">
-    <h1>{z['emoji']} {z['kr']} 오늘의 운세</h1>
-    <p>{today_str} · {z['date']}</p>
-  </div>
+  <div class="hero"><h1>{z['emoji']} {z['kr']} 오늘의 운세</h1><p>{today_str} · {z['date']}</p></div>
   <div class="card">
     <span class="badge">{z['kr']} 운세 {rating}</span>
     <p>{fortune}</p>
@@ -222,31 +235,21 @@ def build_zodiac_post(z, today_str):
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
-  <div class="meta">
-    <p>· {z['kr']} ({z['date']})</p>
-    <p>※ 재미로 보는 운세 콘텐츠입니다 · 매일 자정 업데이트</p>
-  </div>
+  <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
 </div>"""
     return title, content, ["별자리운세", z['kr'], "오늘의운세"]
 
 
 def build_chinese_post(c, today_str):
-    """③ 띠 운세 12개"""
     fortune = chinese_fortune(c['en'])
-    color   = pick_color()
-    number  = pick_number()
-    rating  = stars()
-    kw      = seo_keywords_str(6)
-    target  = f"{c['kr']} {today_str}"
-    title   = seo_title(target)
+    color = pick_color()
+    number = pick_number()
+    rating = stars()
+    title = seo_title(f"{c['kr']} {today_str}")
 
-    content = f"""
-{style()}
+    content = f"""{style()}
 <div class="wrap">
-  <div class="hero">
-    <h1>{c['emoji']} {c['kr']} 오늘의 운세</h1>
-    <p>{today_str} · {c['year']}</p>
-  </div>
+  <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
   <div class="card">
     <span class="badge">{c['kr']} 운세 {rating}</span>
     <p>{fortune}</p>
@@ -255,24 +258,93 @@ def build_chinese_post(c, today_str):
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
-  <div class="meta">
-    <p>· {c['kr']} 해당 출생연도: {c['year']}</p>
-    <p>※ 재미로 보는 운세 콘텐츠입니다 · 매일 자정 업데이트</p>
-  </div>
+  <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
 </div>"""
     return title, content, ["띠운세", c['kr'], "오늘의운세"]
 
 
+def build_weekly_post(today_str):
+    week_range = get_week_range()
+    f1, advice = weekly_fortune_general()
+    color = pick_color()
+    number = pick_number()
+    title = f"이번 주 운세 {week_range} 주간운세 총정리"
+
+    # 요일별 한마디
+    days = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"]
+    day_html = ""
+    for d in days:
+        s = sentence()[:40] + "..."
+        day_html += f'<div class="week-day"><strong>{d}</strong> — {s}</div>'
+
+    content = f"""{style()}
+<div class="wrap">
+  <div class="hero"><h1>📅 이번 주 운세</h1><p>{week_range}</p></div>
+  <div class="card">
+    <span class="badge">🗓️ 주간 운세 총정리</span>
+    <p>{f1}</p><br>
+    <p>{advice}</p>
+    <div class="lucky">
+      <div class="lucky-box"><div class="lbl">🎨 이번 주 행운의 색</div><div class="val">{color}</div></div>
+      <div class="lucky-box"><div class="lbl">🔢 이번 주 행운의 숫자</div><div class="val">{number}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge">📆 요일별 운세</span>
+    <br>{day_html}
+  </div>
+  <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
+</div>"""
+    return title, content, ["주간운세","이번주운세","운세"]
+
+
+def build_monthly_post(today_str):
+    month = get_month()
+    f1, advice = monthly_fortune_general()
+    color = pick_color()
+    number = pick_number()
+    title = f"{month} 월간운세 총정리 한달 운세"
+
+    # 상/중/하순 운세
+    periods = [
+        ("상순 (1~10일)", sentence()),
+        ("중순 (11~20일)", sentence()),
+        ("하순 (21~말일)", sentence()),
+    ]
+    period_html = ""
+    for p, s in periods:
+        period_html += f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
+
+    content = f"""{style()}
+<div class="wrap">
+  <div class="hero"><h1>🌙 {month} 월간운세</h1><p>{month} 한달 운세 총정리</p></div>
+  <div class="card">
+    <span class="badge">📋 이달의 운세</span>
+    <p>{f1}</p><br>
+    <p>{advice}</p>
+    <div class="lucky">
+      <div class="lucky-box"><div class="lbl">🎨 이달의 행운의 색</div><div class="val">{color}</div></div>
+      <div class="lucky-box"><div class="lbl">🔢 이달의 행운의 숫자</div><div class="val">{number}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge">📅 시기별 운세</span>
+    <br>{period_html}
+  </div>
+  <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매월 업데이트</div>
+</div>"""
+    return title, content, ["월간운세","이달운세","운세"]
+
+
 # ─────────────────────────────────────────
-# Blogger 전송
+# Refresh Token으로 Access Token 자동 발급
 # ─────────────────────────────────────────
-BLOG_ID         = os.environ.get("BLOG_ID","")
-REFRESH_TOKEN   = os.environ.get("BLOGGER_REFRESH_TOKEN","")
-CLIENT_ID       = os.environ.get("GOOGLE_CLIENT_ID","")
-CLIENT_SECRET   = os.environ.get("GOOGLE_CLIENT_SECRET","")
+BLOG_ID       = os.environ.get("BLOG_ID","")
+REFRESH_TOKEN = os.environ.get("BLOGGER_REFRESH_TOKEN","")
+CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID","")
+CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET","")
 
 def get_access_token():
-    """Refresh Token으로 Access Token 자동 발급"""
     resp = requests.post("https://oauth2.googleapis.com/token", data={
         "grant_type":    "refresh_token",
         "refresh_token": REFRESH_TOKEN,
@@ -280,14 +352,12 @@ def get_access_token():
         "client_secret": CLIENT_SECRET,
     })
     if resp.status_code == 200:
-        token = resp.json().get("access_token","")
         print("🔑 Access Token 자동 갱신 완료")
-        return token
+        return resp.json().get("access_token","")
     else:
         print(f"❌ Token 갱신 실패: {resp.text[:120]}")
-        return ""
+        return os.environ.get("BLOGGER_TOKEN","")
 
-# 실행 시작시 토큰 1회 발급
 ACCESS_TOKEN = get_access_token() if REFRESH_TOKEN else os.environ.get("BLOGGER_TOKEN","")
 
 def post_blogger(title, content, labels, idx, total):
@@ -314,7 +384,7 @@ def post_blogger(title, content, labels, idx, total):
 # ─────────────────────────────────────────
 def main():
     today_str = datetime.now().strftime("%Y년 %m월 %d일")
-    posts = []   # (title, content, labels)
+    posts = []
 
     # ① 오늘의 운세 1개
     posts.append(build_today_post(today_str))
@@ -327,8 +397,15 @@ def main():
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
 
+    # ④ 주간 운세 1개
+    posts.append(build_weekly_post(today_str))
+
+    # ⑤ 월간 운세 1개
+    posts.append(build_monthly_post(today_str))
+
     total = len(posts)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
+    print("구성: 오늘의운세 1 + 별자리 12 + 띠 12 + 주간 1 + 월간 1 = 27개\n")
 
     success = 0
     for i, (title, content, labels) in enumerate(posts, 1):
