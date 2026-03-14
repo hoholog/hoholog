@@ -1,12 +1,12 @@
 """
-운세 자동화 - 하루 49개 포스팅
+운세 자동화 - 하루 27개 포스팅
   1개  : 오늘의 명언
  12개  : 별자리 운세
  12개  : 띠 운세
- 12개  : 별자리 주간 운세
- 12개  : 띠별 월간 운세
+  1개  : 별자리 주간 운세 (12별자리 통합)
+  1개  : 띠별 월간 운세 (12띠 통합)
 ────────────────────────────────
- 49개/일 × 30일 = 1,470개/월
+ 27개/일 × 30일 = 810개/월
 """
 
 import os, random, time
@@ -255,7 +255,7 @@ def build_zodiac_post(z, today_str):
   </div>
   <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
 </div>"""
-    return title, content, ["별자리운세", z['kr'], "오늘의운세"]
+    return title, content, ["별자리운세", z['kr'], "운세"]
 
 
 def build_chinese_post(c, today_str):
@@ -278,7 +278,7 @@ def build_chinese_post(c, today_str):
   </div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
 </div>"""
-    return title, content, ["띠운세", c['kr'], "오늘의운세"]
+    return title, content, ["띠운세", c['kr'], "운세"]
 
 
 def build_zodiac_weekly_post(today_str):
