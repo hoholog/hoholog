@@ -177,7 +177,8 @@ def get_month():
 # 공통 CSS
 # ─────────────────────────────────────────
 def style():
-    return """<style>
+    return """<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding:16px}
 .wrap{max-width:720px;margin:auto}
@@ -199,7 +200,38 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 .game-link p{font-size:13px;color:rgba(255,255,255,.8);margin-bottom:10px}
 .game-link a{display:inline-block;background:#fff;color:#4f46e5;padding:10px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}
 .game-link a:hover{background:#f0eaff}
-</style>"""
+.fortune-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff;margin-bottom:16px}
+.fortune-card .fc-emoji{font-size:48px;text-align:center;margin-bottom:10px}
+.fortune-card .fc-title{font-size:22px;font-weight:900;text-align:center;margin-bottom:4px}
+.fortune-card .fc-sub{font-size:13px;opacity:.8;text-align:center;margin-bottom:6px}
+.fortune-card .fc-stars{color:#fde68a;text-align:center;font-size:14px;margin-bottom:16px}
+.fortune-card .fc-text{background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:14px}
+.fortune-card .fc-lucky{display:flex;gap:10px}
+.fortune-card .fc-lucky-box{flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center}
+.fortune-card .fc-lucky-lbl{font-size:11px;opacity:.8;margin-bottom:4px}
+.fortune-card .fc-lucky-val{font-size:18px;font-weight:900}
+.fortune-card .fc-watermark{font-size:11px;opacity:.5;text-align:center;margin-top:12px}
+.save-btn{display:block;width:100%;background:#7c3aed;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px}
+.save-btn:hover{background:#6d28d9}
+</style>
+<script>
+function saveFortuneCard(cardId, filename) {
+    var el = document.getElementById(cardId);
+    if (!el) { alert('카드를 찾을 수 없습니다'); return; }
+    var btn = document.getElementById('savebtn-' + cardId);
+    if (btn) { btn.textContent = '⏳ 저장 중...'; btn.disabled = true; }
+    html2canvas(el, {scale:2, backgroundColor:null, useCORS:true, logging:false}).then(function(canvas) {
+        var a = document.createElement('a');
+        a.download = filename + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+    }).catch(function() {
+        alert('저장 실패. 스크린샷을 이용해주세요.');
+        if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+    });
+}
+</script>"""
 
 def site_link():
     return """
@@ -251,8 +283,8 @@ def build_zodiac_post(z, today_str):
     number = pick_number()
     rating = stars()
     title = seo_title(f"{z['kr']} {today_str}")
+    card_id = f"fc-{z['en']}"
 
-    # 별자리 관련 키워드
     kw_list = [
         z['kr'], f"{z['kr']} 오늘운세", f"{z['kr']} 운세",
         f"{z['kr']} 오늘의운세", f"{z['kr']} 2026",
@@ -265,14 +297,22 @@ def build_zodiac_post(z, today_str):
     content = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>{z['emoji']} {z['kr']} 오늘의 운세</h1><p>{today_str} · {z['date']}</p></div>
-  <div class="card">
-    <span class="badge">{z['kr']} 운세 {rating}</span>
-    <p>{fortune}</p>
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
+
+  <div id="{card_id}" class="fortune-card">
+    <div class="fc-emoji">{z['emoji']}</div>
+    <div class="fc-title">{z['kr']}</div>
+    <div class="fc-sub">{today_str} · {z['date']}</div>
+    <div class="fc-stars">{rating}</div>
+    <div class="fc-text">{fortune}</div>
+    <div class="fc-lucky">
+      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎨 행운의 색</div><div class="fc-lucky-val">{color}</div></div>
+      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🔢 행운의 숫자</div><div class="fc-lucky-val">{number}</div></div>
     </div>
+    <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
+
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{z['kr']}_운세_{today_str}')">📸 이미지 저장</button>
+
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
@@ -286,8 +326,8 @@ def build_chinese_post(c, today_str):
     number = pick_number()
     rating = stars()
     title = seo_title(f"{c['kr']} {today_str}")
+    card_id = f"fc-{c['en']}"
 
-    # 띠 관련 키워드 (출생연도 포함)
     years = c['year'].split(',')
     year_tags = [f"{y}년생 운세" for y in years[:4]]
     kw_list = [
@@ -301,14 +341,22 @@ def build_chinese_post(c, today_str):
     content = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
-  <div class="card">
-    <span class="badge">{c['kr']} 운세 {rating}</span>
-    <p>{fortune}</p>
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
+
+  <div id="{card_id}" class="fortune-card">
+    <div class="fc-emoji">{c['emoji']}</div>
+    <div class="fc-title">{c['kr']}</div>
+    <div class="fc-sub">{today_str} · {c['year'].split(',')[0]}년생~</div>
+    <div class="fc-stars">{rating}</div>
+    <div class="fc-text">{fortune}</div>
+    <div class="fc-lucky">
+      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎨 행운의 색</div><div class="fc-lucky-val">{color}</div></div>
+      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🔢 행운의 숫자</div><div class="fc-lucky-val">{number}</div></div>
     </div>
+    <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
+
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{c['kr']}_운세_{today_str}')">📸 이미지 저장</button>
+
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
