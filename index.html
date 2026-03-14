@@ -237,6 +237,178 @@
                         </div>\`;
                     }
 
+                    // ── 성별/양음력 선택 ──
+                    window._genderVal = null;
+                    window._calType = '양력';
+
+                    function setGender(v){
+                        window._genderVal = v;
+                        ['male','female'].forEach(id=>{
+                            const b = document.getElementById('g-'+id);
+                            if(b){ b.style.borderColor='#e2e8f0'; b.style.background='#f8fafc'; }
+                        });
+                        const sel = v==='남' ? document.getElementById('g-male') : document.getElementById('g-female');
+                        if(sel){ sel.style.borderColor='#7c3aed'; sel.style.background='#ede9fe'; }
+                    }
+
+                    function setCalType(v){
+                        window._calType = v;
+                        ['solar','lunar'].forEach(id=>{
+                            const b = document.getElementById('cal-'+id);
+                            if(b){ b.style.borderColor='#e2e8f0'; b.style.background='#f8fafc'; }
+                        });
+                        const sel = v==='양력' ? document.getElementById('cal-solar') : document.getElementById('cal-lunar');
+                        if(sel){ sel.style.borderColor='#7c3aed'; sel.style.background='#ede9fe'; }
+                    }
+
+                    // ── 띠 계산 ──
+                    function getChineseZodiac(year){
+                        const animals = ['원숭이','닭','개','돼지','쥐','소','호랑이','토끼','용','뱀','말','양'];
+                        const emojis  = ['🐵','🐓','🐶','🐷','🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑'];
+                        const idx = year % 12;
+                        return { name: animals[idx]+'띠', emoji: emojis[idx] };
+                    }
+
+                    // ── 별자리 계산 ──
+                    function getZodiacSign(month, day){
+                        const signs = [
+                            {name:'염소자리',emoji:'♑',end:[1,19]},
+                            {name:'물병자리',emoji:'♒',end:[2,18]},
+                            {name:'물고기자리',emoji:'♓',end:[3,20]},
+                            {name:'양자리',emoji:'♈',end:[4,19]},
+                            {name:'황소자리',emoji:'♉',end:[5,20]},
+                            {name:'쌍둥이자리',emoji:'♊',end:[6,21]},
+                            {name:'게자리',emoji:'♋',end:[7,22]},
+                            {name:'사자자리',emoji:'♌',end:[8,22]},
+                            {name:'처녀자리',emoji:'♍',end:[9,22]},
+                            {name:'천칭자리',emoji:'♎',end:[10,22]},
+                            {name:'전갈자리',emoji:'♏',end:[11,21]},
+                            {name:'사수자리',emoji:'♐',end:[12,21]},
+                            {name:'염소자리',emoji:'♑',end:[12,31]},
+                        ];
+                        for(const s of signs){
+                            if(month < s.end[0] || (month === s.end[0] && day <= s.end[1])) return s;
+                        }
+                        return signs[0];
+                    }
+
+                    // ── 시간별 운세 ──
+                    const TIME_MSG = {
+                        '모름':'오늘 하루 전반적으로 긍정적인 기운이 감돌고 있습니다.',
+                        '자시':'깊은 밤 기운을 타고난 당신, 직관력이 특히 뛰어난 날입니다.',
+                        '축시':'새벽의 고요함이 당신에게 차분한 집중력을 선사합니다.',
+                        '인시':'이른 아침 기운을 가진 당신은 오늘 새로운 도전에 유리합니다.',
+                        '묘시':'부드러운 아침 햇살처럼 오늘 대인관계가 매우 원만할 것입니다.',
+                        '진시':'활기찬 아침 기운으로 오늘 업무 추진력이 강하게 발휘됩니다.',
+                        '사시':'뜨거운 태양의 기운처럼 오늘 열정과 창의력이 넘칩니다.',
+                        '오시':'정오의 기운을 받아 오늘 모든 일이 명확하게 풀려나갑니다.',
+                        '미시':'오후의 여유로운 기운으로 오늘 재물운이 상승합니다.',
+                        '신시':'활발한 오후 기운으로 오늘 사람들과의 인연이 생깁니다.',
+                        '유시':'황혼의 아름다운 기운처럼 오늘 감성과 예술적 감각이 빛납니다.',
+                        '술시':'저녁의 안정된 기운으로 오늘 중요한 결정을 내리기 좋습니다.',
+                        '해시':'밤의 신비로운 기운으로 오늘 숨겨진 기회가 찾아옵니다.',
+                    };
+
+                    const GENDER_MSG = {
+                        '남': ['강한 추진력으로 목표를 향해 나아가기 좋은 날입니다.','주변의 신뢰가 높아지는 시기입니다. 리더십을 발휘해보세요.'],
+                        '여': ['섬세한 감각이 빛을 발하는 날입니다. 직감을 믿어보세요.','주변 사람들과의 관계에서 따뜻한 에너지가 넘칩니다.'],
+                    };
+
+                    const OVERALL_MSG = [
+                        '오늘은 새로운 시작을 알리는 에너지가 강합니다. 망설이지 말고 첫 발을 내딛으세요.',
+                        '주변의 작은 인연을 소중히 여기면 뜻밖의 기회가 생깁니다.',
+                        '오늘은 감정보다 이성을 따르는 것이 더 좋은 결과를 가져옵니다.',
+                        '재물운이 서서히 상승하고 있습니다. 무리한 지출은 자제하세요.',
+                        '오랫동안 준비해온 일이 결실을 맺을 조짐이 보입니다.',
+                        '건강 관리에 신경 쓰세요. 충분한 수분 섭취와 휴식이 필요합니다.',
+                        '새로운 사람과의 만남에서 긍정적인 영향을 받을 수 있습니다.',
+                        '오늘 하루 집중력이 높아 학습이나 자기계발에 최적의 날입니다.',
+                    ];
+
+                    function generateTodayFortune(){
+                        const year  = parseInt(document.getElementById('inp-year').value);
+                        const month = parseInt(document.getElementById('inp-month').value);
+                        const day   = parseInt(document.getElementById('inp-day').value);
+                        const time  = document.getElementById('inp-time').value;
+                        const gender = window._genderVal;
+                        const calType = window._calType;
+
+                        if(!year || !month || !day){
+                            alert('생년월일을 모두 입력해주세요!'); return;
+                        }
+                        if(!gender){
+                            alert('성별을 선택해주세요!'); return;
+                        }
+                        if(year < 1930 || year > 2010){
+                            alert('년도를 1930~2010 사이로 입력해주세요!'); return;
+                        }
+
+                        const chinese = getChineseZodiac(year);
+                        const zodiac  = getZodiacSign(month, day);
+                        const age     = new Date().getFullYear() - year + 1;
+                        const timeMsg = TIME_MSG[time] || TIME_MSG['모름'];
+                        const genderMsg = rnd(GENDER_MSG[gender]);
+                        const overall = rnd(OVERALL_MSG);
+                        const color   = rnd(COLORS);
+                        const num     = rndN();
+                        const rating  = rnd(RATINGS);
+
+                        const result = document.getElementById('today-result');
+                        result.innerHTML = \`
+                            <div class="fcard">
+                                <div id="today-card" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff">
+                                    <div style="text-align:center;margin-bottom:18px">
+                                        <div style="font-size:13px;opacity:.8;margin-bottom:4px">\${calType} · \${year}년 \${month}월 \${day}일 · \${time}</div>
+                                        <div style="font-size:28px;font-weight:900">\${gender === '남' ? '👨' : '👩'} \${gender}성 · 만 \${age-1}세</div>
+                                        <div style="margin-top:8px;font-size:15px;opacity:.9">
+                                            \${chinese.emoji} \${chinese.name} &nbsp;·&nbsp; \${zodiac.emoji} \${zodiac.name}
+                                        </div>
+                                        <div style="color:#fde68a;margin-top:4px">\${rating}</div>
+                                    </div>
+
+                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:12px">
+                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">⏰ \${time} 기운</div>
+                                        <div style="font-size:14px;line-height:1.8">\${timeMsg}</div>
+                                    </div>
+
+                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:12px">
+                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">🔮 오늘의 운세</div>
+                                        <div style="font-size:14px;line-height:1.8">\${overall}</div>
+                                    </div>
+
+                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:14px">
+                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">\${gender === '남' ? '👨' : '👩'} \${gender}성 운세</div>
+                                        <div style="font-size:14px;line-height:1.8">\${genderMsg}</div>
+                                    </div>
+
+                                    <div style="display:flex;gap:10px">
+                                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                            <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
+                                            <div style="font-weight:900;font-size:16px">\${color}</div>
+                                        </div>
+                                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                            <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
+                                            <div style="font-weight:900;font-size:22px">\${num}</div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · \${todayStr()}</div>
+                                </div>
+
+                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                                    <button onclick="saveCard('today-card','오늘의운세_\${year}\${month}\${day}')"
+                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                                        📸 이미지 저장
+                                    </button>
+                                    <button onclick="generateTodayFortune()"
+                                        style="background:#e2e8f0;color:#444;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                                        🔄 다시 보기
+                                    </button>
+                                </div>
+                            </div>\`;
+
+                        result.scrollIntoView({behavior:'smooth', block:'start'});
+                    }
+
                     // ── 선택 상태 ──
                     let selectedZodiac = null;
                     let selectedChinese = null;
@@ -315,17 +487,91 @@
                         c.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">⏳ 불러오는 중...</div>';
 
                         if(type==='today'){
-                            const posts = await fetchPosts('오늘의운세', 5);
                             c.innerHTML = \`
-                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌟 오늘의 운세</h2><p style="opacity:.85">\${todayStr()}</p></div>
-                                <div class="fcard">\${luckyRow()}</div>
+                                <div class="fhero">
+                                    <h2 style="font-size:24px;margin-bottom:6px">🌟 오늘의 운세</h2>
+                                    <p style="opacity:.85">\${todayStr()}</p>
+                                </div>
+
                                 <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">📖 최신 오늘의 운세</div>
-                                    \${renderPosts(posts,'오늘의운세')}
-                                    <div style="text-align:center;margin-top:16px">
-                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/오늘의운세" target="_blank" class="blog-btn">📖 전체 운세 보기</a>
+                                    <div style="font-weight:900;font-size:17px;margin-bottom:18px;color:#7c3aed">✏️ 정보 입력</div>
+
+                                    <!-- 성별 -->
+                                    <div style="margin-bottom:16px">
+                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">성별</div>
+                                        <div style="display:flex;gap:10px">
+                                            <button onclick="setGender('남')" id="g-male"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
+                                                👨 남성
+                                            </button>
+                                            <button onclick="setGender('여')" id="g-female"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
+                                                👩 여성
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>\`;
+
+                                    <!-- 양력/음력 -->
+                                    <div style="margin-bottom:16px">
+                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일 구분</div>
+                                        <div style="display:flex;gap:10px">
+                                            <button onclick="setCalType('양력')" id="cal-solar"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
+                                                ☀️ 양력
+                                            </button>
+                                            <button onclick="setCalType('음력')" id="cal-lunar"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
+                                                🌙 음력
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 생년월일 -->
+                                    <div style="margin-bottom:16px">
+                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일</div>
+                                        <div style="display:flex;gap:8px">
+                                            <input id="inp-year" type="number" placeholder="년(4자리)" min="1930" max="2010"
+                                                style="flex:2;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                                            <input id="inp-month" type="number" placeholder="월" min="1" max="12"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                                            <input id="inp-day" type="number" placeholder="일" min="1" max="31"
+                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                                        </div>
+                                    </div>
+
+                                    <!-- 태어난 시간 -->
+                                    <div style="margin-bottom:20px">
+                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">태어난 시간</div>
+                                        <select id="inp-time"
+                                            style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;background:#f8fafc">
+                                            <option value="모름">⏰ 모름</option>
+                                            <option value="자시">자시 (23:00~01:00)</option>
+                                            <option value="축시">축시 (01:00~03:00)</option>
+                                            <option value="인시">인시 (03:00~05:00)</option>
+                                            <option value="묘시">묘시 (05:00~07:00)</option>
+                                            <option value="진시">진시 (07:00~09:00)</option>
+                                            <option value="사시">사시 (09:00~11:00)</option>
+                                            <option value="오시">오시 (11:00~13:00)</option>
+                                            <option value="미시">미시 (13:00~15:00)</option>
+                                            <option value="신시">신시 (15:00~17:00)</option>
+                                            <option value="유시">유시 (17:00~19:00)</option>
+                                            <option value="술시">술시 (19:00~21:00)</option>
+                                            <option value="해시">해시 (21:00~23:00)</option>
+                                        </select>
+                                    </div>
+
+                                    <button onclick="generateTodayFortune()"
+                                        style="width:100%;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer">
+                                        🔮 오늘의 운세 보기
+                                    </button>
+                                </div>
+
+                                <div id="today-result"></div>
+                            \`;
+
+                            // 저장된 값 복원
+                            if(window._genderVal) setGender(window._genderVal);
+                            if(window._calType)   setCalType(window._calType);
                         }
 
                         else if(type==='zodiac'){
