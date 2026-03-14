@@ -2,13 +2,13 @@ name: 🌟 Daily Fortune 27 Posts
 
 on:
   schedule:
-    - cron: '1 15 * * *'
-  workflow_dispatch:
+    - cron: '1 15 * * *'   # 매일 KST 00:01 (UTC 15:01)
+  workflow_dispatch:        # 수동 실행
 
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 15     # 27개 전송 충분한 시간
 
     steps:
       - name: 📥 체크아웃
