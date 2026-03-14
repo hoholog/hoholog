@@ -217,11 +217,10 @@ def build_quote_post(today_str):
     quote2, meaning2, _ = pick_quote()
     color = pick_color()
     number = pick_number()
-    kw = seo_kw(12)
     title = seo_title(f"{today_str} 오늘의 명언")
-    tags = [t.strip() for t in kw.split(",")][:10]
-    tag_html = "".join(f'<span class="tag">{t}</span>' for t in tags)
-    cat_badge = f" · {category}" if category else ""
+    cat_badge = f" · {category}" if category and str(category) != 'nan' else ""
+    meaning_html = f'<br><p style="font-size:14px;color:#666;line-height:1.8">{meaning}</p>' if meaning and str(meaning) != 'nan' else ""
+    meaning2_html = f'<br><p style="font-size:13px;color:#888;line-height:1.7">{meaning2}</p>' if meaning2 and str(meaning2) != 'nan' else ""
 
     content = f"""{style()}
 <div class="wrap">
@@ -229,7 +228,7 @@ def build_quote_post(today_str):
   <div class="card">
     <span class="badge">✨ 오늘의 명언{cat_badge}</span>
     <p style="font-size:17px;font-weight:700;line-height:1.9;color:#4a235a">❝ {quote} ❞</p>
-    {f'<br><p style="font-size:14px;color:#666;line-height:1.8">{meaning}</p>' if meaning else ''}
+    {meaning_html}
     <div class="lucky">
       <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
@@ -238,9 +237,8 @@ def build_quote_post(today_str):
   <div class="card">
     <span class="badge">🌟 한 줄 더</span>
     <p style="font-size:15px;line-height:1.85;color:#444">❝ {quote2} ❞</p>
-    {f'<br><p style="font-size:13px;color:#888;line-height:1.7">{meaning2}</p>' if meaning2 else ''}
+    {meaning2_html}
   </div>
-  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
   <div class="meta">※ 매일 자정 업데이트 · 오늘의 명언</div>
 </div>"""
