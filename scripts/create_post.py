@@ -1,12 +1,12 @@
 """
-운세 자동화 - 하루 27개 포스팅
-  1개  : 오늘의 운세 (종합)
+운세 자동화 - 하루 49개 포스팅
+  1개  : 오늘의 명언
  12개  : 별자리 운세
  12개  : 띠 운세
-  1개  : 주간 운세
-  1개  : 월간 운세
+ 12개  : 별자리 주간 운세
+ 12개  : 띠별 월간 운세
 ────────────────────────────────
- 27개/일 × 30일 = 810개/월
+ 49개/일 × 30일 = 1,470개/월
 """
 
 import os, random, time
@@ -31,6 +31,7 @@ fortune_1000      = csv("fortune_sentences_1000.csv")
 fortune_4000      = csv("fortune_sentences_4000.csv")
 daily_365         = csv("daily_fortunes_365.csv")
 fortune_365       = csv("fortune_365_days.csv")
+fortune_quotes    = csv("fortune_quotes_10000.csv")   # ← 오늘의명언용
 zodiac_kr         = csv("zodiac_fortune_1000.csv")
 zodiac12          = csv("zodiac12_fortune_1000.csv")
 chinese_zodiac    = csv("chinese_zodiac_fortunes.csv")
@@ -91,6 +92,16 @@ def sentence():
         if not df.empty and 'sentence' in df.columns:
             pool += df['sentence'].dropna().tolist()
     return random.choice(pool) if pool else "오늘도 좋은 하루 되세요."
+
+def pick_quote():
+    """fortune_quotes_10000.csv에서 오늘의 명언 랜덤 선택"""
+    if not fortune_quotes.empty and 'quote_ko' in fortune_quotes.columns:
+        row = fortune_quotes.sample(1).iloc[0]
+        quote = row['quote_ko']
+        meaning = row.get('meaning', '')
+        category = row.get('category', '')
+        return quote, meaning, category
+    return sentence(), "", ""
 
 def daily_fortune():
     today = date.today().strftime("%Y-%m-%d")
@@ -190,31 +201,38 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 # HTML 빌더
 # ─────────────────────────────────────────
 
-def build_today_post(today_str):
-    f1 = daily_fortune()
-    f2 = sentence()
+def build_quote_post(today_str):
+    quote, meaning, category = pick_quote()
+    quote2, meaning2, _ = pick_quote()
     color = pick_color()
     number = pick_number()
     kw = seo_kw(12)
-    title = seo_title(f"{today_str} 오늘의 운세")
+    title = seo_title(f"{today_str} 오늘의 명언")
     tags = [t.strip() for t in kw.split(",")][:10]
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in tags)
+    cat_badge = f" · {category}" if category else ""
 
     content = f"""{style()}
 <div class="wrap">
-  <div class="hero"><h1>🌟 오늘의 운세</h1><p>{today_str}</p></div>
+  <div class="hero"><h1>📖 오늘의 명언</h1><p>{today_str}</p></div>
   <div class="card">
-    <span class="badge">📖 오늘의 메시지</span>
-    <p>{f1}</p><br><p>{f2}</p>
+    <span class="badge">✨ 오늘의 명언{cat_badge}</span>
+    <p style="font-size:17px;font-weight:700;line-height:1.9;color:#4a235a">❝ {quote} ❞</p>
+    {f'<br><p style="font-size:14px;color:#666;line-height:1.8">{meaning}</p>' if meaning else ''}
     <div class="lucky">
       <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
+  <div class="card">
+    <span class="badge">🌟 한 줄 더</span>
+    <p style="font-size:15px;line-height:1.85;color:#444">❝ {quote2} ❞</p>
+    {f'<br><p style="font-size:13px;color:#888;line-height:1.7">{meaning2}</p>' if meaning2 else ''}
+  </div>
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
-  <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매일 자정 업데이트</div>
+  <div class="meta">※ 매일 자정 업데이트 · 오늘의 명언</div>
 </div>"""
-    return title, content, ["오늘의운세","daily","운세"]
+    return title, content, ["오늘의명언", "명언", "운세"]
 
 
 def build_zodiac_post(z, today_str):
@@ -263,77 +281,77 @@ def build_chinese_post(c, today_str):
     return title, content, ["띠운세", c['kr'], "오늘의운세"]
 
 
-def build_weekly_post(today_str):
+def build_zodiac_weekly_post(today_str):
+    """12별자리 주간운세 한 페이지"""
     week_range = get_week_range()
-    f1, advice = weekly_fortune_general()
-    color = pick_color()
-    number = pick_number()
-    title = f"이번 주 운세 {week_range} 주간운세 총정리"
+    title = f"별자리 주간운세 {week_range} 12별자리 이번 주 운세 총정리"
 
-    # 요일별 한마디
-    days = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"]
-    day_html = ""
-    for d in days:
-        s = sentence()[:40] + "..."
-        day_html += f'<div class="week-day"><strong>{d}</strong> — {s}</div>'
+    cards_html = ""
+    for z in ZODIACS:
+        fortune = zodiac_fortune(z['kr'])
+        color = pick_color()
+        number = pick_number()
+        rating = stars()
+        days = ["월","화","수","목","금","토","일"]
+        day_html = "".join(
+            f'<div class="week-day"><strong>{d}요일</strong> — {sentence()[:35]}...</div>'
+            for d in days
+        )
+        cards_html += f"""
+  <div class="card">
+    <span class="badge">{z['emoji']} {z['kr']} ({z['date']}) {rating}</span>
+    <p>{fortune}</p>
+    <div class="lucky">
+      <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
+      <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
+    </div>
+    <br>{day_html}
+  </div>"""
 
     content = f"""{style()}
 <div class="wrap">
-  <div class="hero"><h1>📅 이번 주 운세</h1><p>{week_range}</p></div>
-  <div class="card">
-    <span class="badge">🗓️ 주간 운세 총정리</span>
-    <p>{f1}</p><br>
-    <p>{advice}</p>
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 이번 주 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 이번 주 행운의 숫자</div><div class="val">{number}</div></div>
-    </div>
-  </div>
-  <div class="card">
-    <span class="badge">📆 요일별 운세</span>
-    <br>{day_html}
-  </div>
+  <div class="hero"><h1>📅 별자리 주간운세</h1><p>{week_range} 12별자리 총정리</p></div>
+  {cards_html}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
 </div>"""
-    return title, content, ["주간운세","이번주운세","운세"]
+    return title, content, ["별자리주간", "주간운세", "별자리운세"]
 
 
-def build_monthly_post(today_str):
+def build_chinese_monthly_post(today_str):
+    """12띠 월간운세 한 페이지"""
     month = get_month()
-    f1, advice = monthly_fortune_general()
-    color = pick_color()
-    number = pick_number()
-    title = f"{month} 월간운세 총정리 한달 운세"
+    title = f"{month} 띠별 월간운세 12띠 한달 운세 총정리"
 
-    # 상/중/하순 운세
-    periods = [
-        ("상순 (1~10일)", sentence()),
-        ("중순 (11~20일)", sentence()),
-        ("하순 (21~말일)", sentence()),
-    ]
-    period_html = ""
-    for p, s in periods:
-        period_html += f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
-
-    content = f"""{style()}
-<div class="wrap">
-  <div class="hero"><h1>🌙 {month} 월간운세</h1><p>{month} 한달 운세 총정리</p></div>
+    cards_html = ""
+    for c in CHINESE:
+        fortune = chinese_fortune(c['en'])
+        f1, _ = monthly_fortune_general()
+        color = pick_color()
+        number = pick_number()
+        rating = stars()
+        periods = [("상순 (1~10일)", sentence()), ("중순 (11~20일)", sentence()), ("하순 (21~말일)", sentence())]
+        period_html = "".join(
+            f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
+            for p, s in periods
+        )
+        cards_html += f"""
   <div class="card">
-    <span class="badge">📋 이달의 운세</span>
-    <p>{f1}</p><br>
-    <p>{advice}</p>
+    <span class="badge">{c['emoji']} {c['kr']} ({c['year'].split(',')[0]}년생~) {rating}</span>
+    <p>{fortune}</p><br><p>{f1}</p>
     <div class="lucky">
       <div class="lucky-box"><div class="lbl">🎨 이달의 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 이달의 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
-  </div>
-  <div class="card">
-    <span class="badge">📅 시기별 운세</span>
     <br>{period_html}
-  </div>
+  </div>"""
+
+    content = f"""{style()}
+<div class="wrap">
+  <div class="hero"><h1>🌙 띠별 월간운세</h1><p>{month} 12띠 총정리</p></div>
+  {cards_html}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매월 업데이트</div>
 </div>"""
-    return title, content, ["월간운세","이달운세","운세"]
+    return title, content, ["띠별월간", "월간운세", "띠운세"]
 
 
 # ─────────────────────────────────────────
@@ -386,26 +404,26 @@ def main():
     today_str = datetime.now().strftime("%Y년 %m월 %d일")
     posts = []
 
-    # ① 오늘의 운세 1개
-    posts.append(build_today_post(today_str))
+    # ① 오늘의 명언 1개
+    posts.append(build_quote_post(today_str))
 
-    # ② 별자리 12개
+    # ② 별자리 운세 12개
     for z in ZODIACS:
         posts.append(build_zodiac_post(z, today_str))
 
-    # ③ 띠 12개
+    # ③ 띠 운세 12개
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
 
-    # ④ 주간 운세 1개
-    posts.append(build_weekly_post(today_str))
+    # ④ 별자리 주간운세 1개 (12별자리 통합)
+    posts.append(build_zodiac_weekly_post(today_str))
 
-    # ⑤ 월간 운세 1개
-    posts.append(build_monthly_post(today_str))
+    # ⑤ 띠별 월간운세 1개 (12띠 통합)
+    posts.append(build_chinese_monthly_post(today_str))
 
     total = len(posts)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
-    print("구성: 오늘의운세 1 + 별자리 12 + 띠 12 + 주간 1 + 월간 1 = 27개\n")
+    print("구성: 오늘의명언 1 + 별자리 12 + 띠 12 + 별자리주간 1 + 띠별월간 1 = 27개\n")
 
     success = 0
     for i, (title, content, labels) in enumerate(posts, 1):
