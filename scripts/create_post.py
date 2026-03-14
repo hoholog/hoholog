@@ -195,7 +195,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 .tag-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .tag{background:#eef2ff;color:#5c6bc0;padding:4px 10px;border-radius:20px;font-size:11px}
 .week-day{background:#fff9e6;border-left:4px solid #f7b731;padding:12px 16px;border-radius:8px;margin-bottom:10px;font-size:14px;line-height:1.7}
+.game-link{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;padding:20px;text-align:center;margin-top:20px}
+.game-link p{font-size:13px;color:rgba(255,255,255,.8);margin-bottom:10px}
+.game-link a{display:inline-block;background:#fff;color:#4f46e5;padding:10px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}
+.game-link a:hover{background:#f0eaff}
 </style>"""
+
+def site_link():
+    return """
+<div class="game-link">
+    <p>🎮 운세와 함께 즐기는 무료 게임</p>
+    <a href="https://hoholog.github.io/hoholog/#index">🎮 호호로그게임 바로가기</a>
+</div>"""
 
 # ─────────────────────────────────────────
 # HTML 빌더
@@ -230,6 +241,7 @@ def build_quote_post(today_str):
     {f'<br><p style="font-size:13px;color:#888;line-height:1.7">{meaning2}</p>' if meaning2 else ''}
   </div>
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
+  {site_link()}
   <div class="meta">※ 매일 자정 업데이트 · 오늘의 명언</div>
 </div>"""
     return title, content, ["오늘의명언", "명언", "운세"]
@@ -254,6 +266,7 @@ def build_zodiac_post(z, today_str):
     </div>
   </div>
   <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
+  {site_link()}
 </div>"""
     return title, content, ["별자리운세", z['kr'], "운세"]
 
@@ -277,6 +290,7 @@ def build_chinese_post(c, today_str):
     </div>
   </div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
+  {site_link()}
 </div>"""
     return title, content, ["띠운세", c['kr'], "운세"]
 
@@ -312,6 +326,7 @@ def build_zodiac_weekly_post(today_str):
 <div class="wrap">
   <div class="hero"><h1>📅 별자리 주간운세</h1><p>{week_range} 12별자리 총정리</p></div>
   {cards_html}
+  {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
 </div>"""
     return title, content, ["별자리주간", "주간운세", "별자리운세"]
@@ -349,6 +364,7 @@ def build_chinese_monthly_post(today_str):
 <div class="wrap">
   <div class="hero"><h1>🌙 띠별 월간운세</h1><p>{month} 12띠 총정리</p></div>
   {cards_html}
+  {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매월 업데이트</div>
 </div>"""
     return title, content, ["띠별월간", "월간운세", "띠운세"]
