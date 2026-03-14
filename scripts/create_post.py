@@ -252,6 +252,16 @@ def build_zodiac_post(z, today_str):
     rating = stars()
     title = seo_title(f"{z['kr']} {today_str}")
 
+    # 별자리 관련 키워드
+    kw_list = [
+        z['kr'], f"{z['kr']} 오늘운세", f"{z['kr']} 운세",
+        f"{z['kr']} 오늘의운세", f"{z['kr']} 2026",
+        f"{z['kr']} 별자리운세", f"별자리 {z['kr']}",
+        f"{z['kr']} {today_str}", f"{z['date']} 별자리",
+        "오늘의운세", "별자리운세", "운세"
+    ]
+    tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+
     content = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>{z['emoji']} {z['kr']} 오늘의 운세</h1><p>{today_str} · {z['date']}</p></div>
@@ -263,6 +273,7 @@ def build_zodiac_post(z, today_str):
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
 </div>"""
@@ -276,6 +287,17 @@ def build_chinese_post(c, today_str):
     rating = stars()
     title = seo_title(f"{c['kr']} {today_str}")
 
+    # 띠 관련 키워드 (출생연도 포함)
+    years = c['year'].split(',')
+    year_tags = [f"{y}년생 운세" for y in years[:4]]
+    kw_list = [
+        c['kr'], f"{c['kr']} 오늘운세", f"{c['kr']} 운세",
+        f"{c['kr']} 오늘의운세", f"{c['kr']} 2026",
+        f"{c['kr']} 띠운세", f"띠운세 {c['kr']}",
+        f"{c['kr']} {today_str}", "오늘의운세", "띠운세", "운세"
+    ] + year_tags
+    tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+
     content = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
@@ -287,6 +309,7 @@ def build_chinese_post(c, today_str):
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
   </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
 </div>"""
