@@ -154,555 +154,17 @@
                         <h1 class="text-4xl font-black mb-3">🌟 오늘의 운세</h1>
                         <p class="text-slate-400" id="fortune-date"></p>
                     </div>
-
-                    <!-- 탭 -->
                     <div class="flex gap-3 mb-8 flex-wrap justify-center">
                         <button onclick="showFortune('today')"   id="tab-today"   class="ftab active-ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌟 오늘운세</button>
                         <button onclick="showFortune('zodiac')"  id="tab-zodiac"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">✨ 별자리</button>
                         <button onclick="showFortune('chinese')" id="tab-chinese" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🐾 띠운세</button>
-                        <button onclick="showFortune('weekly')"  id="tab-weekly"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">📅 주간운세</button>
-                        <button onclick="showFortune('monthly')" id="tab-monthly" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌙 월간운세</button>
+                        <button onclick="showFortune('weekly')"  id="tab-weekly"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">📅 별자리 주간</button>
+                        <button onclick="showFortune('monthly')" id="tab-monthly" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌙 띠별 월간</button>
                     </div>
-
                     <div id="fortune-content"><div style="text-align:center;padding:60px;color:#aaa">⏳ 운세를 불러오는 중...</div></div>
-
-                    <style>
-                        .ftab{background:#f1f5f9;color:#64748b}
-                        .active-ftab{background:#7c3aed;color:#fff}
-                        .fhero{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:1.5rem;padding:2.5rem;text-align:center;margin-bottom:1.2rem}
-                        .fcard{background:#fff;border-radius:1.4rem;padding:1.6rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.07)}
-                        .lucky-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
-                        .lucky-item{flex:1;min-width:120px;background:#f5f3ff;border-radius:1rem;padding:1rem;text-align:center}
-                        .lucky-label{font-size:11px;color:#888;margin-bottom:4px}
-                        .lucky-val{font-size:22px;font-weight:900;color:#7c3aed}
-                        .zgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
-                        .zcard{background:#fff;border-radius:1.2rem;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #f1f5f9}
-                        .zhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-                        .stars{color:#f4a61e;font-size:12px;margin-left:auto}
-                        .pbox{background:#fffbf0;border-left:4px solid #f7b731;border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:14px;line-height:1.7}
-                        .blog-btn{display:inline-block;background:#4f46e5;color:#fff;padding:10px 22px;border-radius:12px;font-weight:bold;text-decoration:none;font-size:14px;margin-top:8px}
-                        .blog-btn:hover{background:#4338ca}
-                        .post-item{border-bottom:1px solid #f1f5f9;padding:16px 0;cursor:pointer}
-                        .post-item:hover .post-title{color:#7c3aed}
-                        .post-title{font-size:15px;font-weight:700;color:#333;margin-bottom:6px;line-height:1.5}
-                        .post-date{font-size:12px;color:#aaa}
-                        .post-snippet{font-size:13px;color:#666;margin-top:6px;line-height:1.6}
-                    </style>
-
-                    <script>
-                    const BLOG_ID  = '5608603268556826697';
-                    const API_KEY  = 'AIzaSyDBqlEZSs5HElZZYf0XyIMZOFpn10f0cu0';
-                    const BASE_URL = 'https://www.googleapis.com/blogger/v3';
-
-                    const RATINGS = ['★★★☆☆','★★★★☆','★★★★★','★★☆☆☆','★★★★☆'];
-                    const COLORS  = ['골드','라벤더','민트그린','스카이블루','코랄','퍼플','로즈핑크','버건디'];
-                    function rnd(a){return a[Math.floor(Math.random()*a.length)]}
-                    function rndN(){return Math.floor(Math.random()*99)+1}
-                    function todayStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일'}
-                    function weekRange(){
-                        const d=new Date(),mon=new Date(d);
-                        mon.setDate(d.getDate()-d.getDay()+1);
-                        const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-                        return (mon.getMonth()+1)+'/'+mon.getDate()+' ~ '+(sun.getMonth()+1)+'/'+sun.getDate();
-                    }
-                    function monthStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월'}
-                    function fmtDate(s){const d=new Date(s);return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()}
-
-                    // Blogger API로 글 가져오기
-                    async function fetchPosts(label, maxResults=6){
-                        const url = BASE_URL+'/blogs/'+BLOG_ID+'/posts?key='+API_KEY+'&labels='+encodeURIComponent(label)+'&maxResults='+maxResults+'&fields=items(title,url,published,content)';
-                        try{
-                            const r = await fetch(url);
-                            const d = await r.json();
-                            return d.items || [];
-                        } catch(e){ return [] }
-                    }
-
-                    function renderPosts(posts, label){
-                        if(!posts.length) return '<p style="color:#aaa;text-align:center;padding:20px">아직 게시글이 없습니다</p>';
-                        return posts.map(p => {
-                            const snippet = p.content ? p.content.replace(/<[^>]+>/g,'').slice(0,80)+'...' : '';
-                            return \`<div class="post-item" onclick="window.open('\${p.url}','_blank')">
-                                <div class="post-title">\${p.title}</div>
-                                <div class="post-date">\${fmtDate(p.published)}</div>
-                                <div class="post-snippet">\${snippet}</div>
-                            </div>\`;
-                        }).join('');
-                    }
-
-                    function luckyRow(){
-                        return \`<div class="lucky-row">
-                            <div class="lucky-item"><div class="lucky-label">🎨 행운의 색</div><div class="lucky-val">\${rnd(COLORS)}</div></div>
-                            <div class="lucky-item"><div class="lucky-label">🔢 행운의 숫자</div><div class="lucky-val">\${rndN()}</div></div>
-                        </div>\`;
-                    }
-
-                    // ── 성별/양음력 선택 ──
-                    window._genderVal = null;
-                    window._calType = '양력';
-
-                    function setGender(v){
-                        window._genderVal = v;
-                        ['male','female'].forEach(id=>{
-                            const b = document.getElementById('g-'+id);
-                            if(b){ b.style.borderColor='#e2e8f0'; b.style.background='#f8fafc'; }
-                        });
-                        const sel = v==='남' ? document.getElementById('g-male') : document.getElementById('g-female');
-                        if(sel){ sel.style.borderColor='#7c3aed'; sel.style.background='#ede9fe'; }
-                    }
-
-                    function setCalType(v){
-                        window._calType = v;
-                        ['solar','lunar'].forEach(id=>{
-                            const b = document.getElementById('cal-'+id);
-                            if(b){ b.style.borderColor='#e2e8f0'; b.style.background='#f8fafc'; }
-                        });
-                        const sel = v==='양력' ? document.getElementById('cal-solar') : document.getElementById('cal-lunar');
-                        if(sel){ sel.style.borderColor='#7c3aed'; sel.style.background='#ede9fe'; }
-                    }
-
-                    // ── 띠 계산 ──
-                    function getChineseZodiac(year){
-                        const animals = ['원숭이','닭','개','돼지','쥐','소','호랑이','토끼','용','뱀','말','양'];
-                        const emojis  = ['🐵','🐓','🐶','🐷','🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑'];
-                        const idx = year % 12;
-                        return { name: animals[idx]+'띠', emoji: emojis[idx] };
-                    }
-
-                    // ── 별자리 계산 ──
-                    function getZodiacSign(month, day){
-                        const signs = [
-                            {name:'염소자리',emoji:'♑',end:[1,19]},
-                            {name:'물병자리',emoji:'♒',end:[2,18]},
-                            {name:'물고기자리',emoji:'♓',end:[3,20]},
-                            {name:'양자리',emoji:'♈',end:[4,19]},
-                            {name:'황소자리',emoji:'♉',end:[5,20]},
-                            {name:'쌍둥이자리',emoji:'♊',end:[6,21]},
-                            {name:'게자리',emoji:'♋',end:[7,22]},
-                            {name:'사자자리',emoji:'♌',end:[8,22]},
-                            {name:'처녀자리',emoji:'♍',end:[9,22]},
-                            {name:'천칭자리',emoji:'♎',end:[10,22]},
-                            {name:'전갈자리',emoji:'♏',end:[11,21]},
-                            {name:'사수자리',emoji:'♐',end:[12,21]},
-                            {name:'염소자리',emoji:'♑',end:[12,31]},
-                        ];
-                        for(const s of signs){
-                            if(month < s.end[0] || (month === s.end[0] && day <= s.end[1])) return s;
-                        }
-                        return signs[0];
-                    }
-
-                    // ── 시간별 운세 ──
-                    const TIME_MSG = {
-                        '모름':'오늘 하루 전반적으로 긍정적인 기운이 감돌고 있습니다.',
-                        '자시':'깊은 밤 기운을 타고난 당신, 직관력이 특히 뛰어난 날입니다.',
-                        '축시':'새벽의 고요함이 당신에게 차분한 집중력을 선사합니다.',
-                        '인시':'이른 아침 기운을 가진 당신은 오늘 새로운 도전에 유리합니다.',
-                        '묘시':'부드러운 아침 햇살처럼 오늘 대인관계가 매우 원만할 것입니다.',
-                        '진시':'활기찬 아침 기운으로 오늘 업무 추진력이 강하게 발휘됩니다.',
-                        '사시':'뜨거운 태양의 기운처럼 오늘 열정과 창의력이 넘칩니다.',
-                        '오시':'정오의 기운을 받아 오늘 모든 일이 명확하게 풀려나갑니다.',
-                        '미시':'오후의 여유로운 기운으로 오늘 재물운이 상승합니다.',
-                        '신시':'활발한 오후 기운으로 오늘 사람들과의 인연이 생깁니다.',
-                        '유시':'황혼의 아름다운 기운처럼 오늘 감성과 예술적 감각이 빛납니다.',
-                        '술시':'저녁의 안정된 기운으로 오늘 중요한 결정을 내리기 좋습니다.',
-                        '해시':'밤의 신비로운 기운으로 오늘 숨겨진 기회가 찾아옵니다.',
-                    };
-
-                    const GENDER_MSG = {
-                        '남': ['강한 추진력으로 목표를 향해 나아가기 좋은 날입니다.','주변의 신뢰가 높아지는 시기입니다. 리더십을 발휘해보세요.'],
-                        '여': ['섬세한 감각이 빛을 발하는 날입니다. 직감을 믿어보세요.','주변 사람들과의 관계에서 따뜻한 에너지가 넘칩니다.'],
-                    };
-
-                    const OVERALL_MSG = [
-                        '오늘은 새로운 시작을 알리는 에너지가 강합니다. 망설이지 말고 첫 발을 내딛으세요.',
-                        '주변의 작은 인연을 소중히 여기면 뜻밖의 기회가 생깁니다.',
-                        '오늘은 감정보다 이성을 따르는 것이 더 좋은 결과를 가져옵니다.',
-                        '재물운이 서서히 상승하고 있습니다. 무리한 지출은 자제하세요.',
-                        '오랫동안 준비해온 일이 결실을 맺을 조짐이 보입니다.',
-                        '건강 관리에 신경 쓰세요. 충분한 수분 섭취와 휴식이 필요합니다.',
-                        '새로운 사람과의 만남에서 긍정적인 영향을 받을 수 있습니다.',
-                        '오늘 하루 집중력이 높아 학습이나 자기계발에 최적의 날입니다.',
-                    ];
-
-                    function generateTodayFortune(){
-                        const year  = parseInt(document.getElementById('inp-year').value);
-                        const month = parseInt(document.getElementById('inp-month').value);
-                        const day   = parseInt(document.getElementById('inp-day').value);
-                        const time  = document.getElementById('inp-time').value;
-                        const gender = window._genderVal;
-                        const calType = window._calType;
-
-                        if(!year || !month || !day){
-                            alert('생년월일을 모두 입력해주세요!'); return;
-                        }
-                        if(!gender){
-                            alert('성별을 선택해주세요!'); return;
-                        }
-                        if(year < 1930 || year > 2010){
-                            alert('년도를 1930~2010 사이로 입력해주세요!'); return;
-                        }
-
-                        const chinese = getChineseZodiac(year);
-                        const zodiac  = getZodiacSign(month, day);
-                        const age     = new Date().getFullYear() - year + 1;
-                        const timeMsg = TIME_MSG[time] || TIME_MSG['모름'];
-                        const genderMsg = rnd(GENDER_MSG[gender]);
-                        const overall = rnd(OVERALL_MSG);
-                        const color   = rnd(COLORS);
-                        const num     = rndN();
-                        const rating  = rnd(RATINGS);
-
-                        const result = document.getElementById('today-result');
-                        result.innerHTML = \`
-                            <div class="fcard">
-                                <div id="today-card" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff">
-                                    <div style="text-align:center;margin-bottom:18px">
-                                        <div style="font-size:13px;opacity:.8;margin-bottom:4px">\${calType} · \${year}년 \${month}월 \${day}일 · \${time}</div>
-                                        <div style="font-size:28px;font-weight:900">\${gender === '남' ? '👨' : '👩'} \${gender}성 · 만 \${age-1}세</div>
-                                        <div style="margin-top:8px;font-size:15px;opacity:.9">
-                                            \${chinese.emoji} \${chinese.name} &nbsp;·&nbsp; \${zodiac.emoji} \${zodiac.name}
-                                        </div>
-                                        <div style="color:#fde68a;margin-top:4px">\${rating}</div>
-                                    </div>
-
-                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:12px">
-                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">⏰ \${time} 기운</div>
-                                        <div style="font-size:14px;line-height:1.8">\${timeMsg}</div>
-                                    </div>
-
-                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:12px">
-                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">🔮 오늘의 운세</div>
-                                        <div style="font-size:14px;line-height:1.8">\${overall}</div>
-                                    </div>
-
-                                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:14px">
-                                        <div style="font-size:12px;opacity:.8;margin-bottom:6px">\${gender === '남' ? '👨' : '👩'} \${gender}성 운세</div>
-                                        <div style="font-size:14px;line-height:1.8">\${genderMsg}</div>
-                                    </div>
-
-                                    <div style="display:flex;gap:10px">
-                                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
-                                            <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
-                                            <div style="font-weight:900;font-size:16px">\${color}</div>
-                                        </div>
-                                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
-                                            <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
-                                            <div style="font-weight:900;font-size:22px">\${num}</div>
-                                        </div>
-                                    </div>
-                                    <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · \${todayStr()}</div>
-                                </div>
-
-                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
-                                    <button onclick="saveCard('today-card','오늘의운세_\${year}\${month}\${day}')"
-                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
-                                        📸 이미지 저장
-                                    </button>
-                                    <button onclick="generateTodayFortune()"
-                                        style="background:#e2e8f0;color:#444;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
-                                        🔄 다시 보기
-                                    </button>
-                                </div>
-                            </div>\`;
-
-                        result.scrollIntoView({behavior:'smooth', block:'start'});
-                    }
-
-                    // ── 선택 상태 ──
-                    let selectedZodiac = null;
-                    let selectedChinese = null;
-
-                    const ZODIACS_LIST = [
-                        {kr:'양자리',date:'3/21~4/19',emoji:'♈'},
-                        {kr:'황소자리',date:'4/20~5/20',emoji:'♉'},
-                        {kr:'쌍둥이자리',date:'5/21~6/21',emoji:'♊'},
-                        {kr:'게자리',date:'6/22~7/22',emoji:'♋'},
-                        {kr:'사자자리',date:'7/23~8/22',emoji:'♌'},
-                        {kr:'처녀자리',date:'8/23~9/22',emoji:'♍'},
-                        {kr:'천칭자리',date:'9/23~10/22',emoji:'♎'},
-                        {kr:'전갈자리',date:'10/23~11/21',emoji:'♏'},
-                        {kr:'사수자리',date:'11/22~12/21',emoji:'♐'},
-                        {kr:'염소자리',date:'12/22~1/19',emoji:'♑'},
-                        {kr:'물병자리',date:'1/20~2/18',emoji:'♒'},
-                        {kr:'물고기자리',date:'2/19~3/20',emoji:'♓'},
-                    ];
-                    const CHINESE_LIST = [
-                        {kr:'쥐띠',year:'1960,1972,1984,1996,2008,2020',emoji:'🐭'},
-                        {kr:'소띠',year:'1961,1973,1985,1997,2009,2021',emoji:'🐮'},
-                        {kr:'호랑이띠',year:'1962,1974,1986,1998,2010,2022',emoji:'🐯'},
-                        {kr:'토끼띠',year:'1963,1975,1987,1999,2011,2023',emoji:'🐰'},
-                        {kr:'용띠',year:'1964,1976,1988,2000,2012,2024',emoji:'🐲'},
-                        {kr:'뱀띠',year:'1965,1977,1989,2001,2013,2025',emoji:'🐍'},
-                        {kr:'말띠',year:'1966,1978,1990,2002,2014,2026',emoji:'🐴'},
-                        {kr:'양띠',year:'1967,1979,1991,2003,2015,2027',emoji:'🐑'},
-                        {kr:'원숭이띠',year:'1968,1980,1992,2004,2016,2028',emoji:'🐵'},
-                        {kr:'닭띠',year:'1969,1981,1993,2005,2017,2029',emoji:'🐓'},
-                        {kr:'개띠',year:'1970,1982,1994,2006,2018,2030',emoji:'🐶'},
-                        {kr:'돼지띠',year:'1971,1983,1995,2007,2019,2031',emoji:'🐷'},
-                    ];
-
-                    // ── 이미지 저장 ──
-                    function saveCard(elId, filename){
-                        const el = document.getElementById(elId);
-                        if(!el){ alert('저장할 카드가 없습니다'); return; }
-                        html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true}).then(canvas=>{
-                            const a = document.createElement('a');
-                            a.download = filename+'.png';
-                            a.href = canvas.toDataURL('image/png');
-                            a.click();
-                        });
-                    }
-
-                    // ── 운세 카드 HTML ──
-                    function makeCard(emoji, name, sub, fortune, color, num, rating, cardId){
-                        return \`<div id="\${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff;max-width:480px;margin:0 auto">
-                            <div style="text-align:center;margin-bottom:16px">
-                                <div style="font-size:48px">\${emoji}</div>
-                                <div style="font-size:22px;font-weight:900;margin:6px 0">\${name}</div>
-                                <div style="opacity:.8;font-size:13px">\${sub}</div>
-                                <div style="color:#fde68a;font-size:14px;margin-top:4px">\${rating}</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.8;margin-bottom:14px">
-                                \${fortune}
-                            </div>
-                            <div style="display:flex;gap:10px">
-                                <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
-                                    <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
-                                    <div style="font-weight:900;font-size:16px">\${color}</div>
-                                </div>
-                                <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
-                                    <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
-                                    <div style="font-weight:900;font-size:22px">\${num}</div>
-                                </div>
-                            </div>
-                            <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · \${todayStr()}</div>
-                        </div>\`;
-                    }
-
-                    async function showFortune(type){
-                        document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active-ftab'));
-                        document.getElementById('tab-'+type).classList.add('active-ftab');
-                        const c = document.getElementById('fortune-content');
-                        c.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">⏳ 불러오는 중...</div>';
-
-                        if(type==='today'){
-                            c.innerHTML = \`
-                                <div class="fhero">
-                                    <h2 style="font-size:24px;margin-bottom:6px">🌟 오늘의 운세</h2>
-                                    <p style="opacity:.85">\${todayStr()}</p>
-                                </div>
-
-                                <div class="fcard">
-                                    <div style="font-weight:900;font-size:17px;margin-bottom:18px;color:#7c3aed">✏️ 정보 입력</div>
-
-                                    <!-- 성별 -->
-                                    <div style="margin-bottom:16px">
-                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">성별</div>
-                                        <div style="display:flex;gap:10px">
-                                            <button onclick="setGender('남')" id="g-male"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
-                                                👨 남성
-                                            </button>
-                                            <button onclick="setGender('여')" id="g-female"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
-                                                👩 여성
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- 양력/음력 -->
-                                    <div style="margin-bottom:16px">
-                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일 구분</div>
-                                        <div style="display:flex;gap:10px">
-                                            <button onclick="setCalType('양력')" id="cal-solar"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
-                                                ☀️ 양력
-                                            </button>
-                                            <button onclick="setCalType('음력')" id="cal-lunar"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">
-                                                🌙 음력
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- 생년월일 -->
-                                    <div style="margin-bottom:16px">
-                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일</div>
-                                        <div style="display:flex;gap:8px">
-                                            <input id="inp-year" type="number" placeholder="년(4자리)" min="1930" max="2010"
-                                                style="flex:2;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
-                                            <input id="inp-month" type="number" placeholder="월" min="1" max="12"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
-                                            <input id="inp-day" type="number" placeholder="일" min="1" max="31"
-                                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
-                                        </div>
-                                    </div>
-
-                                    <!-- 태어난 시간 -->
-                                    <div style="margin-bottom:20px">
-                                        <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">태어난 시간</div>
-                                        <select id="inp-time"
-                                            style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;background:#f8fafc">
-                                            <option value="모름">⏰ 모름</option>
-                                            <option value="자시">자시 (23:00~01:00)</option>
-                                            <option value="축시">축시 (01:00~03:00)</option>
-                                            <option value="인시">인시 (03:00~05:00)</option>
-                                            <option value="묘시">묘시 (05:00~07:00)</option>
-                                            <option value="진시">진시 (07:00~09:00)</option>
-                                            <option value="사시">사시 (09:00~11:00)</option>
-                                            <option value="오시">오시 (11:00~13:00)</option>
-                                            <option value="미시">미시 (13:00~15:00)</option>
-                                            <option value="신시">신시 (15:00~17:00)</option>
-                                            <option value="유시">유시 (17:00~19:00)</option>
-                                            <option value="술시">술시 (19:00~21:00)</option>
-                                            <option value="해시">해시 (21:00~23:00)</option>
-                                        </select>
-                                    </div>
-
-                                    <button onclick="generateTodayFortune()"
-                                        style="width:100%;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer">
-                                        🔮 오늘의 운세 보기
-                                    </button>
-                                </div>
-
-                                <div id="today-result"></div>
-                            \`;
-
-                            // 저장된 값 복원
-                            if(window._genderVal) setGender(window._genderVal);
-                            if(window._calType)   setCalType(window._calType);
-                        }
-
-                        else if(type==='zodiac'){
-                            // 선택 UI
-                            const selHTML = \`
-                                <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">✨ 내 별자리 선택</div>
-                                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px" id="zodiac-sel">
-                                        \${ZODIACS_LIST.map(z=>\`
-                                            <button onclick="selectZodiac('\${z.kr}')"
-                                                id="zsel-\${z.kr}"
-                                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;transition:all.2s;font-size:13px;font-weight:700">
-                                                \${z.emoji}<br>\${z.kr}<br><span style="font-size:10px;color:#aaa">\${z.date}</span>
-                                            </button>\`).join('')}
-                                    </div>
-                                </div>
-                                <div id="zodiac-card-area"></div>\`;
-                            c.innerHTML = selHTML;
-                            if(selectedZodiac) selectZodiac(selectedZodiac);
-                        }
-
-                        else if(type==='chinese'){
-                            // 선택 UI
-                            const selHTML = \`
-                                <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">🐾 내 띠 선택</div>
-                                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px" id="chinese-sel">
-                                        \${CHINESE_LIST.map(c=>\`
-                                            <button onclick="selectChinese('\${c.kr}')"
-                                                id="csel-\${c.kr}"
-                                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;transition:all.2s;font-size:13px;font-weight:700">
-                                                \${c.emoji}<br>\${c.kr}<br><span style="font-size:10px;color:#aaa">\${c.year.split(',').slice(0,2).join(',')}..</span>
-                                            </button>\`).join('')}
-                                    </div>
-                                </div>
-                                <div id="chinese-card-area"></div>\`;
-                            c.innerHTML = selHTML;
-                            if(selectedChinese) selectChinese(selectedChinese);
-                        }
-
-                        else if(type==='weekly'){
-                            const posts = await fetchPosts('주간운세', 6);
-                            c.innerHTML = \`
-                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">📅 이번 주 운세</h2><p style="opacity:.85">\${weekRange()}</p></div>
-                                <div class="fcard">\${luckyRow()}</div>
-                                <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 주간 운세</div>
-                                    \${renderPosts(posts,'주간운세')}
-                                    <div style="text-align:center;margin-top:16px">
-                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/주간운세" target="_blank" class="blog-btn">📅 주간 운세 전체보기</a>
-                                    </div>
-                                </div>\`;
-                        }
-
-                        else if(type==='monthly'){
-                            const posts = await fetchPosts('월간운세', 6);
-                            c.innerHTML = \`
-                                <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌙 \${monthStr()} 월간운세</h2><p style="opacity:.85">한달 운세 총정리</p></div>
-                                <div class="fcard">\${luckyRow()}</div>
-                                <div class="fcard">
-                                    <div style="font-weight:900;font-size:16px;margin-bottom:12px;color:#7c3aed">최신 월간 운세</div>
-                                    \${renderPosts(posts,'월간운세')}
-                                    <div style="text-align:center;margin-top:16px">
-                                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/월간운세" target="_blank" class="blog-btn">🌙 월간 운세 전체보기</a>
-                                    </div>
-                                </div>\`;
-                        }
-                    }
-
-                    // ── 별자리 선택 ──
-                    function selectZodiac(kr){
-                        selectedZodiac = kr;
-                        document.querySelectorAll('[id^="zsel-"]').forEach(b=>{
-                            b.style.background='#f5f3ff';
-                            b.style.borderColor='transparent';
-                        });
-                        const btn = document.getElementById('zsel-'+kr);
-                        if(btn){ btn.style.background='#ede9fe'; btn.style.borderColor='#7c3aed'; }
-
-                        const z = ZODIACS_LIST.find(x=>x.kr===kr);
-                        const fortune = rnd(['오늘은 새로운 시작을 알리는 에너지가 강합니다. 적극적으로 움직이면 좋은 결과가 따라옵니다.','주변 사람들과의 소통이 큰 도움이 됩니다. 열린 마음으로 대화해보세요.','작은 노력이 큰 결실을 맺는 하루가 될 것입니다. 꾸준함이 핵심입니다.','예상치 못한 좋은 소식이 들려올 수 있습니다. 기대감을 가져보세요.','재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.']);
-                        const area = document.getElementById('zodiac-card-area');
-                        area.innerHTML = \`
-                            <div class="fcard">
-                                \${makeCard(z.emoji, z.kr, z.date, fortune, rnd(COLORS), rndN(), rnd(RATINGS), 'zcard')}
-                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
-                                    <button onclick="saveCard('zcard','별자리운세_\${kr}')"
-                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
-                                        📸 이미지 저장
-                                    </button>
-                                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">
-                                        📖 블로그에서 더보기
-                                    </a>
-                                </div>
-                            </div>\`;
-                    }
-
-                    // ── 띠 선택 ──
-                    function selectChinese(kr){
-                        selectedChinese = kr;
-                        document.querySelectorAll('[id^="csel-"]').forEach(b=>{
-                            b.style.background='#f5f3ff';
-                            b.style.borderColor='transparent';
-                        });
-                        const btn = document.getElementById('csel-'+kr);
-                        if(btn){ btn.style.background='#ede9fe'; btn.style.borderColor='#7c3aed'; }
-
-                        const ch = CHINESE_LIST.find(x=>x.kr===kr);
-                        const fortune = rnd(['오늘은 새로운 시작을 알리는 에너지가 강합니다. 적극적으로 움직이면 좋은 결과가 따라옵니다.','주변 사람들과의 소통이 큰 도움이 됩니다. 열린 마음으로 대화해보세요.','작은 노력이 큰 결실을 맺는 하루가 될 것입니다. 꾸준함이 핵심입니다.','예상치 못한 좋은 소식이 들려올 수 있습니다. 기대감을 가져보세요.','재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.']);
-                        const area = document.getElementById('chinese-card-area');
-                        area.innerHTML = \`
-                            <div class="fcard">
-                                \${makeCard(ch.emoji, ch.kr, ch.year.split(',').slice(0,3).join(',')+' ...', fortune, rnd(COLORS), rndN(), rnd(RATINGS), 'ccard')}
-                                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
-                                    <button onclick="saveCard('ccard','띠운세_\${kr}')"
-                                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
-                                        📸 이미지 저장
-                                    </button>
-                                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">
-                                        📖 블로그에서 더보기
-                                    </a>
-                                </div>
-                            </div>\`;
-                    }
-
-                    document.getElementById('fortune-date').textContent = todayStr();
-                    showFortune('today');
-                    <\/script>
                 </div>
             `,
-            guide: `
+                        guide: `
                 <div class="page-transition max-w-4xl mx-auto">
                     <h1 class="text-4xl font-black mb-12 text-center">전체 서비스 가이드</h1>
                     <div class="grid gap-6">
@@ -776,6 +238,7 @@
                 contentDiv.innerHTML = pages[page];
                 window.location.hash = page;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                if(page === 'fortune') showFortune('today');
             }
         }
 
@@ -783,6 +246,597 @@
             const hash = window.location.hash.replace('#', '');
             navigateTo(pages[hash] ? hash : 'index');
         };
+
+        // ═══════════════════════════════
+        //  운세 공통 데이터 & 유틸
+        // ═══════════════════════════════
+        const BLOG_ID  = '5608603268556826697';
+        const API_KEY  = 'AIzaSyDBqlEZSs5HElZZYf0XyIMZOFpn10f0cu0';
+        const BASE_URL = 'https://www.googleapis.com/blogger/v3';
+        const RATINGS  = ['★★★☆☆','★★★★☆','★★★★★','★★☆☆☆','★★★★☆'];
+        const COLORS   = ['골드','라벤더','민트그린','스카이블루','코랄','퍼플','로즈핑크','버건디'];
+        function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+        function rndN(){return Math.floor(Math.random()*99)+1}
+        function todayStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일'}
+        function weekRange(){
+            const d=new Date(),mon=new Date(d);
+            mon.setDate(d.getDate()-d.getDay()+1);
+            const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+            return (mon.getMonth()+1)+'/'+mon.getDate()+' ~ '+(sun.getMonth()+1)+'/'+sun.getDate();
+        }
+        function monthStr(){const d=new Date();return d.getFullYear()+'년 '+(d.getMonth()+1)+'월'}
+        function fmtDate(s){const d=new Date(s);return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()}
+
+        // ═══════════════════════════════
+        //  Blogger API
+        // ═══════════════════════════════
+        async function fetchPosts(label, maxResults=6){
+            const url = BASE_URL+'/blogs/'+BLOG_ID+'/posts?key='+API_KEY+'&labels='+encodeURIComponent(label)+'&maxResults='+maxResults+'&fields=items(title,url,published,content)';
+            try{ const r=await fetch(url); const d=await r.json(); return d.items||[]; }
+            catch(e){ return [] }
+        }
+        function renderPosts(posts){
+            if(!posts.length) return '<p style="color:#aaa;text-align:center;padding:20px">아직 게시글이 없습니다</p>';
+            return posts.map(p=>{
+                const snippet = p.content ? p.content.replace(/<[^>]+>/g,'').slice(0,80)+'...' : '';
+                return `<div class="post-item" onclick="window.open('${p.url}','_blank')">
+                    <div class="post-title">${p.title}</div>
+                    <div class="post-date">${fmtDate(p.published)}</div>
+                    <div class="post-snippet">${snippet}</div>
+                </div>`;
+            }).join('');
+        }
+        function luckyRow(){
+            return `<div class="lucky-row">
+                <div class="lucky-item"><div class="lucky-label">🎨 행운의 색</div><div class="lucky-val">${rnd(COLORS)}</div></div>
+                <div class="lucky-item"><div class="lucky-label">🔢 행운의 숫자</div><div class="lucky-val">${rndN()}</div></div>
+            </div>`;
+        }
+
+        // ═══════════════════════════════
+        //  운세 CSS (동적 삽입)
+        // ═══════════════════════════════
+        (function(){
+            const s = document.createElement('style');
+            s.textContent = `
+                .ftab{background:#f1f5f9;color:#64748b}
+                .active-ftab{background:#7c3aed;color:#fff}
+                .fhero{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:1.5rem;padding:2.5rem;text-align:center;margin-bottom:1.2rem}
+                .fcard{background:#fff;border-radius:1.4rem;padding:1.6rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+                .lucky-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
+                .lucky-item{flex:1;min-width:120px;background:#f5f3ff;border-radius:1rem;padding:1rem;text-align:center}
+                .lucky-label{font-size:11px;color:#888;margin-bottom:4px}
+                .lucky-val{font-size:22px;font-weight:900;color:#7c3aed}
+                .blog-btn{display:inline-block;background:#4f46e5;color:#fff;padding:10px 22px;border-radius:12px;font-weight:bold;text-decoration:none;font-size:14px;margin-top:8px}
+                .blog-btn:hover{background:#4338ca}
+                .post-item{border-bottom:1px solid #f1f5f9;padding:16px 0;cursor:pointer}
+                .post-item:hover .post-title{color:#7c3aed}
+                .post-title{font-size:15px;font-weight:700;color:#333;margin-bottom:6px;line-height:1.5}
+                .post-date{font-size:12px;color:#aaa}
+                .post-snippet{font-size:13px;color:#666;margin-top:6px;line-height:1.6}
+            `;
+            document.head.appendChild(s);
+        })();
+
+        // ═══════════════════════════════
+        //  이미지 저장
+        // ═══════════════════════════════
+        function saveCard(elId, filename){
+            const el = document.getElementById(elId);
+            if(!el){ alert('저장할 카드가 없습니다'); return; }
+            html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true}).then(canvas=>{
+                const a = document.createElement('a');
+                a.download = filename+'.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+            });
+        }
+
+        // ═══════════════════════════════
+        //  운세 카드 생성
+        // ═══════════════════════════════
+        function makeCard(emoji, name, sub, fortune, color, num, rating, cardId){
+            return `<div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff;max-width:480px;margin:0 auto">
+                <div style="text-align:center;margin-bottom:16px">
+                    <div style="font-size:48px">${emoji}</div>
+                    <div style="font-size:22px;font-weight:900;margin:6px 0">${name}</div>
+                    <div style="opacity:.8;font-size:13px">${sub}</div>
+                    <div style="color:#fde68a;font-size:14px;margin-top:4px">${rating}</div>
+                </div>
+                <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.8;margin-bottom:14px">${fortune}</div>
+                <div style="display:flex;gap:10px">
+                    <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                        <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
+                        <div style="font-weight:900;font-size:16px">${color}</div>
+                    </div>
+                    <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                        <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
+                        <div style="font-weight:900;font-size:22px">${num}</div>
+                    </div>
+                </div>
+                <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
+            </div>`;
+        }
+
+        // ═══════════════════════════════
+        //  오늘의 운세 - 입력 폼
+        // ═══════════════════════════════
+        let _gender = null, _calType = '양력';
+
+        function setGender(v){
+            _gender = v;
+            ['g-male','g-female'].forEach(id=>{
+                const b=document.getElementById(id);
+                if(b){b.style.borderColor='#e2e8f0';b.style.background='#f8fafc';}
+            });
+            const sel = v==='남' ? document.getElementById('g-male') : document.getElementById('g-female');
+            if(sel){sel.style.borderColor='#7c3aed';sel.style.background='#ede9fe';}
+        }
+        function setCalType(v){
+            _calType = v;
+            ['cal-solar','cal-lunar'].forEach(id=>{
+                const b=document.getElementById(id);
+                if(b){b.style.borderColor='#e2e8f0';b.style.background='#f8fafc';}
+            });
+            const sel = v==='양력' ? document.getElementById('cal-solar') : document.getElementById('cal-lunar');
+            if(sel){sel.style.borderColor='#7c3aed';sel.style.background='#ede9fe';}
+        }
+
+        function getChineseZodiac(year){
+            const a=['원숭이','닭','개','돼지','쥐','소','호랑이','토끼','용','뱀','말','양'];
+            const e=['🐵','🐓','🐶','🐷','🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑'];
+            const i=year%12; return {name:a[i]+'띠',emoji:e[i]};
+        }
+        function getZodiacSign(month,day){
+            const s=[
+                {name:'염소자리',emoji:'♑',m:1,d:19},{name:'물병자리',emoji:'♒',m:2,d:18},
+                {name:'물고기자리',emoji:'♓',m:3,d:20},{name:'양자리',emoji:'♈',m:4,d:19},
+                {name:'황소자리',emoji:'♉',m:5,d:20},{name:'쌍둥이자리',emoji:'♊',m:6,d:21},
+                {name:'게자리',emoji:'♋',m:7,d:22},{name:'사자자리',emoji:'♌',m:8,d:22},
+                {name:'처녀자리',emoji:'♍',m:9,d:22},{name:'천칭자리',emoji:'♎',m:10,d:22},
+                {name:'전갈자리',emoji:'♏',m:11,d:21},{name:'사수자리',emoji:'♐',m:12,d:21},
+                {name:'염소자리',emoji:'♑',m:12,d:31},
+            ];
+            for(const x of s){ if(month<x.m||(month===x.m&&day<=x.d)) return x; }
+            return s[0];
+        }
+
+        const TIME_MSG={
+            '모름':'오늘 하루 전반적으로 긍정적인 기운이 감돌고 있습니다.',
+            '00:00':'자정의 신비로운 기운을 타고난 당신, 직관력이 특히 뛰어난 날입니다.',
+            '00:30':'깊은 밤의 고요함이 당신에게 특별한 통찰력을 선사합니다.',
+            '01:00':'새벽 한시의 기운, 창의적인 영감이 넘치는 하루입니다.',
+            '01:30':'고요한 새벽 기운으로 오늘 집중력이 극대화됩니다.',
+            '02:00':'새벽의 차분한 기운으로 냉철한 판단력이 돋보입니다.',
+            '02:30':'깊은 새벽 기운이 오늘 당신의 인내력을 강화합니다.',
+            '03:00':'이른 새벽 기운으로 오늘 새로운 도전에 유리합니다.',
+            '03:30':'새벽 기운이 오늘 당신의 결단력을 높여줍니다.',
+            '04:00':'동트기 전 기운으로 오늘 숨겨진 기회를 포착할 수 있습니다.',
+            '04:30':'새벽빛 기운으로 오늘 선견지명이 발휘됩니다.',
+            '05:00':'여명의 기운으로 오늘 새로운 시작에 최적의 날입니다.',
+            '05:30':'부드러운 새벽빛처럼 오늘 대인관계가 원만합니다.',
+            '06:00':'아침 햇살 기운으로 오늘 활기차고 긍정적인 하루입니다.',
+            '06:30':'상쾌한 아침 기운으로 오늘 업무 효율이 높아집니다.',
+            '07:00':'활기찬 아침 기운으로 오늘 추진력이 강하게 발휘됩니다.',
+            '07:30':'밝은 아침 기운이 오늘 당신의 매력을 높여줍니다.',
+            '08:00':'아침의 활발한 기운으로 오늘 소통과 협력이 빛납니다.',
+            '08:30':'생동감 넘치는 기운으로 오늘 창의력이 폭발합니다.',
+            '09:00':'뜨거운 태양 기운처럼 오늘 열정과 창의력이 넘칩니다.',
+            '09:30':'활발한 오전 기운으로 오늘 중요한 결정을 내리기 좋습니다.',
+            '10:00':'왕성한 기운으로 오늘 모든 일이 순조롭게 풀립니다.',
+            '10:30':'넘치는 에너지로 오늘 목표 달성에 한 발짝 다가갑니다.',
+            '11:00':'정오 앞 기운으로 오늘 재물운과 명예운이 상승합니다.',
+            '11:30':'한낮의 밝은 기운이 오늘 모든 일을 명확하게 해줍니다.',
+            '12:00':'정오의 기운을 받아 오늘 모든 일이 명확하게 풀립니다.',
+            '12:30':'점심 기운으로 오늘 인간관계에서 좋은 소식이 있습니다.',
+            '13:00':'오후의 여유로운 기운으로 오늘 재물운이 상승합니다.',
+            '13:30':'포근한 오후 기운으로 오늘 안정적인 성과를 거둡니다.',
+            '14:00':'활발한 오후 기운으로 오늘 사람들과 좋은 인연이 생깁니다.',
+            '14:30':'오후의 따뜻한 기운이 오늘 감성과 공감 능력을 높입니다.',
+            '15:00':'황금 오후 기운으로 오늘 투자와 재테크에 유리합니다.',
+            '15:30':'풍요로운 기운으로 오늘 예상치 못한 행운이 찾아옵니다.',
+            '16:00':'기울어가는 태양 기운으로 오늘 지혜와 경험이 빛납니다.',
+            '16:30':'늦은 오후 기운으로 오늘 중요한 만남이 이루어집니다.',
+            '17:00':'황혼의 기운처럼 오늘 감성과 예술적 감각이 빛납니다.',
+            '17:30':'노을빛 기운으로 오늘 낭만적인 인연을 기대해보세요.',
+            '18:00':'저녁의 안정된 기운으로 오늘 가족과 사랑운이 좋습니다.',
+            '18:30':'저녁 기운이 오늘 당신의 포용력과 친화력을 높입니다.',
+            '19:00':'밤이 오는 기운으로 오늘 내면의 성찰과 성장이 이루어집니다.',
+            '19:30':'어스름 기운으로 오늘 중요한 결정을 내리기 좋습니다.',
+            '20:00':'밤의 차분한 기운으로 오늘 학습과 자기계발에 최적입니다.',
+            '20:30':'고요한 밤 기운이 오늘 집중력과 분석력을 높입니다.',
+            '21:00':'밤의 신비로운 기운으로 오늘 숨겨진 기회가 찾아옵니다.',
+            '21:30':'깊어가는 밤 기운으로 오늘 직감이 예리하게 작동합니다.',
+            '22:00':'밤의 깊은 기운으로 오늘 장기적인 계획 수립에 유리합니다.',
+            '22:30':'늦은 밤 기운이 오늘 창의적 아이디어를 불러옵니다.',
+            '23:00':'자정 앞 기운으로 오늘 비밀스러운 행운이 따라옵니다.',
+            '23:30':'하루 끝 기운으로 내일을 위한 새로운 에너지가 충전됩니다.',
+        };
+        const OVERALL_MSG=[
+            '오늘은 새로운 시작을 알리는 에너지가 강합니다. 망설이지 말고 첫 발을 내딛으세요.',
+            '주변의 작은 인연을 소중히 여기면 뜻밖의 기회가 생깁니다.',
+            '재물운이 서서히 상승하고 있습니다. 무리한 지출은 자제하세요.',
+            '오랫동안 준비해온 일이 결실을 맺을 조짐이 보입니다.',
+            '건강 관리에 신경 쓰세요. 충분한 수분 섭취와 휴식이 필요합니다.',
+            '새로운 사람과의 만남에서 긍정적인 영향을 받을 수 있습니다.',
+            '오늘 하루 집중력이 높아 학습이나 자기계발에 최적의 날입니다.',
+        ];
+        const GENDER_MSG={
+            '남':['강한 추진력으로 목표를 향해 나아가기 좋은 날입니다.','주변의 신뢰가 높아지는 시기입니다. 리더십을 발휘해보세요.'],
+            '여':['섬세한 감각이 빛을 발하는 날입니다. 직감을 믿어보세요.','주변 사람들과의 관계에서 따뜻한 에너지가 넘칩니다.'],
+        };
+
+        function generateTodayFortune(){
+            const year  = parseInt(document.getElementById('inp-year').value);
+            const month = parseInt(document.getElementById('inp-month').value);
+            const day   = parseInt(document.getElementById('inp-day').value);
+            const time  = document.getElementById('inp-time').value;
+            if(!year||!month||!day){alert('생년월일을 모두 입력해주세요!');return;}
+            if(!_gender){alert('성별을 선택해주세요!');return;}
+            if(year<1930||year>2010){alert('년도를 1930~2010 사이로 입력해주세요!');return;}
+
+            const chinese   = getChineseZodiac(year);
+            const zodiac    = getZodiacSign(month,day);
+            const age       = new Date().getFullYear()-year;
+            const timeMsg   = TIME_MSG[time]||TIME_MSG['모름'];
+            const overall   = rnd(OVERALL_MSG);
+            const genderMsg = rnd(GENDER_MSG[_gender]);
+            const color     = rnd(COLORS);
+            const num       = rndN();
+            const rating    = rnd(RATINGS);
+
+            const result = document.getElementById('today-result');
+            result.innerHTML = `
+                <div class="fcard">
+                    <div id="today-card" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff">
+                        <div style="text-align:center;margin-bottom:18px">
+                            <div style="font-size:13px;opacity:.8;margin-bottom:4px">${_calType} · ${year}년 ${month}월 ${day}일 · ${time}</div>
+                            <div style="font-size:26px;font-weight:900">${_gender==='남'?'👨':'👩'} ${_gender}성 · 만 ${age}세</div>
+                            <div style="margin-top:8px;font-size:15px;opacity:.9">${chinese.emoji} ${chinese.name} &nbsp;·&nbsp; ${zodiac.emoji} ${zodiac.name}</div>
+                            <div style="color:#fde68a;margin-top:4px">${rating}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:14px;margin-bottom:10px">
+                            <div style="font-size:11px;opacity:.8;margin-bottom:4px">⏰ ${time} 기운</div>
+                            <div style="font-size:14px;line-height:1.8">${timeMsg}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:14px;margin-bottom:10px">
+                            <div style="font-size:11px;opacity:.8;margin-bottom:4px">🔮 오늘의 운세</div>
+                            <div style="font-size:14px;line-height:1.8">${overall}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:14px;margin-bottom:14px">
+                            <div style="font-size:11px;opacity:.8;margin-bottom:4px">${_gender==='남'?'👨':'👩'} ${_gender}성 운세</div>
+                            <div style="font-size:14px;line-height:1.8">${genderMsg}</div>
+                        </div>
+                        <div style="display:flex;gap:10px">
+                            <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
+                                <div style="font-weight:900;font-size:16px">${color}</div>
+                            </div>
+                            <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                                <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
+                                <div style="font-weight:900;font-size:22px">${num}</div>
+                            </div>
+                        </div>
+                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                        <button onclick="saveCard('today-card','오늘의운세_${year}${month}${day}')"
+                            style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                            📸 이미지 저장
+                        </button>
+                        <button onclick="generateTodayFortune()"
+                            style="background:#e2e8f0;color:#444;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
+                            🔄 다시 보기
+                        </button>
+                    </div>
+                </div>`;
+            result.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+
+        // ═══════════════════════════════
+        //  별자리 / 띠 선택
+        // ═══════════════════════════════
+        const ZODIACS_LIST=[
+            {kr:'양자리',date:'3/21~4/19',emoji:'♈'},{kr:'황소자리',date:'4/20~5/20',emoji:'♉'},
+            {kr:'쌍둥이자리',date:'5/21~6/21',emoji:'♊'},{kr:'게자리',date:'6/22~7/22',emoji:'♋'},
+            {kr:'사자자리',date:'7/23~8/22',emoji:'♌'},{kr:'처녀자리',date:'8/23~9/22',emoji:'♍'},
+            {kr:'천칭자리',date:'9/23~10/22',emoji:'♎'},{kr:'전갈자리',date:'10/23~11/21',emoji:'♏'},
+            {kr:'사수자리',date:'11/22~12/21',emoji:'♐'},{kr:'염소자리',date:'12/22~1/19',emoji:'♑'},
+            {kr:'물병자리',date:'1/20~2/18',emoji:'♒'},{kr:'물고기자리',date:'2/19~3/20',emoji:'♓'},
+        ];
+        const CHINESE_LIST=[
+            {kr:'쥐띠',year:'1960,1972,1984,1996,2008,2020',emoji:'🐭'},
+            {kr:'소띠',year:'1961,1973,1985,1997,2009,2021',emoji:'🐮'},
+            {kr:'호랑이띠',year:'1962,1974,1986,1998,2010,2022',emoji:'🐯'},
+            {kr:'토끼띠',year:'1963,1975,1987,1999,2011,2023',emoji:'🐰'},
+            {kr:'용띠',year:'1964,1976,1988,2000,2012,2024',emoji:'🐲'},
+            {kr:'뱀띠',year:'1965,1977,1989,2001,2013,2025',emoji:'🐍'},
+            {kr:'말띠',year:'1966,1978,1990,2002,2014,2026',emoji:'🐴'},
+            {kr:'양띠',year:'1967,1979,1991,2003,2015,2027',emoji:'🐑'},
+            {kr:'원숭이띠',year:'1968,1980,1992,2004,2016,2028',emoji:'🐵'},
+            {kr:'닭띠',year:'1969,1981,1993,2005,2017,2029',emoji:'🐓'},
+            {kr:'개띠',year:'1970,1982,1994,2006,2018,2030',emoji:'🐶'},
+            {kr:'돼지띠',year:'1971,1983,1995,2007,2019,2031',emoji:'🐷'},
+        ];
+        const FORTUNE_MSGS=[
+            '오늘은 새로운 시작을 알리는 에너지가 강합니다. 적극적으로 움직이면 좋은 결과가 따라옵니다.',
+            '주변 사람들과의 소통이 큰 도움이 됩니다. 열린 마음으로 대화해보세요.',
+            '작은 노력이 큰 결실을 맺는 하루가 될 것입니다. 꾸준함이 핵심입니다.',
+            '예상치 못한 좋은 소식이 들려올 수 있습니다. 기대감을 가져보세요.',
+            '재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.',
+        ];
+
+        let _selZodiac=null, _selChinese=null, _selZodiacWeekly=null, _selChineseMonthly=null;
+
+        const WEEKLY_MSGS=[
+            '이번 주는 새로운 도전을 시작하기에 최적의 시기입니다. 용기를 내어 첫 발을 내딛어 보세요.',
+            '주변 사람들과의 협력이 큰 성과를 가져옵니다. 팀워크를 발휘하세요.',
+            '이번 주 재물운이 상승세입니다. 현명한 소비와 투자를 고려해보세요.',
+            '중요한 결정을 내려야 할 시기입니다. 직감을 믿고 신중하게 판단하세요.',
+            '인간관계에서 긍정적인 변화가 생깁니다. 먼저 손을 내밀어 보세요.',
+        ];
+        const MONTHLY_MSGS=[
+            '이달은 새로운 시작과 변화의 달입니다. 오랫동안 미뤄온 일을 시작해보세요.',
+            '이달 재물운이 꾸준히 상승합니다. 장기적인 계획을 세우기 좋은 때입니다.',
+            '건강 관리에 특별히 신경 써야 할 달입니다. 규칙적인 생활 습관을 유지하세요.',
+            '이달 귀인이 나타나 도움을 줄 것입니다. 주변 인연을 소중히 여기세요.',
+            '이달은 내면의 성장과 자기 개발에 집중하기 좋은 시기입니다.',
+        ];
+
+        function selectZodiacWeekly(kr){
+            _selZodiacWeekly=kr;
+            document.querySelectorAll('[id^="zwsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('zwsel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const z=ZODIACS_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('zodiac-weekly-area');
+            const days=['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
+            const dayRows=days.map(d=>`<div style="background:#f8f7ff;border-radius:10px;padding:12px;margin-bottom:8px">
+                <strong style="color:#7c3aed">${d}</strong>
+                <span style="font-size:13px;color:#555;margin-left:8px">${rnd(FORTUNE_MSGS).slice(0,35)}...</span>
+            </div>`).join('');
+            area.innerHTML=`<div class="fcard">
+                <div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:16px" id="zwcard">
+                    <div style="font-size:36px">${z.emoji}</div>
+                    <div style="font-size:20px;font-weight:900;margin:6px 0">${z.kr} 주간운세</div>
+                    <div style="opacity:.8;font-size:13px">${weekRange()}</div>
+                    <div style="color:#fde68a;margin-top:4px">${rnd(RATINGS)}</div>
+                    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-top:14px;font-size:14px;line-height:1.8">${rnd(WEEKLY_MSGS)}</div>
+                    <div style="margin-top:14px">${dayRows}</div>
+                    <div style="display:flex;gap:10px;margin-top:12px">
+                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:11px;opacity:.8">🎨 이번 주 행운의 색</div>
+                            <div style="font-weight:900;font-size:16px">${rnd(COLORS)}</div>
+                        </div>
+                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:11px;opacity:.8">🔢 이번 주 행운의 숫자</div>
+                            <div style="font-weight:900;font-size:22px">${rndN()}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${weekRange()}</div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                    <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
+                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
+                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+                </div>
+            </div>`;
+        }
+
+        function selectChineseMonthly(kr){
+            _selChineseMonthly=kr;
+            document.querySelectorAll('[id^="cmsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('cmsel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const ch=CHINESE_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('chinese-monthly-area');
+            const periods=[['상순 (1~10일)',rnd(MONTHLY_MSGS)],['중순 (11~20일)',rnd(MONTHLY_MSGS)],['하순 (21~말일)',rnd(MONTHLY_MSGS)]];
+            const periodRows=periods.map(([p,m])=>`<div style="background:#fffbf0;border-left:4px solid #f7b731;border-radius:8px;padding:12px 14px;margin-bottom:8px">
+                <strong style="color:#92400e">${p}</strong><br>
+                <span style="font-size:13px;color:#555;line-height:1.7">${m}</span>
+            </div>`).join('');
+            area.innerHTML=`<div class="fcard">
+                <div style="background:linear-gradient(135deg,#f093fb,#f5576c);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:16px" id="cmcard">
+                    <div style="font-size:36px">${ch.emoji}</div>
+                    <div style="font-size:20px;font-weight:900;margin:6px 0">${ch.kr} 월간운세</div>
+                    <div style="opacity:.8;font-size:13px">${monthStr()}</div>
+                    <div style="color:#fde68a;margin-top:4px">${rnd(RATINGS)}</div>
+                    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-top:14px;font-size:14px;line-height:1.8">${rnd(MONTHLY_MSGS)}</div>
+                    <div style="margin-top:14px">${periodRows}</div>
+                    <div style="display:flex;gap:10px;margin-top:12px">
+                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:11px;opacity:.8">🎨 이달의 행운의 색</div>
+                            <div style="font-weight:900;font-size:16px">${rnd(COLORS)}</div>
+                        </div>
+                        <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:11px;opacity:.8">🔢 이달의 행운의 숫자</div>
+                            <div style="font-weight:900;font-size:22px">${rndN()}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${monthStr()}</div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                    <button onclick="saveCard('cmcard','띠월간운세_${kr}')"
+                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
+                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+                </div>
+            </div>`;
+        }
+
+        function selectZodiac(kr){
+            _selZodiac=kr;
+            document.querySelectorAll('[id^="zsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('zsel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const z=ZODIACS_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('zodiac-card-area');
+            area.innerHTML=`<div class="fcard">
+                ${makeCard(z.emoji,z.kr,z.date,rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'zcard')}
+                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                    <button onclick="saveCard('zcard','별자리운세_${kr}')"
+                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
+                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+                </div>
+            </div>`;
+        }
+
+        function selectChinese(kr){
+            _selChinese=kr;
+            document.querySelectorAll('[id^="csel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('csel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const ch=CHINESE_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('chinese-card-area');
+            area.innerHTML=`<div class="fcard">
+                ${makeCard(ch.emoji,ch.kr,ch.year.split(',').slice(0,3).join(',')+' ...',rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'ccard')}
+                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                    <button onclick="saveCard('ccard','띠운세_${kr}')"
+                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
+                    <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+                </div>
+            </div>`;
+        }
+
+        // ═══════════════════════════════
+        //  탭 전환
+        // ═══════════════════════════════
+        async function showFortune(type){
+            document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active-ftab'));
+            const tabEl = document.getElementById('tab-'+type);
+            if(tabEl) tabEl.classList.add('active-ftab');
+            const c=document.getElementById('fortune-content');
+            c.innerHTML='<div style="text-align:center;padding:60px;color:#aaa">⏳ 불러오는 중...</div>';
+
+            if(type==='today'){
+                c.innerHTML=`
+                    <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌟 오늘의 운세</h2><p style="opacity:.85">${todayStr()}</p></div>
+                    <div class="fcard">
+                        <div style="font-weight:900;font-size:17px;margin-bottom:18px;color:#7c3aed">✏️ 정보 입력</div>
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">성별</div>
+                            <div style="display:flex;gap:10px">
+                                <button onclick="setGender('남')" id="g-male" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">👨 남성</button>
+                                <button onclick="setGender('여')" id="g-female" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">👩 여성</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일 구분</div>
+                            <div style="display:flex;gap:10px">
+                                <button onclick="setCalType('양력')" id="cal-solar" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">☀️ 양력</button>
+                                <button onclick="setCalType('음력')" id="cal-lunar" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:700;cursor:pointer;font-size:15px">🌙 음력</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일</div>
+                            <div style="display:flex;gap:8px">
+                                <input id="inp-year" type="number" placeholder="년(4자리)" min="1930" max="2010" style="flex:2;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                                <input id="inp-month" type="number" placeholder="월" min="1" max="12" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                                <input id="inp-day" type="number" placeholder="일" min="1" max="31" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;text-align:center">
+                            </div>
+                        </div>
+                        <div style="margin-bottom:20px">
+                            <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">태어난 시간</div>
+                            <select id="inp-time" style="width:100%;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;background:#f8fafc">
+                                <option value="모름">⏰ 모름</option>
+                                <option value="00:00">00:00</option><option value="00:30">00:30</option>
+                                <option value="01:00">01:00</option><option value="01:30">01:30</option>
+                                <option value="02:00">02:00</option><option value="02:30">02:30</option>
+                                <option value="03:00">03:00</option><option value="03:30">03:30</option>
+                                <option value="04:00">04:00</option><option value="04:30">04:30</option>
+                                <option value="05:00">05:00</option><option value="05:30">05:30</option>
+                                <option value="06:00">06:00</option><option value="06:30">06:30</option>
+                                <option value="07:00">07:00</option><option value="07:30">07:30</option>
+                                <option value="08:00">08:00</option><option value="08:30">08:30</option>
+                                <option value="09:00">09:00</option><option value="09:30">09:30</option>
+                                <option value="10:00">10:00</option><option value="10:30">10:30</option>
+                                <option value="11:00">11:00</option><option value="11:30">11:30</option>
+                                <option value="12:00">12:00</option><option value="12:30">12:30</option>
+                                <option value="13:00">13:00</option><option value="13:30">13:30</option>
+                                <option value="14:00">14:00</option><option value="14:30">14:30</option>
+                                <option value="15:00">15:00</option><option value="15:30">15:30</option>
+                                <option value="16:00">16:00</option><option value="16:30">16:30</option>
+                                <option value="17:00">17:00</option><option value="17:30">17:30</option>
+                                <option value="18:00">18:00</option><option value="18:30">18:30</option>
+                                <option value="19:00">19:00</option><option value="19:30">19:30</option>
+                                <option value="20:00">20:00</option><option value="20:30">20:30</option>
+                                <option value="21:00">21:00</option><option value="21:30">21:30</option>
+                                <option value="22:00">22:00</option><option value="22:30">22:30</option>
+                                <option value="23:00">23:00</option><option value="23:30">23:30</option>
+                            </select>
+                        </div>
+                        <button onclick="generateTodayFortune()" style="width:100%;padding:16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer">
+                            🔮 오늘의 운세 보기
+                        </button>
+                    </div>
+                    <div id="today-result"></div>`;
+                if(_gender) setGender(_gender);
+                setCalType(_calType);
+            }
+
+            else if(type==='zodiac'){
+                c.innerHTML=`<div class="fcard">
+                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">✨ 내 별자리 선택</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+                        ${ZODIACS_LIST.map(z=>`<button onclick="selectZodiac('${z.kr}')" id="zsel-${z.kr}"
+                            style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;font-size:13px;font-weight:700">
+                            ${z.emoji}<br>${z.kr}<br><span style="font-size:10px;color:#aaa">${z.date}</span>
+                        </button>`).join('')}
+                    </div>
+                </div>
+                <div id="zodiac-card-area"></div>`;
+                if(_selZodiac) selectZodiac(_selZodiac);
+            }
+
+            else if(type==='chinese'){
+                c.innerHTML=`<div class="fcard">
+                    <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">🐾 내 띠 선택</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+                        ${CHINESE_LIST.map(ch=>`<button onclick="selectChinese('${ch.kr}')" id="csel-${ch.kr}"
+                            style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;font-size:13px;font-weight:700">
+                            ${ch.emoji}<br>${ch.kr}<br><span style="font-size:10px;color:#aaa">${ch.year.split(',').slice(0,2).join(',')}..</span>
+                        </button>`).join('')}
+                    </div>
+                </div>
+                <div id="chinese-card-area"></div>`;
+                if(_selChinese) selectChinese(_selChinese);
+            }
+
+            else if(type==='weekly'){
+                c.innerHTML=`
+                    <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">📅 별자리 주간 운세</h2><p style="opacity:.85">${weekRange()}</p></div>
+                    <div class="fcard">
+                        <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">✨ 내 별자리 선택</div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+                            ${ZODIACS_LIST.map(z=>`<button onclick="selectZodiacWeekly('${z.kr}')" id="zwsel-${z.kr}"
+                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;font-size:13px;font-weight:700">
+                                ${z.emoji}<br>${z.kr}<br><span style="font-size:10px;color:#aaa">${z.date}</span>
+                            </button>`).join('')}
+                        </div>
+                    </div>
+                    <div id="zodiac-weekly-area"></div>`;
+                if(_selZodiacWeekly) selectZodiacWeekly(_selZodiacWeekly);
+            }
+
+            else if(type==='monthly'){
+                c.innerHTML=`
+                    <div class="fhero"><h2 style="font-size:24px;margin-bottom:6px">🌙 띠별 월간 운세</h2><p style="opacity:.85">${monthStr()}</p></div>
+                    <div class="fcard">
+                        <div style="font-weight:900;font-size:16px;margin-bottom:14px;color:#7c3aed">🐾 내 띠 선택</div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+                            ${CHINESE_LIST.map(ch=>`<button onclick="selectChineseMonthly('${ch.kr}')" id="cmsel-${ch.kr}"
+                                style="background:#f5f3ff;border:2px solid transparent;border-radius:12px;padding:10px 6px;cursor:pointer;font-size:13px;font-weight:700">
+                                ${ch.emoji}<br>${ch.kr}<br><span style="font-size:10px;color:#aaa">${ch.year.split(',').slice(0,2).join(',')}..</span>
+                            </button>`).join('')}
+                        </div>
+                    </div>
+                    <div id="chinese-monthly-area"></div>`;
+                if(_selChineseMonthly) selectChineseMonthly(_selChineseMonthly);
+            }
+
+            // 날짜 표시
+            const dateEl = document.getElementById('fortune-date');
+            if(dateEl) dateEl.textContent = todayStr();
+        }
     </script>
 </body>
 </html>
