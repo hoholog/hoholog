@@ -358,9 +358,20 @@ def build_chinese_post(c, today_str):
     title = seo_title(f"{c['kr']} {today_str}")
     card_id = f"fc-{c['en']}"
 
-    # 출생연도 표시
+    # 출생연도별 각각 다른 운세
     years = c['year'].split(',')
-    years_html = " · ".join([f"{y}년생" for y in years])
+    year_rows = ""
+    for y in years:
+        yr_fortune = chinese_fortune(c['en'])
+        yr_color = pick_color()
+        yr_number = pick_number()
+        year_rows += f'''<div style="border-bottom:1px solid #ede9fe;padding:12px 0;display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:72px;background:#7c3aed;color:#fff;border-radius:8px;padding:6px 10px;text-align:center;font-size:13px;font-weight:700">{y}년생</div>
+            <div style="flex:1">
+                <div style="font-size:13px;color:#444;line-height:1.7;margin-bottom:4px">{yr_fortune}</div>
+                <div style="font-size:11px;color:#888">🎨 {yr_color} &nbsp; 🔢 {yr_number}</div>
+            </div>
+        </div>'''
 
     years_tags = [f"{y}년생 운세" for y in years[:4]]
     kw_list = [
@@ -375,9 +386,9 @@ def build_chinese_post(c, today_str):
 <div class="wrap">
   <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
 
-  <div class="card" style="text-align:center;background:#f8f0ff">
-    <span class="badge">📅 해당 출생연도</span>
-    <p style="font-size:14px;color:#6c3483;font-weight:700;margin-top:8px;line-height:2">{years_html}</p>
+  <div class="card">
+    <span class="badge">{c['emoji']} {c['kr']} 출생연도별 오늘 운세</span>
+    <div style="margin-top:8px">{year_rows}</div>
   </div>
 
   <div id="{card_id}" class="fortune-card">
