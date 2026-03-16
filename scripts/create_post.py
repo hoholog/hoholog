@@ -417,6 +417,15 @@ def build_chinese_post(c, today_str):
     return title, content, ["띠운세", c['kr'], "운세"]
 
 
+def zodiac_weekly_fortune(kr_name):
+    """주간 운세 CSV에서 가져오기"""
+    if not zodiac_weekly.empty and 'zodiac' in zodiac_weekly.columns:
+        m = zodiac_weekly[zodiac_weekly['zodiac'] == kr_name]
+        if not m.empty:
+            text = m.sample(1).iloc[0]['fortune']
+            return str(text).replace('\n\n', '<br><br>').replace('\n', '<br>')
+    return sentence()
+
 def build_zodiac_weekly_post(today_str):
     """12별자리 주간운세 한 페이지"""
     week_range = get_week_range()
@@ -424,24 +433,18 @@ def build_zodiac_weekly_post(today_str):
 
     cards_html = ""
     for z in ZODIACS:
-        fortune = zodiac_fortune(z['kr'])
+        fortune = zodiac_weekly_fortune(z['kr'])
         color = pick_color()
         number = pick_number()
         rating = stars()
-        days = ["월","화","수","목","금","토","일"]
-        day_html = "".join(
-            f'<div class="week-day"><strong>{d}요일</strong> — {sentence()[:35]}...</div>'
-            for d in days
-        )
         cards_html += f"""
   <div class="card">
     <span class="badge">{z['emoji']} {z['kr']} ({z['date']}) {rating}</span>
-    <p>{fortune}</p>
+    <p style="line-height:1.9">{fortune}</p>
     <div class="lucky">
       <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
-    <br>{day_html}
   </div>"""
 
     content = f"""{style()}
