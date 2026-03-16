@@ -33,6 +33,8 @@ daily_365         = csv("daily_fortunes_365.csv")
 fortune_365       = csv("fortune_365_days.csv")
 fortune_quotes    = csv("fortune_quotes_10000.csv")   # ← 오늘의명언용
 zodiac_kr         = csv("zodiac_fortune_1000.csv")
+fortune_score     = csv("fortune_score.csv")          # ← 운세 지수
+lucky_items       = csv("lucky_items_1000.csv")        # ← 행운의 아이템 (별자리용)
 chinese_zodiac    = csv("chinese_zodiac_fortunes.csv")
 colors_200        = csv("lucky_colors_200.csv")
 numbers_500       = csv("lucky_numbers_500.csv")
@@ -136,6 +138,43 @@ def monthly_fortune_general():
         row = monthly_500.sample(1).iloc[0]
         return row['sentence'], row.get('advice', '')
     return sentence(), ""
+
+def pick_score(name):
+    """운세 지수 랜덤 선택"""
+    if not fortune_score.empty and 'zodiac' in fortune_score.columns:
+        m = fortune_score[fortune_score['zodiac'] == name]
+        if not m.empty:
+            row = m.sample(1).iloc[0]
+            return int(row['total']), int(row['money']), int(row['health']), int(row['love'])
+    # 백업 랜덤
+    return random.randint(60,95), random.randint(45,99), random.randint(50,99), random.randint(40,99)
+
+def score_bar(label, emoji, pct, color):
+    """운세 지수 막대 그래프 HTML"""
+    filled = round(pct / 10)
+    bar = '█' * filled + '░' * (10 - filled)
+    return f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="min-width:70px;font-size:13px">{emoji} {label}</span><span style="font-family:monospace;color:{color};font-size:14px">{bar}</span><span style="font-size:13px;font-weight:700;color:{color}">{pct}%</span></div>'
+
+def score_card(name):
+    """운세 지수 카드 HTML"""
+    total, money, health, love = pick_score(name)
+    return f'''<div class="card" style="background:#f8f0ff">
+    <span class="badge">📊 오늘의 운세 지수</span>
+    <div style="margin-top:10px">
+        {score_bar("종합운", "🌟", total,  "#6c3483")}
+        {score_bar("금전운", "💰", money,  "#d4ac0d")}
+        {score_bar("건강운", "💪", health, "#1e8449")}
+        {score_bar("애정운", "❤️", love,   "#e74c3c")}
+    </div>
+</div>'''
+
+def pick_lucky_item(zodiac_name):
+    """별자리 행운의 아이템 선택"""
+    if not lucky_items.empty and 'zodiac' in lucky_items.columns:
+        m = lucky_items[lucky_items['zodiac'] == zodiac_name]
+        if not m.empty:
+            return m.sample(1).iloc[0]['item']
+    return random.choice(['수정 팔찌', '네잎클로버', '파란 돌', '은반지', '향초'])
 
 def pick_color():
     if not colors_200.empty and 'color' in colors_200.columns:
@@ -269,6 +308,7 @@ def build_zodiac_post(z, today_str):
     color = pick_color()
     number = pick_number()
     rating = stars()
+    lucky_item = pick_lucky_item(z['kr'])
     title = seo_title(f"{z['kr']} {today_str}")
     card_id = f"fc-{z['en']}"
 
@@ -292,6 +332,7 @@ def build_zodiac_post(z, today_str):
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
     <div class="fc-lucky">
+      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎁 행운의 아이템</div><div class="fc-lucky-val" style="font-size:13px">{lucky_item}</div></div>
       <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎨 행운의 색</div><div class="fc-lucky-val">{color}</div></div>
       <div class="fc-lucky-box"><div class="fc-lucky-lbl">🔢 행운의 숫자</div><div class="fc-lucky-val">{number}</div></div>
     </div>
@@ -299,6 +340,8 @@ def build_zodiac_post(z, today_str):
   </div>
 
   <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{z['kr']}_운세_{today_str}')">📸 이미지 저장</button>
+
+  {score_card(z['kr'])}
 
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{z['kr']} ({z['date']})</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
@@ -315,24 +358,32 @@ def build_chinese_post(c, today_str):
     title = seo_title(f"{c['kr']} {today_str}")
     card_id = f"fc-{c['en']}"
 
+    # 출생연도 표시
     years = c['year'].split(',')
-    year_tags = [f"{y}년생 운세" for y in years[:4]]
+    years_html = " · ".join([f"{y}년생" for y in years])
+
+    years_tags = [f"{y}년생 운세" for y in years[:4]]
     kw_list = [
         c['kr'], f"{c['kr']} 오늘운세", f"{c['kr']} 운세",
         f"{c['kr']} 오늘의운세", f"{c['kr']} 2026",
         f"{c['kr']} 띠운세", f"띠운세 {c['kr']}",
         f"{c['kr']} {today_str}", "오늘의운세", "띠운세", "운세"
-    ] + year_tags
+    ] + years_tags
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
 
     content = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
 
+  <div class="card" style="text-align:center;background:#f8f0ff">
+    <span class="badge">📅 해당 출생연도</span>
+    <p style="font-size:14px;color:#6c3483;font-weight:700;margin-top:8px;line-height:2">{years_html}</p>
+  </div>
+
   <div id="{card_id}" class="fortune-card">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']}</div>
-    <div class="fc-sub">{today_str} · {c['year'].split(',')[0]}년생~</div>
+    <div class="fc-sub">{today_str}</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
     <div class="fc-lucky">
@@ -343,6 +394,8 @@ def build_chinese_post(c, today_str):
   </div>
 
   <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{c['kr']}_운세_{today_str}')">📸 이미지 저장</button>
+
+  {score_card(c['kr'])}
 
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
