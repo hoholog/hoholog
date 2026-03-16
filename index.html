@@ -873,20 +873,43 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const z=ZODIACS_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('zodiac-weekly-area');
-            const days=['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
-            const dayRows=days.map(d=>`<div style="background:#f8f7ff;border-radius:10px;padding:12px;margin-bottom:8px">
-                <strong style="color:#7c3aed">${d}</strong>
-                <span style="font-size:13px;color:#555;margin-left:8px">${rnd(FORTUNE_MSGS).replace(/<br><br>/g,' ').replace(/<br>/g,' ').slice(0,40)}...</span>
-            </div>`).join('');
+
+            // 주간 운세 내용 (인트로 + 요일별)
+            const weekIntros=[
+                `이번 주 ${z.kr}에게는 새로운 흐름이 시작됩니다. 지난 주의 피로를 털어내고 가볍게 발걸음을 내딛어보세요. 주변의 작은 변화들이 큰 기회로 이어질 수 있는 시기입니다.`,
+                `이번 주 ${z.kr}의 에너지는 전반적으로 상승세입니다. 그동안 준비해온 것들이 서서히 빛을 발하기 시작합니다. 자신감을 갖고 한 걸음씩 나아가보세요.`,
+                `이번 주 ${z.kr}에게는 인내와 성장의 시간이 주어집니다. 결과가 눈에 보이지 않더라도 포기하지 마세요. 당신의 노력은 반드시 아름다운 결실이 됩니다.`,
+                `이번 주 ${z.kr}는 직관력이 특히 뛰어난 시기입니다. 중요한 결정 앞에서 마음의 소리에 귀 기울여보세요.`,
+            ];
+            const dayMsgs={
+                '월':['이번 주의 첫 걸음이 중요합니다. 무리하지 말고 우선순위를 정해 차분하게 시작해보세요.','새로운 한 주의 시작입니다. 오늘의 작은 실천이 일주일 전체의 방향을 만들어갑니다.'],
+                '화':['소통과 협력에 좋은 에너지가 흐릅니다. 중요한 대화가 있다면 오늘이 적기입니다.','화요일의 기운이 창의력을 자극합니다. 새로운 아이디어가 떠오른다면 메모해두세요.'],
+                '수':['한 주의 중간 지점입니다. 지금까지의 진행 상황을 점검하고 필요한 부분을 조정해보세요.','집중력이 높아지는 날입니다. 중요한 업무나 학습에 몰두하기 좋은 시간입니다.'],
+                '목':['실행력이 높아지는 날입니다. 머릿속에만 있던 계획을 행동으로 옮겨보세요.','주변에서 의미 있는 정보나 조언이 들려올 수 있습니다. 귀를 열고 경청해보세요.'],
+                '금':['한 주의 마무리가 가까워지고 있습니다. 오늘 하루를 활기차게 마무리하면 주말이 더욱 풍요로워집니다.','가까운 사람과 따뜻한 시간을 나눠보세요. 감사함을 표현하기 좋은 날입니다.'],
+                '토':['기다리던 주말입니다. 평소 하지 못했던 취미나 휴식으로 몸과 마음을 재충전해보세요.','창의적인 활동에 특히 좋은 에너지가 흐릅니다. 좋아하는 것에 집중해보세요.'],
+                '일':['한 주를 차분히 돌아보는 시간을 가져보세요. 잘한 일은 스스로 칭찬해보세요.','충분한 휴식이 내일의 새로운 시작을 위한 가장 좋은 준비입니다. 스스로를 쉬게 해주세요.'],
+            };
+
+            const intro = rnd(weekIntros);
+            const dayRows = Object.entries(dayMsgs).map(([d,msgs])=>
+                `<div style="border-bottom:1px solid rgba(255,255,255,.15);padding:10px 0;display:flex;gap:10px;align-items:flex-start">
+                    <span style="min-width:28px;background:rgba(255,255,255,.2);border-radius:6px;padding:3px 6px;font-size:11px;font-weight:700;text-align:center">${d}</span>
+                    <span style="font-size:13px;line-height:1.7;opacity:.9">${rnd(msgs)}</span>
+                </div>`
+            ).join('');
+
             area.innerHTML=`<div class="fcard">
-                <div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:16px" id="zwcard">
-                    <div style="font-size:36px">${z.emoji}</div>
-                    <div style="font-size:20px;font-weight:900;margin:6px 0">${z.kr} 주간운세</div>
-                    <div style="opacity:.8;font-size:13px">${weekRange()}</div>
-                    <div style="color:#fde68a;margin-top:4px">${rnd(RATINGS)}</div>
-                    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-top:14px;font-size:14px;line-height:1.8">${rnd(WEEKLY_MSGS)}</div>
-                    <div style="margin-top:14px">${dayRows}</div>
-                    <div style="display:flex;gap:10px;margin-top:12px">
+                <div id="zwcard" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:22px;color:#fff">
+                    <div style="text-align:center;margin-bottom:16px">
+                        <div style="font-size:36px">${z.emoji}</div>
+                        <div style="font-size:20px;font-weight:900;margin:6px 0">${z.kr} 주간운세</div>
+                        <div style="opacity:.8;font-size:13px">${weekRange()}</div>
+                        <div style="color:#fde68a;margin-top:4px">${rnd(RATINGS)}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-bottom:14px;font-size:14px;line-height:1.85">${intro}</div>
+                    <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px">${dayRows}</div>
+                    <div style="display:flex;gap:10px;margin-top:14px">
                         <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
                             <div style="font-size:11px;opacity:.8">🎨 이번 주 행운의 색</div>
                             <div style="font-weight:900;font-size:16px">${rnd(COLORS)}</div>
@@ -898,7 +921,7 @@
                     </div>
                     <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${weekRange()}</div>
                 </div>
-                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
                     <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
                         style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
                     <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
