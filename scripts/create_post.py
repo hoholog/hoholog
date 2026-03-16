@@ -33,7 +33,6 @@ daily_365         = csv("daily_fortunes_365.csv")
 fortune_365       = csv("fortune_365_days.csv")
 fortune_quotes    = csv("fortune_quotes_10000.csv")   # ← 오늘의명언용
 zodiac_kr         = csv("zodiac_fortune_1000.csv")
-zodiac12          = csv("zodiac12_fortune_1000.csv")
 chinese_zodiac    = csv("chinese_zodiac_fortunes.csv")
 colors_200        = csv("lucky_colors_200.csv")
 numbers_500       = csv("lucky_numbers_500.csv")
@@ -113,11 +112,10 @@ def daily_fortune():
     return sentence()
 
 def zodiac_fortune(kr_name):
-    for df in [zodiac_kr, zodiac12]:
-        if not df.empty and 'zodiac' in df.columns:
-            m = df[df['zodiac'] == kr_name]
-            if not m.empty:
-                return m.sample(1).iloc[0]['fortune']
+    if not zodiac_kr.empty and 'zodiac' in zodiac_kr.columns:
+        m = zodiac_kr[zodiac_kr['zodiac'] == kr_name]
+        if not m.empty:
+            return m.sample(1).iloc[0]['fortune']
     return sentence()
 
 def chinese_fortune(en_name):
