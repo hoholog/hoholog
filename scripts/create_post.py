@@ -146,7 +146,9 @@ def pick_color():
 
 def pick_number():
     if not numbers_500.empty and 'number' in numbers_500.columns:
-        return str(numbers_500.sample(1).iloc[0]['number'])
+        num = numbers_500.sample(1).iloc[0]['number']
+        # 1~99 범위로 제한
+        return str(int(num) % 99 + 1)
     return str(random.randint(1, 99))
 
 def seo_title(target):
@@ -246,13 +248,9 @@ def site_link():
 
 def build_quote_post(today_str):
     quote, meaning, category = pick_quote()
-    quote2, meaning2, _ = pick_quote()
-    color = pick_color()
-    number = pick_number()
     title = seo_title(f"{today_str} 오늘의 명언")
     cat_badge = f" · {category}" if category and str(category) != 'nan' else ""
     meaning_html = f'<br><p style="font-size:14px;color:#666;line-height:1.8">{meaning}</p>' if meaning and str(meaning) != 'nan' else ""
-    meaning2_html = f'<br><p style="font-size:13px;color:#888;line-height:1.7">{meaning2}</p>' if meaning2 and str(meaning2) != 'nan' else ""
 
     content = f"""{style()}
 <div class="wrap">
@@ -261,15 +259,6 @@ def build_quote_post(today_str):
     <span class="badge">✨ 오늘의 명언{cat_badge}</span>
     <p style="font-size:17px;font-weight:700;line-height:1.9;color:#4a235a">❝ {quote} ❞</p>
     {meaning_html}
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
-    </div>
-  </div>
-  <div class="card">
-    <span class="badge">🌟 한 줄 더</span>
-    <p style="font-size:15px;line-height:1.85;color:#444">❝ {quote2} ❞</p>
-    {meaning2_html}
   </div>
   {site_link()}
   <div class="meta">※ 매일 자정 업데이트 · 오늘의 명언</div>
