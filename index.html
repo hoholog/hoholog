@@ -971,15 +971,30 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const ch=CHINESE_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('chinese-card-area');
-            const yearsHtml = ch.year.split(',').map(y=>`${y}년생`).join(' · ');
+
+            // 출생연도별 각각 다른 운세
+            const years = ch.year.split(',');
+            const yearRows = years.map(y => {
+                const msg = rnd(FORTUNE_MSGS);
+                const lc = rnd(COLORS);
+                const ln = rndN();
+                return `<div style="border-bottom:1px solid #ede9fe;padding:12px 0;display:flex;align-items:flex-start;gap:12px">
+                    <div style="min-width:72px;background:#7c3aed;color:#fff;border-radius:8px;padding:6px 10px;text-align:center;font-size:13px;font-weight:700">${y}년생</div>
+                    <div style="flex:1">
+                        <div style="font-size:13px;color:#444;line-height:1.7;margin-bottom:4px">${msg}</div>
+                        <div style="font-size:11px;color:#888">🎨 ${lc} &nbsp; 🔢 ${ln}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
             area.innerHTML=`<div class="fcard">
-                <div style="background:#f5f3ff;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center">
-                    <div style="font-size:11px;color:#888;margin-bottom:4px">📅 해당 출생연도</div>
-                    <div style="font-size:13px;font-weight:700;color:#7c3aed;line-height:1.9">${yearsHtml}</div>
+                <div style="font-weight:900;font-size:15px;margin-bottom:12px;color:#7c3aed">${ch.emoji} ${ch.kr} 출생연도별 오늘 운세</div>
+                <div id="ccard-years">${yearRows}</div>
+                <div style="margin-top:16px">
+                    ${scoreCardHtml().replace('background:rgba(255,255,255,.12)','background:#f5f3ff').replace(/color:#fde68a/g,"color:#7c3aed").replace(/color:#86efac/g,"color:#d4ac0d").replace(/color:#6ee7b7/g,"color:#1e8449").replace(/color:#fca5a5/g,"color:#e74c3c").replace(/opacity:.8/g,"opacity:1").replace(/color:#fff/g,"color:#333")}
                 </div>
-                ${makeCard(ch.emoji,ch.kr,ch.year.split(',').slice(0,3).join(',')+' ...',rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'ccard')}
                 <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
-                    <button onclick="saveCard('ccard','띠운세_${kr}')"
+                    <button onclick="saveCard('ccard-years','띠운세_${kr}')"
                         style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
                     <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠운세" target="_blank" class="blog-btn">📖 블로그 더보기</a>
                 </div>
