@@ -117,7 +117,9 @@ def zodiac_fortune(kr_name):
     if not zodiac_kr.empty and 'zodiac' in zodiac_kr.columns:
         m = zodiac_kr[zodiac_kr['zodiac'] == kr_name]
         if not m.empty:
-            return m.sample(1).iloc[0]['fortune']
+            text = m.sample(1).iloc[0]['fortune']
+            # 줄바꿈을 HTML <br><br>로 변환
+            return str(text).replace('\n\n', '<br><br>').replace('\n', '<br>')
     return sentence()
 
 def chinese_fortune(en_name):
