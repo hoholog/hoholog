@@ -576,7 +576,12 @@
         // ═══════════════════════════════
         //  운세 카드 생성
         // ═══════════════════════════════
-        function makeCard(emoji, name, sub, fortune, color, num, rating, cardId){
+        function makeCard(emoji, name, sub, fortune, color, num, rating, cardId, luckyItem=null){
+            const itemRow = luckyItem ? `
+                <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                    <div style="font-size:11px;opacity:.8">🎁 행운의 아이템</div>
+                    <div style="font-weight:900;font-size:13px">${luckyItem}</div>
+                </div>` : '';
             return `<div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:28px;color:#fff;max-width:480px;margin:0 auto">
                 <div style="text-align:center;margin-bottom:16px">
                     <div style="font-size:48px">${emoji}</div>
@@ -585,16 +590,18 @@
                     <div style="color:#fde68a;font-size:14px;margin-top:4px">${rating}</div>
                 </div>
                 <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.8;margin-bottom:14px">${fortune}</div>
-                <div style="display:flex;gap:10px">
-                    <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    ${itemRow}
+                    <div style="flex:1;min-width:100px;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
                         <div style="font-size:11px;opacity:.8">🎨 행운의 색</div>
                         <div style="font-weight:900;font-size:16px">${color}</div>
                     </div>
-                    <div style="flex:1;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
+                    <div style="flex:1;min-width:80px;background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center">
                         <div style="font-size:11px;opacity:.8">🔢 행운의 숫자</div>
                         <div style="font-weight:900;font-size:22px">${num}</div>
                     </div>
                 </div>
+                ${scoreCardHtml()}
                 <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
             </div>`;
         }
@@ -807,6 +814,41 @@
             '재물운이 상승하는 흐름입니다. 계획적인 소비를 추천합니다.',
         ];
 
+        const LUCKY_ITEMS=[
+            '수정 팔찌','흰색 손수건','은반지','작은 거울','네잎클로버',
+            '파란 볼펜','노란 메모지','향초','초록 식물','나무 빗',
+            '실크 스카프','가죽 지갑','금색 열쇠고리','책갈피','작은 수첩',
+            '라벤더 향주머니','흰 조약돌','나침반','유리구슬','빨간 실',
+            '청금석','자수정','로즈쿼츠','흑요석','호안석',
+            '나비 모양 핀','달 모양 귀걸이','별자리 카드','조개껍데기','나무 연필',
+        ];
+
+        function rndScore(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+        function scoreBar(label, emoji, pct, color){
+            const filled = Math.round(pct/10);
+            const bar = '█'.repeat(filled) + '░'.repeat(10-filled);
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="min-width:60px;font-size:12px;color:#fff;opacity:.9">${emoji} ${label}</span>
+                <span style="font-family:monospace;font-size:13px;color:${color};letter-spacing:1px">${bar}</span>
+                <span style="font-size:12px;font-weight:900;color:${color}">${pct}%</span>
+            </div>`;
+        }
+
+        function scoreCardHtml(){
+            const total  = rndScore(60,98);
+            const money  = rndScore(45,99);
+            const health = rndScore(50,99);
+            const love   = rndScore(40,99);
+            return `<div style="background:rgba(255,255,255,.12);border-radius:12px;padding:14px;margin-top:12px">
+                <div style="font-size:12px;opacity:.8;margin-bottom:8px">📊 오늘의 운세 지수</div>
+                ${scoreBar('종합운','🌟',total,'#fde68a')}
+                ${scoreBar('금전운','💰',money,'#86efac')}
+                ${scoreBar('건강운','💪',health,'#6ee7b7')}
+                ${scoreBar('애정운','❤️',love,'#fca5a5')}
+            </div>`;
+        }
+
         let _selZodiac=null, _selChinese=null, _selZodiacWeekly=null, _selChineseMonthly=null;
 
         const WEEKLY_MSGS=[
@@ -911,8 +953,9 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const z=ZODIACS_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('zodiac-card-area');
+            const luckyItem = rnd(LUCKY_ITEMS);
             area.innerHTML=`<div class="fcard">
-                ${makeCard(z.emoji,z.kr,z.date,rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'zcard')}
+                ${makeCard(z.emoji,z.kr,z.date,rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'zcard',luckyItem)}
                 <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('zcard','별자리운세_${kr}')"
                         style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
@@ -928,7 +971,12 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const ch=CHINESE_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('chinese-card-area');
+            const yearsHtml = ch.year.split(',').map(y=>`${y}년생`).join(' · ');
             area.innerHTML=`<div class="fcard">
+                <div style="background:#f5f3ff;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center">
+                    <div style="font-size:11px;color:#888;margin-bottom:4px">📅 해당 출생연도</div>
+                    <div style="font-size:13px;font-weight:700;color:#7c3aed;line-height:1.9">${yearsHtml}</div>
+                </div>
                 ${makeCard(ch.emoji,ch.kr,ch.year.split(',').slice(0,3).join(',')+' ...',rnd(FORTUNE_MSGS),rnd(COLORS),rndN(),rnd(RATINGS),'ccard')}
                 <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('ccard','띠운세_${kr}')"
