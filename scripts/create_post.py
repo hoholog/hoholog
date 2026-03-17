@@ -12,7 +12,14 @@
 import os, random, time
 import pandas as pd
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
+
+# KST = UTC+9
+KST = timezone(timedelta(hours=9))
+
+def now_kst():
+    """항상 KST 기준 현재 시각 반환"""
+    return datetime.now(KST)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, '..', 'data')
@@ -105,7 +112,7 @@ def pick_quote():
     return sentence(), "", ""
 
 def daily_fortune():
-    today = date.today().strftime("%Y-%m-%d")
+    today = now_kst().strftime("%Y-%m-%d")
     for df in [daily_365, fortune_365]:
         if not df.empty and 'date' in df.columns:
             m = df[df['date'] == today]
@@ -205,14 +212,14 @@ def stars():
     return random.choice(RATINGS)
 
 def get_week_range():
-    today = date.today()
+    today = now_kst().date()
     mon = today.strftime("%m/%d")
     sun_day = today.toordinal() - today.weekday() + 6
     sun = date.fromordinal(sun_day).strftime("%m/%d")
     return f"{mon} ~ {sun}"
 
 def get_month():
-    return datetime.now().strftime("%Y년 %m월")
+    return now_kst().strftime("%Y년 %m월")
 
 # ─────────────────────────────────────────
 # 공통 CSS
@@ -525,24 +532,35 @@ def post_blogger(title, content, labels, idx, total):
         return True
 
     url = f"https://www.googleapis.com/blogger/v3/blogs/{BLOG_ID}/posts/"
-    resp = requests.post(url,
-        headers={"Authorization":f"Bearer {ACCESS_TOKEN}","Content-Type":"application/json"},
-        json={"title":title,"content":content,"labels":labels}
-    )
-    ok = resp.status_code == 200
-    status = "✅" if ok else "❌"
-    print(f"[{idx:02d}/{total}] {status} {title[:45]}  →  {resp.status_code}")
-    if not ok:
-        print(f"        오류: {resp.text[:120]}")
-    time.sleep(1.2)
-    return ok
+    
+    for attempt in range(1, 4):  # 최대 3회 재시도
+        resp = requests.post(url,
+            headers={"Authorization":f"Bearer {ACCESS_TOKEN}","Content-Type":"application/json"},
+            json={"title":title,"content":content,"labels":labels}
+        )
+        if resp.status_code == 200:
+            print(f"[{idx:02d}/{total}] ✅ {title[:45]}  →  200")
+            time.sleep(3)   # 분당 쿼터 보호: 3초 간격
+            return True
+        elif resp.status_code == 429:
+            wait = 60 * attempt  # 1분, 2분, 3분
+            print(f"[{idx:02d}/{total}] ⏳ 429 쿼터 초과 — {wait}초 대기 후 재시도 ({attempt}/3)...")
+            time.sleep(wait)
+        else:
+            print(f"[{idx:02d}/{total}] ❌ {title[:45]}  →  {resp.status_code}")
+            print(f"        오류: {resp.text[:120]}")
+            time.sleep(3)
+            return False
+
+    print(f"[{idx:02d}/{total}] ❌ {title[:45]}  →  3회 재시도 후 실패")
+    return False
 
 
 # ─────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────
 def main():
-    today_str = datetime.now().strftime("%Y년 %m월 %d일")
+    today_str = now_kst().strftime("%Y년 %m월 %d일")
     posts = []
 
     # ① 오늘의 명언 1개
