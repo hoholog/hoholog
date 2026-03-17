@@ -239,6 +239,7 @@
                         <button onclick="showFortune('chinese')" id="tab-chinese" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🐾 띠운세</button>
                         <button onclick="showFortune('weekly')"  id="tab-weekly"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">📅 별자리 주간</button>
                         <button onclick="showFortune('monthly')" id="tab-monthly" class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🌙 띠별 월간</button>
+                        <button onclick="showFortune('tarot')"  id="tab-tarot"  class="ftab px-5 py-2.5 rounded-2xl font-bold transition text-sm">🎴 타로</button>
                     </div>
                     <div id="fortune-content"><div style="text-align:center;padding:60px;color:#aaa">⏳ 운세를 불러오는 중...</div></div>
                 </div>
@@ -542,6 +543,77 @@
             s.textContent = `
                 .ftab{background:#f1f5f9;color:#64748b}
                 .active-ftab{background:#7c3aed;color:#fff}
+                /* 타로 전용 스타일 */
+                :root{--tarot-gold:#c9a84c;--tarot-gold2:#e8c96a;--tarot-purple:#2d1b4e;--tarot-purple2:#4a2880;--tarot-bg:#1a0e2e;--tarot-bg2:#120a20;--tarot-text:#e8dcc8;--tarot-text-dim:#9b8fb0;--tarot-card-bg:#1e1235;--tarot-card-border:rgba(201,168,76,0.2);--tarot-glow:0 0 30px rgba(120,80,200,0.3);--tarot-glow2:0 0 20px rgba(201,168,76,0.15)}
+                .tarot-wrap{background:linear-gradient(160deg,#1a0e2e 0%,#0d0818 100%);border-radius:1.5rem;padding:1.5rem;color:#e8dcc8;min-height:400px}
+                .tarot-title{text-align:center;margin-bottom:1.2rem}
+                .tarot-title h2{font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#c9a84c,#e8c96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.05em}
+                .tarot-title p{color:#9b8fb0;font-size:.85rem;margin-top:.3rem}
+                .tarot-q-grid{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-bottom:1rem}
+                .tarot-q-btn{background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.2);color:#c9a84c;padding:.45rem 1rem;border-radius:20px;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+                .tarot-q-btn:hover,.tarot-q-btn.tq-active{background:rgba(201,168,76,.15);border-color:#c9a84c;color:#e8c96a}
+                .tarot-custom-wrap{display:flex;gap:.5rem;margin-bottom:1.2rem}
+                .tarot-custom-wrap input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(201,168,76,.2);color:#e8dcc8;padding:.6rem 1rem;border-radius:12px;font-size:.88rem;outline:none}
+                .tarot-custom-wrap input::placeholder{color:#6b5f7a}
+                .tarot-custom-wrap button{background:rgba(201,168,76,.2);border:1px solid #c9a84c;color:#c9a84c;padding:.6rem 1.1rem;border-radius:12px;cursor:pointer;font-weight:700;font-size:.85rem;white-space:nowrap}
+                .tarot-draw-btn{display:block;width:100%;padding:.9rem;background:linear-gradient(135deg,#4a2880,#7c3aed);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:900;cursor:pointer;letter-spacing:.08em;margin-bottom:1.4rem;transition:all .25s;box-shadow:0 4px 20px rgba(120,60,200,.3)}
+                .tarot-draw-btn:disabled{opacity:.4;cursor:not-allowed}
+                .tarot-draw-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(120,60,200,.5)}
+                .tarot-cards-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-bottom:1.2rem}
+                @media(max-width:500px){.tarot-cards-row{grid-template-columns:1fr;max-width:200px;margin:0 auto 1rem}}
+                .tarot-slot{}
+                .tarot-pos-label{text-align:center;font-size:.68rem;color:#9b8fb0;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem}
+                .tarot-card{background:linear-gradient(160deg,#1e1235,#150d28);border:1px solid rgba(201,168,76,.2);border-radius:14px;padding:1rem .7rem;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;position:relative;text-align:center}
+                .tarot-card:hover{border-color:rgba(201,168,76,.5);box-shadow:0 0 20px rgba(120,80,200,.3)}
+                .tarot-card.t-revealed{cursor:default;border-color:rgba(201,168,76,.4)}
+                .tarot-back-sym{font-size:2rem;color:#4a2880;animation:tpulse 3s ease-in-out infinite}
+                @keyframes tpulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+                .tarot-hint{font-size:.65rem;color:#6b5f7a;letter-spacing:.1em;margin-top:.5rem}
+                .tarot-card-face{display:none;flex-direction:column;align-items:center;width:100%}
+                .tarot-card.t-revealed .tarot-card-face{display:flex}
+                .tarot-card.t-revealed .tarot-back-sym,.tarot-card.t-revealed .tarot-hint{display:none}
+                .tarot-img-wrap{transition:transform .4s ease}
+                .tarot-card.t-reversed .tarot-img-wrap{transform:rotate(180deg)}
+                .tarot-card.t-reversed .tarot-emoji-wrap{transform:rotate(180deg);transition:transform .4s ease}
+                .tarot-emoji{font-size:2rem;margin-bottom:.3rem}
+                .tarot-name{font-family:serif;font-size:.65rem;color:#c9a84c;letter-spacing:.05em;margin-bottom:.15rem}
+                .tarot-name-ko{font-size:.78rem;color:#e8c96a;font-weight:600;margin-bottom:.3rem}
+                .tarot-dir{font-size:.62rem;padding:.12rem .5rem;border-radius:10px}
+                .tarot-dir.t-up{background:rgba(201,168,76,.15);color:#c9a84c}
+                .tarot-dir.t-rev{background:rgba(100,80,180,.25);color:#a090dd}
+                .tarot-text-wrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-top:.3rem}
+                .tarot-keywords{font-size:.62rem;color:#9b8fb0;margin-top:.25rem;line-height:1.4}
+                .tarot-reveal-all-btn{display:block;width:100%;padding:.7rem;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:#c9a84c;border-radius:12px;font-size:.85rem;font-weight:700;cursor:pointer;margin-bottom:1rem;transition:all .2s}
+                .tarot-reveal-all-btn:hover{background:rgba(201,168,76,.2)}
+                .tarot-section-title{font-size:.85rem;font-weight:800;color:#c9a84c;letter-spacing:.1em;margin-bottom:.8rem;padding-bottom:.4rem;border-bottom:1px solid rgba(201,168,76,.2)}
+                .tarot-interp-box{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.12);border-left:3px solid rgba(201,168,76,.4);border-radius:0 12px 12px 0;padding:.9rem 1rem;margin-bottom:.8rem}
+                .tcib-pos-row{display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem}
+                .tcib-pos-label{font-size:.65rem;color:#9b8fb0;letter-spacing:.1em;text-transform:uppercase}
+                .tcib-pos-desc{font-size:.75rem;color:#6b5f7a;margin-bottom:.6rem;font-style:italic}
+                .tcib-card-title{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.35rem}
+                .tcib-card-name{color:#e8c96a;font-weight:700;font-size:.9rem}
+                .tcib-card-name-en{font-size:.72rem;color:#9b8fb0}
+                .tcib-dir-badge{font-size:.65rem;padding:.1rem .45rem;border-radius:20px}
+                .tcib-dir-badge.up{background:rgba(201,168,76,.15);color:#c9a84c}
+                .tcib-dir-badge.rev{background:rgba(100,80,180,.2);color:#a090dd}
+                .tcib-intro{font-size:.82rem;color:#e8dcc8;line-height:1.6;margin-bottom:.6rem}
+                .tcib-msg-header{font-size:.65rem;color:#9b8fb0;letter-spacing:.12em;margin-bottom:.4rem}
+                .tcib-msg-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.3rem}
+                .tcib-msg-list li{display:flex;align-items:baseline;gap:.35rem;font-size:.82rem;color:#e8dcc8;line-height:1.5}
+                .tcib-msg-icon{font-size:.8rem;flex-shrink:0}
+                .tcib-msg-label{font-size:.65rem;color:#9b8fb0;font-weight:700;white-space:nowrap;flex-shrink:0}
+                .tarot-integrated{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-radius:14px;padding:1.2rem;margin-top:.5rem;font-size:.88rem;color:#e8dcc8;line-height:1.9}
+                .tarot-integrated p{margin-bottom:.7rem}
+                .tarot-reset-btn{display:block;width:100%;padding:.8rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#9b8fb0;border-radius:12px;font-size:.85rem;font-weight:700;cursor:pointer;margin-top:1rem;transition:all .2s}
+                .tarot-reset-btn:hover{background:rgba(255,255,255,.1);color:#e8dcc8}
+                .tarot-guide-box{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.12);border-radius:14px;padding:1.2rem 1.4rem;margin-top:1rem}
+                .tarot-guide-title{font-size:.78rem;color:#c9a84c;letter-spacing:.2em;text-align:center;margin-bottom:.9rem;font-weight:700}
+                .tarot-guide-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.7rem}
+                .tarot-guide-list li{display:flex;align-items:flex-start;gap:.6rem;font-size:.78rem;color:#9b8fb0;line-height:1.65}
+                .tg-icon{font-size:.9rem;flex-shrink:0;margin-top:.05rem;color:#c9a84c}
+                .tarot-loading{text-align:center;padding:2rem;color:#9b8fb0;font-size:.88rem}
+                .tarot-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(201,168,76,.3);border-top-color:#c9a84c;border-radius:50%;animation:tspin 1s linear infinite;margin-right:.5rem;vertical-align:middle}
+                @keyframes tspin{to{transform:rotate(360deg)}}
                 .fhero{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:1.5rem;padding:2.5rem;text-align:center;margin-bottom:1.2rem}
                 .fcard{background:#fff;border-radius:1.4rem;padding:1.6rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.07)}
                 .lucky-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
@@ -1204,10 +1276,357 @@
                 if(_selChineseMonthly) selectChineseMonthly(_selChineseMonthly);
             }
 
+
+            else if(type==='tarot'){
+                c.innerHTML=`
+                <div class="tarot-wrap">
+                    <div class="tarot-title">
+                        <h2>✦ 타로 카드 리딩 ✦</h2>
+                        <p id="tarot-date-label"></p>
+                    </div>
+                    <div id="tarot-inner">
+                        <div style="text-align:center;padding:2rem;color:#9b8fb0">
+                            <div class="tarot-spinner"></div> 카드 덱을 준비하는 중...
+                        </div>
+                    </div>
+                </div>`;
+                // 날짜 표시
+                const dtEl = document.getElementById('tarot-date-label');
+                if(dtEl) dtEl.textContent = todayStr();
+                initTarot();
+            }
+
             // 날짜 표시
             const dateEl = document.getElementById('fortune-date');
             if(dateEl) dateEl.textContent = todayStr();
         }
+    </script>
+    <script>
+    // ══════════════════════════════════════════════════
+    //  타로 카드 모듈 — data/tarot_cards_78.csv 로드
+    // ══════════════════════════════════════════════════
+
+    // 타로 상태
+    let tDeck = [];          // CSV에서 로드된 78장
+    let tDeckLoaded = false;
+    let tQuestion = '';
+    let tDrawnCards = [];
+    let tRevealedCount = 0;
+
+    // 카드별 이모지 매핑
+    const TAROT_EMOJI = {
+      '바보':'🌟','마법사':'🪄','여사제':'🌙','여황제':'👑','황제':'🏛️',
+      '교황':'⛪','연인':'💕','전차':'🏆','힘':'🦁','은둔자':'🕯️',
+      '운명의 수레바퀴':'⭕','정의':'⚖️','매달린 남자':'🔄','죽음':'🌑',
+      '절제':'⚗️','악마':'⛓️','탑':'⚡','별':'⭐','달':'🌕','태양':'☀️',
+      '심판':'🎺','세계':'🌍',
+    };
+    function getTarotEmoji(nameKo, arcana, suit) {
+      if(TAROT_EMOJI[nameKo]) return TAROT_EMOJI[nameKo];
+      const suitEmoji = {Wands:'🔥',Cups:'💧',Swords:'⚔️',Pentacles:'🌿'};
+      return suitEmoji[suit] || (arcana==='Major'?'✨':'🃏');
+    }
+
+    // CSV 파싱 (간단 구현)
+    function parseTarotCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',');
+      return lines.slice(1).map(line => {
+        // CSV 따옴표 처리
+        const cols = [];
+        let cur = '', inQ = false;
+        for(let i=0;i<line.length;i++){
+          if(line[i]==='"'){inQ=!inQ;}
+          else if(line[i]===',' && !inQ){cols.push(cur);cur='';}
+          else{cur+=line[i];}
+        }
+        cols.push(cur);
+        const obj = {};
+        headers.forEach((h,i) => obj[h.trim()] = (cols[i]||'').trim());
+        // 키워드를 keywords_ko 컬럼에서 가져오고 이모지 추가
+        const nameKo = obj.card_name_ko || '';
+        obj.emoji = getTarotEmoji(nameKo, obj.arcana, obj.suit || '');
+        obj.keywords = obj.keywords_ko || '';
+        return obj;
+      });
+    }
+
+    // CSV 로드 (data 폴더)
+    async function loadTarotDeck() {
+      if(tDeckLoaded) return tDeck;
+      try {
+        const res = await fetch('data/tarot_cards_78.csv');
+        if(!res.ok) throw new Error('CSV 로드 실패');
+        const text = await res.text();
+        tDeck = parseTarotCSV(text);
+        tDeckLoaded = true;
+        return tDeck;
+      } catch(e) {
+        console.warn('CSV 로드 실패, 내장 데이터 사용:', e);
+        tDeck = TAROT_FALLBACK;
+        tDeckLoaded = true;
+        return tDeck;
+      }
+    }
+
+    // 셔플
+    function tShuffle(arr) {
+      const a = [...arr];
+      for(let i=a.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    // 타로 초기화
+    async function initTarot() {
+      const inner = document.getElementById('tarot-inner');
+      if(!inner) return;
+      await loadTarotDeck();
+      tQuestion = '';
+      tDrawnCards = [];
+      tRevealedCount = 0;
+      renderTarotUI();
+    }
+
+    // 타로 UI 렌더링
+    function renderTarotUI() {
+      const inner = document.getElementById('tarot-inner');
+      if(!inner) return;
+      const qList = ['연애와 관계','직업과 진로','금전과 재물','건강과 웰빙','인간관계','자기 성장'];
+      inner.innerHTML = `
+        <div class="tarot-q-grid">
+          ${qList.map(q=>`<button class="tarot-q-btn" onclick="tSelectQ('${q}',this)">${q}</button>`).join('')}
+        </div>
+        <div class="tarot-custom-wrap">
+          <input id="tarot-custom-q" placeholder="직접 질문 입력 (예: 이 선택이 맞을까요?)" />
+          <button onclick="tApplyCustomQ()">입력</button>
+        </div>
+        <button class="tarot-draw-btn" id="tarot-draw-btn" onclick="tDrawCards()" disabled>✦ 카드 뽑기 ✦</button>
+        <div id="tarot-cards-area" style="display:none">
+          <div class="tarot-cards-row" id="tarot-cards-row"></div>
+          <button class="tarot-reveal-all-btn" id="tarot-reveal-all" onclick="tRevealAll()">✦ 카드 모두 공개</button>
+        </div>
+        <div id="tarot-result-area" style="display:none"></div>
+      `;
+    }
+
+    function tSelectQ(q, btn) {
+      tQuestion = q;
+      document.querySelectorAll('.tarot-q-btn').forEach(b=>b.classList.remove('tq-active'));
+      btn.classList.add('tq-active');
+      document.getElementById('tarot-custom-q').value = '';
+      document.getElementById('tarot-draw-btn').disabled = false;
+    }
+
+    function tApplyCustomQ() {
+      const v = document.getElementById('tarot-custom-q').value.trim();
+      if(!v) return;
+      tQuestion = v;
+      document.querySelectorAll('.tarot-q-btn').forEach(b=>b.classList.remove('tq-active'));
+      document.getElementById('tarot-draw-btn').disabled = false;
+    }
+
+    function tDrawCards() {
+      if(!tQuestion || !tDeck.length) return;
+      tRevealedCount = 0;
+      const pool = tShuffle(tDeck);
+      tDrawnCards = pool.slice(0,3).map(card => ({
+        ...card,
+        isReversed: Math.random() < 0.33
+      }));
+      document.getElementById('tarot-draw-btn').disabled = true;
+      document.getElementById('tarot-cards-area').style.display = 'block';
+      document.getElementById('tarot-result-area').style.display = 'none';
+      renderTarotCards();
+    }
+
+    const T_POS = [
+      {label:'PAST',    labelKo:'과거',  icon:'🌱', desc:'과거의 경험이 지금의 나를 만들었어요.'},
+      {label:'PRESENT', labelKo:'현재',  icon:'🔥', desc:'지금 이 순간 가장 직접적으로 마주하는 에너지예요.'},
+      {label:'FUTURE',  labelKo:'미래',  icon:'🌟', desc:'앞으로 펼쳐질 가능성과 방향을 보여줘요.'},
+    ];
+
+    function renderTarotCards() {
+      const row = document.getElementById('tarot-cards-row');
+      if(!row) return;
+      row.innerHTML = tDrawnCards.map((card,i) => {
+        const pos = T_POS[i];
+        return `
+          <div>
+            <div class="tarot-pos-label">${pos.labelKo} · ${pos.label}</div>
+            <div class="tarot-card${card.isReversed?' t-reversed':''}" id="tcard-${i}" onclick="tRevealCard(${i})">
+              <div class="tarot-back-sym">✦</div>
+              <div class="tarot-hint" style="font-size:.65rem;color:#6b5f7a;margin-top:.4rem">터치하여 공개</div>
+              <div class="tarot-card-face">
+                <div class="tarot-img-wrap">
+                  <div class="tarot-emoji-wrap"><div class="tarot-emoji">${card.emoji||'🃏'}</div></div>
+                </div>
+                <div class="tarot-text-wrap">
+                  <div class="tarot-name">${card.card_name||''}</div>
+                  <div class="tarot-name-ko">${card.card_name_ko||''}</div>
+                  <span class="tarot-dir ${card.isReversed?'t-rev':'t-up'}">${card.isReversed?'🔄 역방향':'✨ 정방향'}</span>
+                  <div class="tarot-keywords">${card.keywords||''}</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function tRevealCard(i) {
+      const el = document.getElementById('tcard-'+i);
+      if(!el || el.classList.contains('t-revealed')) return;
+      el.classList.add('t-revealed');
+      tRevealedCount++;
+      if(tRevealedCount===3) {
+        document.getElementById('tarot-reveal-all').style.display='none';
+        tShowInterpretation();
+      }
+    }
+
+    function tRevealAll() {
+      tDrawnCards.forEach((_,i)=>{
+        const el=document.getElementById('tcard-'+i);
+        if(el && !el.classList.contains('t-revealed')){el.classList.add('t-revealed');}
+      });
+      tRevealedCount=3;
+      document.getElementById('tarot-reveal-all').style.display='none';
+      tShowInterpretation();
+    }
+
+    // 카드 소개 맵
+    const T_CARD_INTRO = {
+      '바보':'새로운 여정의 시작, 순수한 가능성을 품은 카드예요.',
+      '마법사':'내 안의 능력과 의지로 현실을 만들어가는 카드예요.',
+      '여사제':'말하지 않아도 느끼는 깊은 직관과 내면의 지혜를 담은 카드예요.',
+      '여황제':'풍요롭고 따뜻한 창조의 에너지, 돌봄과 번영의 카드예요.',
+      '황제':'안정적인 구조와 리더십, 흔들리지 않는 기반의 카드예요.',
+      '교황':'전통과 가르침 속에서 길을 찾는 카드예요.',
+      '연인':'선택의 기로에서 마음이 원하는 것을 묻는 카드예요.',
+      '전차':'강한 의지로 목표를 향해 돌진하는 승리의 카드예요.',
+      '힘':'부드럽지만 강한 내면의 용기, 진정한 힘의 카드예요.',
+      '은둔자':'혼자만의 시간 속에서 진실을 찾아가는 카드예요.',
+      '운명의 수레바퀴':'삶의 전환점, 변화의 흐름을 알려주는 카드예요.',
+      '정의':'공정한 균형과 결과, 진실이 드러나는 카드예요.',
+      '매달린 남자':'잠시 멈추고 다른 시각으로 바라보라는 카드예요.',
+      '죽음':'끝이 아닌 새로운 시작, 변화와 전환의 카드예요.',
+      '절제':'균형과 조화, 서두르지 않는 지혜의 카드예요.',
+      '악마':'스스로 만든 집착과 두려움을 직면하게 하는 카드예요.',
+      '탑':'갑작스러운 변화, 무너져야 새로 세울 수 있다는 카드예요.',
+      '별':'어둠 뒤에 찾아오는 희망과 회복의 카드예요.',
+      '달':'불확실함 속의 직관, 보이지 않는 것을 느끼는 카드예요.',
+      '태양':'밝고 따뜻한 기쁨과 성공의 에너지를 담은 카드예요.',
+      '심판':'내면의 부름에 응답하는 재탄생의 카드예요.',
+      '세계':'하나의 여정이 완성되는 성취와 통합의 카드예요.',
+    };
+
+    function tShowInterpretation() {
+      const area = document.getElementById('tarot-result-area');
+      if(!area) return;
+      area.style.display = 'block';
+
+      // 카드 해석 3장
+      const cardHTML = tDrawnCards.map((card,i) => {
+        const pos = T_POS[i];
+        const meaning = card.isReversed ? card.reversed_meaning : card.upright_meaning;
+        const intro = T_CARD_INTRO[card.card_name_ko] || `${card.card_name_ko}은(는) ${(meaning||'').split(' ')[0]}의 에너지를 담은 카드예요.`;
+        const items = (meaning||'').split(/[, ]/).filter(m=>m.trim().length>1).slice(0,3);
+        const icons=['💡','🌿','🔮'], labels=['조언','가르침','직감'];
+        return `
+          <div class="tarot-interp-box">
+            <div class="tcib-pos-row">
+              <span>${pos.icon}</span>
+              <span class="tcib-pos-label">${pos.labelKo} 자리 · ${pos.label}</span>
+            </div>
+            <div class="tcib-pos-desc">${pos.desc}</div>
+            <div class="tcib-card-title">
+              <span style="font-size:1.2rem">${card.emoji||'🃏'}</span>
+              <span class="tcib-card-name">${card.card_name_ko} <em class="tcib-card-name-en">${card.card_name}</em></span>
+              <span class="tcib-dir-badge ${card.isReversed?'rev':'up'}">${card.isReversed?'🔄 역방향':'✨ 정방향'}</span>
+            </div>
+            <div class="tcib-intro">${intro}</div>
+            <div class="tcib-msg-header">✦ 이 카드가 전하는 메시지</div>
+            <ul class="tcib-msg-list">
+              ${items.map((k,ki)=>`<li><span class="tcib-msg-icon">${icons[ki]}</span><span class="tcib-msg-label">${labels[ki]}</span>${k}</li>`).join('')}
+            </ul>
+          </div>`;
+      }).join('');
+
+      // 통합 해석 (로컬 폴백)
+      const integrated = tLocalInterpretation();
+
+      area.innerHTML = `
+        <div style="margin-top:.5rem">
+          <div class="tarot-section-title">🌙 카드 해석</div>
+          ${cardHTML}
+        </div>
+        <div style="margin-top:1rem">
+          <div class="tarot-section-title">✨ 통합 해석</div>
+          <div class="tarot-integrated">${integrated}</div>
+        </div>
+        <button class="tarot-reset-btn" onclick="tReset()">🔄 다시 뽑기</button>
+        <div class="tarot-guide-box">
+          <div class="tarot-guide-title">∴ 타로 리딩 안내 ∴</div>
+          <ul class="tarot-guide-list">
+            <li><span class="tg-icon">☽</span>타로는 확정적 미래를 예측하는 도구가 아닙니다. 현재의 흐름과 가능성을 탐색하는 안내 지도로 활용하시되, 결과에 얽매이지 않는 열린 마음으로 바라보세요.</li>
+            <li><span class="tg-icon">✦</span>질문이 구체적일수록 카드의 의미를 더 명확하게 연결할 수 있습니다. "나는 어떻게 해야 할까?" 보다 "이 관계에서 내가 취해야 할 태도는?" 처럼 세밀하게 질문해 보세요.</li>
+            <li><span class="tg-icon">☿</span>정방향과 역방향은 에너지의 방향을 나타냅니다. 역방향이 반드시 부정적인 것이 아니라, 내면적이거나 지연된 에너지를 의미하기도 합니다.</li>
+            <li><span class="tg-icon">♾</span>세 장의 카드는 하나의 연속된 이야기입니다. 과거가 현재를 만들고, 현재가 미래의 씨앗이 됩니다. 카드들 사이의 흐름과 연결을 함께 살펴보세요.</li>
+            <li><span class="tg-icon">🌟</span>모든 해석의 최종 권한은 당신에게 있습니다. 직관적으로 강하게 느껴지는 부분에 주목하세요. 타로는 당신 내면의 지혜를 반영하는 거울입니다.</li>
+          </ul>
+        </div>
+      `;
+      area.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function tLocalInterpretation() {
+      const [past, present, future] = tDrawnCards;
+      const pm = ((past.isReversed ? past.reversed_meaning : past.upright_meaning)||'').split(' ')[0];
+      const cm = ((present.isReversed ? present.reversed_meaning : present.upright_meaning)||'').split(' ')[0];
+      const fm = ((future.isReversed ? future.reversed_meaning : future.upright_meaning)||'').split(' ')[0];
+      return `
+        <p>있잖아요, 이 세 장의 카드가 꽤 의미 있는 이야기를 하고 있어요 😊</p>
+        <p>과거 자리의 <strong style="color:#e8c96a">${past.emoji} ${past.card_name_ko}</strong>는 <em>${pm}</em>의 에너지가 지금의 당신을 만들어왔다는 걸 보여줘요. 그 시간들이 헛되지 않았어요, 다 이유가 있었던 거예요.</p>
+        <p>지금 이 순간엔 <strong style="color:#e8c96a">${present.emoji} ${present.card_name_ko}</strong>${present.isReversed?' (역방향)':''}가 함께해요. <em>${cm}</em>의 에너지가 주변을 감싸고 있는데, 사실 당신은 이미 이 상황을 헤쳐나갈 힘을 갖고 있어요.</p>
+        <p>앞으로는 <strong style="color:#e8c96a">${future.emoji} ${future.card_name_ko}</strong>가 기다리고 있어요. <em>${fm}</em>의 흐름이 열려 있거든요. 지금 이 순간의 선택이 그 문을 여는 열쇠가 될 거예요.</p>
+        <p style="color:#c9a84c;font-style:italic;border-top:1px solid rgba(201,168,76,.2);padding-top:.7rem;margin-top:.3rem">✨ 카드는 정해진 답이 아니라, 당신 안에 있는 가능성을 비춰주는 거울이에요. 이미 잘 하고 있어요, 진짜로요. 💛</p>
+      `;
+    }
+
+    function tReset() {
+      tQuestion = '';
+      tDrawnCards = [];
+      tRevealedCount = 0;
+      renderTarotUI();
+    }
+
+    // CSV 로드 실패 시 최소 폴백 (메이저 아르카나 22장만)
+    const TAROT_FALLBACK = [
+      {card_name:'The Fool',card_name_ko:'바보',arcana:'Major',upright_meaning:'새로운 시작 모험 순수함 자유 잠재력',reversed_meaning:'무모함 경솔함 위험',keywords_ko:'시작·자유·순진',emoji:'🌟'},
+      {card_name:'The Magician',card_name_ko:'마법사',arcana:'Major',upright_meaning:'의지력 기술 집중력 창의성',reversed_meaning:'조작 속임수 의지력 부족',keywords_ko:'능력·의지·창조',emoji:'🪄'},
+      {card_name:'The High Priestess',card_name_ko:'여사제',arcana:'Major',upright_meaning:'직관 신비 내면의 지식 지혜',reversed_meaning:'비밀 직관 무시 내면 갈등',keywords_ko:'직관·신비·지혜',emoji:'🌙'},
+      {card_name:'The Empress',card_name_ko:'여황제',arcana:'Major',upright_meaning:'풍요 모성 자연 창의성 번영',reversed_meaning:'의존 창의성 차단',keywords_ko:'풍요·모성·자연',emoji:'👑'},
+      {card_name:'The Emperor',card_name_ko:'황제',arcana:'Major',upright_meaning:'권위 안정성 구조 규율 리더십',reversed_meaning:'지배 경직 독재',keywords_ko:'권위·질서·리더십',emoji:'🏛️'},
+      {card_name:'The Hierophant',card_name_ko:'교황',arcana:'Major',upright_meaning:'전통 관습 도덕 가르침',reversed_meaning:'반항 비관습적 제한',keywords_ko:'전통·신념·가르침',emoji:'⛪'},
+      {card_name:'The Lovers',card_name_ko:'연인',arcana:'Major',upright_meaning:'사랑 조화 선택 관계',reversed_meaning:'불일치 잘못된 선택 단절',keywords_ko:'사랑·선택·관계',emoji:'💕'},
+      {card_name:'The Chariot',card_name_ko:'전차',arcana:'Major',upright_meaning:'승리 의지력 결단력 성공',reversed_meaning:'통제 상실 방향 없음',keywords_ko:'승리·통제·전진',emoji:'🏆'},
+      {card_name:'Strength',card_name_ko:'힘',arcana:'Major',upright_meaning:'용기 인내 온화한 힘 자기 통제',reversed_meaning:'자기 의심 에너지 부족',keywords_ko:'용기·인내·온화',emoji:'🦁'},
+      {card_name:'The Hermit',card_name_ko:'은둔자',arcana:'Major',upright_meaning:'영혼 탐구 내면 지침 고독',reversed_meaning:'고립 외로움 후퇴',keywords_ko:'탐구·고독·지혜',emoji:'🕯️'},
+      {card_name:'Wheel of Fortune',card_name_ko:'운명의 수레바퀴',arcana:'Major',upright_meaning:'행운 업보 삶의 전환점 운명',reversed_meaning:'불운 저항 통제 불가',keywords_ko:'운명·전환·기회',emoji:'⭕'},
+      {card_name:'Justice',card_name_ko:'정의',arcana:'Major',upright_meaning:'공정성 진실 원인과 결과 균형',reversed_meaning:'불공정 부정직 책임 회피',keywords_ko:'공정·진실·균형',emoji:'⚖️'},
+      {card_name:'The Hanged Man',card_name_ko:'매달린 남자',arcana:'Major',upright_meaning:'일시 정지 항복 새로운 관점 희생',reversed_meaning:'지연 저항 고착',keywords_ko:'관점·희생·기다림',emoji:'🔄'},
+      {card_name:'Death',card_name_ko:'죽음',arcana:'Major',upright_meaning:'변화 전환 끝과 시작 변형',reversed_meaning:'저항 변화 두려움 정체',keywords_ko:'변화·전환·새시작',emoji:'🌑'},
+      {card_name:'Temperance',card_name_ko:'절제',arcana:'Major',upright_meaning:'균형 중용 인내 조화',reversed_meaning:'불균형 극단 자제력 부족',keywords_ko:'균형·조화·절제',emoji:'⚗️'},
+      {card_name:'The Devil',card_name_ko:'악마',arcana:'Major',upright_meaning:'속박 물질주의 중독 의존',reversed_meaning:'속박에서 해방 자유',keywords_ko:'속박·집착·해방',emoji:'⛓️'},
+      {card_name:'The Tower',card_name_ko:'탑',arcana:'Major',upright_meaning:'급격한 변화 혼란 계시 붕괴',reversed_meaning:'재난 피하기 두려움 변화',keywords_ko:'붕괴·계시·변화',emoji:'⚡'},
+      {card_name:'The Star',card_name_ko:'별',arcana:'Major',upright_meaning:'희망 영감 평온 소원 회복',reversed_meaning:'절망 희망 없음 낙심',keywords_ko:'희망·영감·회복',emoji:'⭐'},
+      {card_name:'The Moon',card_name_ko:'달',arcana:'Major',upright_meaning:'환상 두려움 잠재의식 착각',reversed_meaning:'공포 해방 억압된 감정',keywords_ko:'환상·직관·신비',emoji:'🌕'},
+      {card_name:'The Sun',card_name_ko:'태양',arcana:'Major',upright_meaning:'긍정 재미 따뜻함 성공 기쁨',reversed_meaning:'내면 아이 과도한 낙관',keywords_ko:'기쁨·성공·활력',emoji:'☀️'},
+      {card_name:'Judgement',card_name_ko:'심판',arcana:'Major',upright_meaning:'성찰 재탄생 내면의 부름 용서',reversed_meaning:'자기 의심 내면 비판',keywords_ko:'심판·재탄생·반성',emoji:'🎺'},
+      {card_name:'The World',card_name_ko:'세계',arcana:'Major',upright_meaning:'완성 통합 성취 여행 마무리',reversed_meaning:'미완성 지름길 지연',keywords_ko:'완성·성취·통합',emoji:'🌍'},
+    ];
     </script>
     <script>
     // ── 보안 ──
