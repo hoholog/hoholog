@@ -561,6 +561,7 @@ def post_blogger(title, content, labels, idx, total):
 # ─────────────────────────────────────────
 def main():
     today_str = now_kst().strftime("%Y년 %m월 %d일")
+    kst_now   = now_kst()
     posts = []
 
     # ① 오늘의 명언 1개
@@ -574,15 +575,26 @@ def main():
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
 
-    # ④ 별자리 주간운세 1개 (12별자리 통합)
-    posts.append(build_zodiac_weekly_post(today_str))
+    # ④ 별자리 주간운세 — 매주 월요일만
+    if kst_now.weekday() == 0:
+        posts.append(build_zodiac_weekly_post(today_str))
+        print("📅 오늘은 월요일 — 별자리 주간운세 포함")
+    else:
+        print("📅 주간운세 스킵 (월요일 아님)")
 
-    # ⑤ 띠별 월간운세 1개 (12띠 통합)
-    posts.append(build_chinese_monthly_post(today_str))
+    # ⑤ 띠별 월간운세 — 매월 1일만
+    if kst_now.day == 1:
+        posts.append(build_chinese_monthly_post(today_str))
+        print("📅 오늘은 1일 — 띠별 월간운세 포함")
+    else:
+        print("📅 월간운세 스킵 (1일 아님)")
 
     total = len(posts)
+    weekly  = " + 별자리주간 1" if kst_now.weekday() == 0 else ""
+    monthly = " + 띠별월간 1"   if kst_now.day == 1        else ""
+    count   = 25 + (1 if kst_now.weekday() == 0 else 0) + (1 if kst_now.day == 1 else 0)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
-    print("구성: 오늘의명언 1 + 별자리 12 + 띠 12 + 별자리주간 1 + 띠별월간 1 = 27개\n")
+    print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12{weekly}{monthly} = {count}개\n")
 
     success = 0
     for i, (title, content, labels) in enumerate(posts, 1):
