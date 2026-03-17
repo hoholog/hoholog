@@ -2,7 +2,8 @@ name: 🌟 Daily Fortune 27 Posts
 
 on:
   schedule:
-    - cron: '1 15 * * *'   # 매일 KST 00:01 (UTC 15:01)
+    - cron: '0 15 * * *'   # 매일 KST 00:00 (UTC 15:00) — 메인
+    - cron: '0 16 * * *'   # 매일 KST 01:00 (UTC 16:00) — 백업 (메인 스킵 시)
   workflow_dispatch:        # 수동 실행
 
 jobs:
@@ -22,7 +23,50 @@ jobs:
       - name: 📦 패키지 설치
         run: pip install pandas requests
 
+      - name: 🔍 오늘 이미 포스팅했는지 확인 (중복 방지)
+        id: check
+        env:
+          BLOG_ID: ${{ secrets.BLOG_ID }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          python - <<'EOF'
+          import os, requests
+          from datetime import datetime, timezone, timedelta
+
+          KST = timezone(timedelta(hours=9))
+          today = datetime.now(KST).strftime("%Y년 %m월 %d일")
+
+          # Access Token 갱신
+          resp = requests.post("https://oauth2.googleapis.com/token", data={
+              "grant_type": "refresh_token",
+              "refresh_token": os.environ["BLOGGER_REFRESH_TOKEN"],
+              "client_id": os.environ["GOOGLE_CLIENT_ID"],
+              "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+          })
+          token = resp.json().get("access_token", "")
+
+          # 오늘 날짜 포스트 검색
+          blog_id = os.environ["BLOG_ID"]
+          url = f"https://www.googleapis.com/blogger/v3/blogs/{blog_id}/posts"
+          r = requests.get(url, headers={"Authorization": f"Bearer {token}"},
+                           params={"maxResults": 5, "fetchBodies": "false"})
+          posts = r.json().get("items", [])
+          already = any(today in p.get("title", "") for p in posts)
+
+          if already:
+              print(f"이미 완료 — 중복 실행 스킵")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("skip=true\n")
+          else:
+              print(f"포스팅 없음 — 실행 진행")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("skip=false\n")
+          EOF
+
       - name: 🌟 27개 운세 포스팅 실행
+        if: steps.check.outputs.skip != 'true'
         env:
           BLOG_ID: ${{ secrets.BLOG_ID }}
           BLOGGER_TOKEN: ${{ secrets.BLOGGER_TOKEN }}
