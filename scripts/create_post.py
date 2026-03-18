@@ -318,7 +318,7 @@ def build_zodiac_post(z, today_str):
     number = pick_number()
     rating = stars()
     lucky_item = pick_lucky_item(z['kr'])
-    title = seo_title(f"{z['kr']} {today_str}")
+    title = f"{z['kr']} {today_str} 오늘의 운세"
     card_id = f"fc-{z['en']}"
 
     kw_list = [
@@ -364,7 +364,7 @@ def build_chinese_post(c, today_str):
     color = pick_color()
     number = pick_number()
     rating = stars()
-    title = seo_title(f"{c['kr']} {today_str}")
+    title = f"{c['kr']} {today_str} 오늘의 띠운세"
     card_id = f"fc-{c['en']}"
 
     # 출생연도별 각각 다른 운세
@@ -434,17 +434,25 @@ def zodiac_weekly_fortune(kr_name):
     return sentence()
 
 def build_zodiac_weekly_post(today_str):
-    """12별자리 주간운세 한 페이지"""
+    """별자리별 주간운세 12개 개별 발행 — 매주 월요일"""
     week_range = get_week_range()
-    title = f"별자리 주간운세 {week_range} 12별자리 이번 주 운세 총정리"
-
-    cards_html = ""
+    month_str  = now_kst().strftime("%Y년 %m월")
+    results = []
     for z in ZODIACS:
         fortune = zodiac_weekly_fortune(z['kr'])
-        color = pick_color()
-        number = pick_number()
-        rating = stars()
-        cards_html += f"""
+        color   = pick_color()
+        number  = pick_number()
+        rating  = stars()
+        # 제목: "양자리 2026년 03월 주간운세" — html fetchWeeklyPost 검색 키워드와 일치
+        title = f"{z['kr']} {month_str} 주간운세 {week_range}"
+        kw_list = [
+            z['kr'], f"{z['kr']} 주간운세", f"{z['kr']} 이번주운세",
+            "별자리 주간운세", f"{z['kr']} {month_str}", "주간운세", "별자리운세"
+        ]
+        tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+        content_html = f"""{style()}
+<div class="wrap">
+  <div class="hero"><h1>📅 {z['emoji']} {z['kr']} 주간운세</h1><p>{week_range} · {z['date']}</p></div>
   <div class="card">
     <span class="badge">{z['emoji']} {z['kr']} ({z['date']}) {rating}</span>
     <p style="line-height:1.9">{fortune}</p>
@@ -452,54 +460,55 @@ def build_zodiac_weekly_post(today_str):
       <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
       <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
     </div>
-  </div>"""
-
-    content = f"""{style()}
-<div class="wrap">
-  <div class="hero"><h1>📅 별자리 주간운세</h1><p>{week_range} 12별자리 총정리</p></div>
-  {cards_html}
+  </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
 </div>"""
-    return title, content, ["별자리주간", "주간운세", "별자리운세"]
+        results.append((title, content_html, ["별자리주간", z['kr'], "주간운세"]))
+    return results
 
 
 def build_chinese_monthly_post(today_str):
-    """12띠 월간운세 한 페이지"""
-    month = get_month()
-    title = f"{month} 띠별 월간운세 12띠 한달 운세 총정리"
-
-    cards_html = ""
+    """띠별 월간운세 12개 개별 발행 — 매월 1일"""
+    month_str = get_month()
+    results = []
     for c in CHINESE:
         fortune = chinese_fortune(c['en'])
-        f1, _ = monthly_fortune_general()
-        color = pick_color()
-        number = pick_number()
-        rating = stars()
+        f1, _   = monthly_fortune_general()
+        color   = pick_color()
+        number  = pick_number()
+        rating  = stars()
         periods = [("상순 (1~10일)", sentence()), ("중순 (11~20일)", sentence()), ("하순 (21~말일)", sentence())]
         period_html = "".join(
             f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
             for p, s in periods
         )
-        cards_html += f"""
+        # 제목: "쥐띠 2026년 03월 월간운세" — html fetchMonthlyPost 검색 키워드와 일치
+        title = f"{c['kr']} {month_str} 월간운세"
+        kw_list = [
+            c['kr'], f"{c['kr']} 월간운세", f"{c['kr']} 이달운세",
+            "띠별 월간운세", f"{c['kr']} {month_str}", "월간운세", "띠운세"
+        ]
+        tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+        content_html = f"""{style()}
+<div class="wrap">
+  <div class="hero"><h1>🌙 {c['emoji']} {c['kr']} 월간운세</h1><p>{month_str}</p></div>
   <div class="card">
     <span class="badge">{c['emoji']} {c['kr']} ({c['year'].split(',')[0]}년생~) {rating}</span>
     <p>{fortune}</p><br><p>{f1}</p>
     <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 이달의 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 이달의 행운의 숫자</div><div class="val">{number}</div></div>
+      <div class="lucky-box"><div class="lbl">🎨 이달의 색</div><div class="val">{color}</div></div>
+      <div class="lucky-box"><div class="lbl">🔢 이달의 숫자</div><div class="val">{number}</div></div>
     </div>
     <br>{period_html}
-  </div>"""
-
-    content = f"""{style()}
-<div class="wrap">
-  <div class="hero"><h1>🌙 띠별 월간운세</h1><p>{month} 12띠 총정리</p></div>
-  {cards_html}
+  </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매월 업데이트</div>
 </div>"""
-    return title, content, ["띠별월간", "월간운세", "띠운세"]
+        results.append((title, content_html, ["띠별월간", c['kr'], "월간운세"]))
+    return results
 
 
 # ─────────────────────────────────────────
@@ -575,24 +584,24 @@ def main():
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
 
-    # ④ 별자리 주간운세 — 매주 월요일만
+    # ④ 별자리 주간운세 — 매주 월요일만 (별자리별 12개)
     if kst_now.weekday() == 0:
-        posts.append(build_zodiac_weekly_post(today_str))
-        print("📅 오늘은 월요일 — 별자리 주간운세 포함")
+        posts.extend(build_zodiac_weekly_post(today_str))
+        print("📅 오늘은 월요일 — 별자리 주간운세 12개 포함")
     else:
         print("📅 주간운세 스킵 (월요일 아님)")
 
-    # ⑤ 띠별 월간운세 — 매월 1일만
+    # ⑤ 띠별 월간운세 — 매월 1일만 (띠별 12개)
     if kst_now.day == 1:
-        posts.append(build_chinese_monthly_post(today_str))
-        print("📅 오늘은 1일 — 띠별 월간운세 포함")
+        posts.extend(build_chinese_monthly_post(today_str))
+        print("📅 오늘은 1일 — 띠별 월간운세 12개 포함")
     else:
         print("📅 월간운세 스킵 (1일 아님)")
 
     total = len(posts)
-    weekly  = " + 별자리주간 1" if kst_now.weekday() == 0 else ""
-    monthly = " + 띠별월간 1"   if kst_now.day == 1        else ""
-    count   = 25 + (1 if kst_now.weekday() == 0 else 0) + (1 if kst_now.day == 1 else 0)
+    weekly  = " + 별자리주간 12" if kst_now.weekday() == 0 else ""
+    monthly = " + 띠별월간 12"   if kst_now.day == 1        else ""
+    count   = 25 + (12 if kst_now.weekday() == 0 else 0) + (12 if kst_now.day == 1 else 0)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
     print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12{weekly}{monthly} = {count}개\n")
 
