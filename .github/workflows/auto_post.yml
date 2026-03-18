@@ -9,7 +9,7 @@ on:
 jobs:
   post:
     runs-on: ubuntu-latest
-    timeout-minutes: 120    # 429 재시도 대기 포함 여유시간
+    timeout-minutes: 180    # 월요일+1일 최대 49개 포스팅 대기 포함
 
     steps:
       - name: 📥 체크아웃
