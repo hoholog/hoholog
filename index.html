@@ -314,24 +314,23 @@
             }
         }
 
+        let _currentPage = null;
+
         function navigateTo(page) {
             const contentDiv = document.getElementById('content');
-            if (pages[page]) {
-                contentDiv.innerHTML = pages[page];
-                window.location.hash = page;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                if(page === 'fortune') showFortune('today');
-                if(page === 'blog') bbsInit();
-                if(page === 'index') {
-                    // PC 배지 색상 적용
-                    const pcBadge = document.getElementById('pc-badge-g1');
-                    if(pcBadge) {
-                        if(isMobile) {
-                            pcBadge.className = 'absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-400';
-                        } else {
-                            pcBadge.className = 'absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-500';
-                        }
-                    }
+            if (!pages[page]) return;
+            _currentPage = page;
+            contentDiv.innerHTML = pages[page];
+            window.location.hash = page;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (page === 'fortune') showFortune('today');
+            if (page === 'blog') bbsInit();
+            if (page === 'index') {
+                const pcBadge = document.getElementById('pc-badge-g1');
+                if (pcBadge) {
+                    pcBadge.className = isMobile
+                        ? 'absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-400'
+                        : 'absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-500';
                 }
             }
         }
@@ -527,7 +526,7 @@
         // ═══════════════════════════════
         async function fetchPosts(label, maxResults=6){
             const url = BASE_URL+'/blogs/'+BLOG_ID+'/posts?key='+API_KEY+'&labels='+encodeURIComponent(label)+'&maxResults='+maxResults+'&fields=items(title,url,published,content)';
-            try{ const r=await fetch(url); const d=await r.json(); return d.items||[]; }
+            try{ const r=await fetch(url,{cache:'no-store'}); const d=await r.json(); return d.items||[]; }
             catch(e){ return [] }
         }
         // ── Blogger 운세 콘텐츠 파싱 헬퍼 ──
@@ -588,47 +587,43 @@
         }
 
         // ── Blogger 포스트 검색 공통 헬퍼 ──
-        // Blogger v3 /posts/search 의 labels 파라미터는 무시됨 →
-        // 라벨 기반 목록(최신 20개)을 가져온 뒤 제목 문자열로 매칭
+        // /posts/search 의 labels 파라미터는 Blogger v3에서 무시됨 →
+        // 라벨 기반 목록(최신 20개) fetch 후 제목 키워드 전체 매칭
+        // cache:false(no-store)로 항상 최신 데이터 강제 요청
         async function fetchByLabelAndTitle(label, titleKeywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
                 + '&maxResults=20&orderBy=published'
                 + '&fields=items(title,url,published,content)';
             try {
-                const r = await fetch(url);
+                const r = await fetch(url, {cache: 'no-store'});
                 const d = await r.json();
                 const items = d.items || [];
-                // 모든 키워드가 제목에 포함된 첫 번째 포스트 반환
                 return items.find(p => titleKeywords.every(kw => p.title.includes(kw))) || null;
             } catch(e) { return null; }
         }
 
-        // 별자리 오늘운세: 제목 "양자리 2026년 03월 19일 오늘의 운세"
+        // 별자리 오늘운세: "양자리 2026년 03월 19일 오늘의 운세"
         async function fetchFortunePost(label, name) {
-            const keywords = [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세'];
-            return fetchByLabelAndTitle(label, keywords);
+            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세']);
         }
 
-        // 띠운세: 제목 "쥐띠 2026년 03월 19일 오늘의 띠운세"
+        // 띠운세: "쥐띠 2026년 03월 19일 오늘의 띠운세"
         async function fetchChinesePost(label, name) {
-            const keywords = [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세'];
-            return fetchByLabelAndTitle(label, keywords);
+            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세']);
         }
 
-        // 별자리 주간운세: 제목 "양자리 2026년 03월 주간운세"
+        // 별자리 주간운세: "양자리 2026년 03월 주간운세"
         async function fetchWeeklyPost(label, name) {
-            const keywords = [name, kstYear()+'년', kstMonth()+'월', '주간운세'];
-            return fetchByLabelAndTitle(label, keywords);
+            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '주간운세']);
         }
 
-        // 띠별 월간운세: 제목 "쥐띠 2026년 03월 월간운세"
+        // 띠별 월간운세: "쥐띠 2026년 03월 월간운세"
         async function fetchMonthlyPost(label, name) {
-            const keywords = [name, kstYear()+'년', kstMonth()+'월', '월간운세'];
-            return fetchByLabelAndTitle(label, keywords);
+            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '월간운세']);
         }
 
-        // 구버전 호환 (혹시 다른 곳에서 호출 시)
+        // 구버전 호환
         async function fetchFortunePostSimple(label, name) {
             return fetchFortunePost(label, name);
         }
