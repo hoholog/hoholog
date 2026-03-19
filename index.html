@@ -549,14 +549,33 @@
         //         <div style="margin-top:8px">{year_rows}</div></div>
         // year_rows 각 행: <div style="font-size:11px;color:#888">🎨 색 숫자</div> 제거
         function parseFortune_Chinese(raw) {
-            const m = raw.match(
-                /<div[^>]*class="card"[^>]*>\s*<span[^>]*class="badge"[^>]*>[^<]*출생연도별[^<]*<\/span>\s*<div[^>]*style[^>]*>([\s\S]*?)<\/div>\s*<\/div>/
-            );
-            if (!m) return null;
-            // 행운의 색/숫자 줄 제거
-            return m[1].trim().replace(
-                /<div[^>]*font-size:11px;color:#888[^>]*>[\s\S]*?<\/div>/g, ''
-            );
+            // badge에 "출생연도별" 포함된 .card 안의
+            // <div style="margin-top:8px">{year_rows 6개}</div> 전체를 깊이 추적으로 추출
+            const OPEN_TAG = '<div style="margin-top:8px">';
+            const badgePos = raw.indexOf('출생연도별');
+            if (badgePos === -1) return null;
+            const wrapPos = raw.indexOf(OPEN_TAG, badgePos);
+            if (wrapPos === -1) return null;
+
+            const contentStart = wrapPos + OPEN_TAG.length;
+            let depth = 1, i = contentStart, contentEnd = -1;
+            while (i < raw.length && depth > 0) {
+                const o = raw.indexOf('<div', i);
+                const c = raw.indexOf('</div>', i);
+                if (o !== -1 && (c === -1 || o < c)) {
+                    depth++;
+                    i = o + 4;
+                } else if (c !== -1) {
+                    depth--;
+                    if (depth === 0) { contentEnd = c; break; }
+                    i = c + 6;
+                } else { break; }
+            }
+            if (contentEnd === -1) return null;
+
+            // 행운의 색/숫자 줄(<div style="font-size:11px;color:#888">) 제거
+            return raw.slice(contentStart, contentEnd)
+                .replace(/<div[^>]*font-size:11px;color:#888[^>]*>[\s\S]*?<\/div>/g, '');
         }
 
         // ── 타입 3: 별자리 주간운세 ──
