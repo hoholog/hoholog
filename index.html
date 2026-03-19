@@ -98,7 +98,7 @@
             </div>
             <div>
                 <h4 class="text-white font-bold mb-6">고객 센터</h4>
-                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection#90fce9f8a0a9a2a9fdfdd0f7fdf1f9fcbef3fffd" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="0965706139303b306464496e64686065276a6664">[email&#160;protected]</span></a></p>
+                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection#adc1d4c59d949f94c0c0edcac0ccc4c183cec2c0" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="a6cadfce969f949fcbcbe6c1cbc7cfca88c5c9cb">[email&#160;protected]</span></a></p>
                 <p>위치: Seoul, Korea</p>
                 <p class="mt-4 text-xs tracking-widest opacity-60 uppercase">Operational: Weekdays 09:00 - 18:00</p>
             </div>
@@ -317,7 +317,7 @@
         function navigateTo(page) {
             const contentDiv = document.getElementById('content');
             if (!pages[page]) return;
-            // 매번 DOM 새로 생성 → 메뉴/H마크 재클릭 시 Blogger 데이터 항상 fresh fetch
+            // 매번 DOM 새로 생성 → 메뉴/H마크 재클릭 시 항상 fresh fetch
             contentDiv.innerHTML = pages[page];
             window.location.hash = page;
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -527,48 +527,155 @@
             try{ const r=await fetch(url,{cache:'no-store'}); const d=await r.json(); return d.items||[]; }
             catch(e){ return [] }
         }
-        // ── Blogger 운세 콘텐츠 파싱 헬퍼 ──
-        // create_post.py 구조:
-        //   <div class="card"> → 출생연도별 year_rows (띠운세)
-        //   <div class="fc-text"> → 운세 본문 (별자리/띠 공통)
-        function extractBlogContent(post) {
-            if (!post) return null;
-            const raw = post.content || '';
+        // ══════════════════════════════════════════════════
+        //  Blogger 파싱 헬퍼 — create_post.py 4가지 타입 1:1 매핑
+        // ══════════════════════════════════════════════════
 
-            // 띠운세: .card 안의 출생연도별 행(year_rows) HTML 추출
-            // <div class="card"><span class="badge">...출생연도별...</span><div ...>{year_rows}</div></div>
-            const yearCardMatch = raw.match(/<div[^>]*class="card"[^>]*>[\s\S]*?출생연도별[\s\S]*?<div[^>]*style[^>]*>([\s\S]*?)<\/div>\s*<\/div>/);
-            if (yearCardMatch) {
-                return {
-                    title: post.title, url: post.url,
-                    yearRowsHTML: yearCardMatch[1].trim(),
-                    type: 'chinese',
-                    published: post.published
-                };
-            }
-
-            // 별자리/기타: .fc-text div 내 운세 본문
-            const fcMatch = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
-            if (fcMatch) {
-                const text = fcMatch[1]
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<[^>]+>/g, '')
-                    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-                return { title: post.title, url: post.url, text, type: 'zodiac', published: post.published };
-            }
-
-            // 폴백: 전체 태그 제거
-            const text = raw.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-            return { title: post.title, url: post.url, text, type: 'fallback', published: post.published };
+        // ── 타입 1: 별자리 오늘운세 ──
+        // 제목: "양자리 2026년 03월 19일 오늘의 운세"
+        // HTML: <div class="fc-text">{운세본문}</div>  ← fc-lucky 박스 제외
+        function parseFortune_Zodiac(raw) {
+            const m = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
+            if (!m) return null;
+            return m[1]
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
         }
 
-        function blogCardHTML(info, emoji, name, sub, cardId, saveLabel) {
+        // ── 타입 2: 띠 오늘운세 ──
+        // 제목: "돼지띠 2026년 03월 19일 오늘의 띠운세"
+        // HTML: <div class="card"><span class="badge">...출생연도별...</span>
+        //         <div style="margin-top:8px">{year_rows}</div></div>
+        // year_rows 각 행: <div style="font-size:11px;color:#888">🎨 색 숫자</div> 제거
+        function parseFortune_Chinese(raw) {
+            const m = raw.match(
+                /<div[^>]*class="card"[^>]*>\s*<span[^>]*class="badge"[^>]*>[^<]*출생연도별[^<]*<\/span>\s*<div[^>]*style[^>]*>([\s\S]*?)<\/div>\s*<\/div>/
+            );
+            if (!m) return null;
+            // 행운의 색/숫자 줄 제거
+            return m[1].trim().replace(
+                /<div[^>]*font-size:11px;color:#888[^>]*>[\s\S]*?<\/div>/g, ''
+            );
+        }
+
+        // ── 타입 3: 별자리 주간운세 ──
+        // 제목: "양자리 2026년 03월 주간운세 03/17 ~ 03/23"
+        // HTML: <div class="card"><span class="badge">...</span><p style="line-height:1.9">{본문}</p>...
+        function parseFortune_Weekly(raw) {
+            const m = raw.match(/<div[^>]*class="card"[^>]*>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/);
+            if (!m) return null;
+            return m[1]
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+        }
+
+        // ── 타입 4: 띠 월간운세 ──
+        // 제목: "쥐띠 2026년 03월 월간운세"
+        // HTML: <div class="card"><p>{본문1}</p><br><p>{본문2}</p>
+        //         <div class="week-day"><strong>상순...</strong><br>내용</div>...
+        function parseFortune_Monthly(raw) {
+            // 키워드 card 전까지만 (두 번째 card = 관련 키워드 섹션)
+            const cardM = raw.match(
+                /<div[^>]*class="card"[^>]*>([\s\S]*?)<\/div>\s*<div[^>]*class="card"[^>]*><span[^>]*class="badge"[^>]*>🔍/
+            );
+            if (!cardM) return null;
+            const inner = cardM[1];
+            const ps = [...inner.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
+                .map(m2 => m2[1].replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim())
+                .filter(Boolean);
+            const wds = [...inner.matchAll(/<div[^>]*class="week-day"[^>]*>([\s\S]*?)<\/div>/g)]
+                .map(m2 => m2[1].replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim())
+                .filter(Boolean);
+            return { ps, wds };
+        }
+
+        // ── 통합 파서: 제목으로 타입 판별 후 파싱 ──
+        function extractBlogContent(post) {
+            if (!post) return null;
+            const raw  = post.content || '';
+            const meta = { title: post.title, url: post.url, published: post.published };
+            const t    = post.title || '';
+
+            if (t.includes('오늘의 운세') && !t.includes('띠운세')) {
+                const text = parseFortune_Zodiac(raw);
+                return text ? { ...meta, type: 'zodiac', text } : null;
+            }
+            if (t.includes('띠운세') && t.includes('월') && t.includes('일')) {
+                const html = parseFortune_Chinese(raw);
+                return html ? { ...meta, type: 'chinese', yearRowsHTML: html } : null;
+            }
+            if (t.includes('주간운세')) {
+                const text = parseFortune_Weekly(raw);
+                return text ? { ...meta, type: 'weekly', text } : null;
+            }
+            if (t.includes('월간운세')) {
+                const data = parseFortune_Monthly(raw);
+                return data ? { ...meta, type: 'monthly', ...data } : null;
+            }
+            // 폴백: fc-text → card p 순
+            const ft = parseFortune_Zodiac(raw);
+            if (ft) return { ...meta, type: 'zodiac', text: ft };
+            const wt = parseFortune_Weekly(raw);
+            if (wt) return { ...meta, type: 'weekly', text: wt };
+            return null;
+        }
+
+        // ── 타입별 카드 렌더러 ──
+        function renderBlogCard(info, emoji, name, sub, cardId, saveLabel) {
             if (!info) return null;
-            const preview = (info.text || '').length > 500
-                ? (info.text || '').slice(0, 500).replace(/\n/g, '<br>') + '...'
-                : (info.text || '').replace(/\n/g, '<br>');
+
+            // 타입 2: 띠 오늘 — 출생연도별 HTML 그대로
+            if (info.type === 'chinese') {
+                return `
+                <div style="text-align:center;margin-bottom:16px">
+                    <div style="font-size:40px">${emoji}</div>
+                    <div style="font-size:20px;font-weight:900;margin:6px 0;color:#7c3aed">${name} 출생연도별 오늘 운세</div>
+                    <div style="font-size:13px;color:#888">${sub}</div>
+                </div>
+                <div id="${cardId}">${info.yearRowsHTML}</div>
+                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
+                    <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
+                </div>`;
+            }
+
+            // 타입 4: 띠 월간 — 본문 + 상중하순
+            if (info.type === 'monthly') {
+                const bodyHtml = (info.ps||[]).map(p =>
+                    `<p style="margin-bottom:10px;line-height:1.85">${p.replace(/\n/g,'<br>')}</p>`
+                ).join('');
+                const wdHtml = (info.wds||[]).map(w => {
+                    const lines = w.split('\n');
+                    return `<div style="background:rgba(255,255,255,.12);border-left:3px solid rgba(255,220,100,.6);border-radius:0 10px 10px 0;padding:10px 12px;margin-bottom:8px">
+                        <strong style="font-size:12px;opacity:.85">${lines[0]||''}</strong>
+                        <div style="font-size:13px;line-height:1.75;margin-top:4px">${(lines.slice(1).join('\n')||'').replace(/\n/g,'<br>')}</div>
+                    </div>`;
+                }).join('');
+                return `
+                <div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:24px;color:#fff">
+                    <div style="text-align:center;margin-bottom:16px">
+                        <div style="font-size:44px">${emoji}</div>
+                        <div style="font-size:21px;font-weight:900;margin:6px 0">${name}</div>
+                        <div style="opacity:.8;font-size:13px">${sub}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:10px">${bodyHtml}</div>
+                    ${wdHtml}
+                    <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">hoholog.github.io · ${sub}</div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
+                    <button onclick="saveCard('${cardId}','${saveLabel}')"
+                        style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
+                    <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
+                </div>`;
+            }
+
+            // 타입 1/3: 별자리 오늘 · 주간 — 운세 본문 카드
+            const preview = (info.text||'').length > 600
+                ? (info.text||'').slice(0,600).replace(/\n/g,'<br>') + '...'
+                : (info.text||'').replace(/\n/g,'<br>');
             return `
-                <div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:24px;color:#fff;max-width:480px;margin:0 auto">
+                <div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:24px;color:#fff">
                     <div style="text-align:center;margin-bottom:14px">
                         <div style="font-size:44px">${emoji}</div>
                         <div style="font-size:21px;font-weight:900;margin:6px 0">${name}</div>
@@ -584,8 +691,12 @@
                 </div>`;
         }
 
+        // 구버전 호환 래퍼
+        function blogCardHTML(info, emoji, name, sub, cardId, saveLabel) {
+            return renderBlogCard(info, emoji, name, sub, cardId, saveLabel);
+        }
+
         // ── KST 날짜 포맷 헬퍼 ──
-        // 실제 Blogger 제목 형식: "물고기자리 2026년 03월 18일 오늘의 운세"
         function kstYear()  { return kstNow().getUTCFullYear(); }
         function kstMonth() { return String(kstNow().getUTCMonth()+1).padStart(2,'0'); }
         function kstDay()   { return String(kstNow().getUTCDate()).padStart(2,'0'); }
@@ -596,10 +707,10 @@
             return String(mon.getUTCMonth()+1).padStart(2,'0') + String(mon.getUTCDate()).padStart(2,'0');
         }
 
-        // ── Blogger 포스트 검색 공통 헬퍼 ──
-        // /posts/search 의 labels 파라미터는 Blogger v3에서 무시됨 →
-        // 라벨 기반 목록(최신 20개) fetch 후 제목 키워드 전체 매칭
-        async function fetchByLabelAndTitle(label, titleKeywords) {
+        // ── Blogger 포스트 fetch ──
+        // /posts/search 의 labels는 Blogger v3에서 무시됨 →
+        // 라벨 목록(최신 20개) 조회 후 제목 키워드 전체 매칭
+        async function fetchByLabelAndTitle(label, keywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
                 + '&maxResults=20&orderBy=published'
@@ -607,32 +718,26 @@
             try {
                 const r = await fetch(url, {cache: 'no-store'});
                 const d = await r.json();
-                const items = d.items || [];
-                return items.find(p => titleKeywords.every(kw => p.title.includes(kw))) || null;
+                return (d.items||[]).find(p => keywords.every(k => p.title.includes(k))) || null;
             } catch(e) { return null; }
         }
 
-        // 별자리 오늘운세: "양자리 2026년 03월 19일 오늘의 운세"
         async function fetchFortunePost(label, name) {
-            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세']);
+            return fetchByLabelAndTitle(label,
+                [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세']);
         }
-
-        // 띠운세: "쥐띠 2026년 03월 19일 오늘의 띠운세"
         async function fetchChinesePost(label, name) {
-            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세']);
+            return fetchByLabelAndTitle(label,
+                [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세']);
         }
-
-        // 별자리 주간운세: "양자리 2026년 03월 주간운세"
         async function fetchWeeklyPost(label, name) {
-            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '주간운세']);
+            return fetchByLabelAndTitle(label,
+                [name, kstYear()+'년', kstMonth()+'월', '주간운세']);
         }
-
-        // 띠별 월간운세: "쥐띠 2026년 03월 월간운세"
         async function fetchMonthlyPost(label, name) {
-            return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '월간운세']);
+            return fetchByLabelAndTitle(label,
+                [name, kstYear()+'년', kstMonth()+'월', '월간운세']);
         }
-
-        // 구버전 호환
         async function fetchFortunePostSimple(label, name) {
             return fetchFortunePost(label, name);
         }
@@ -1085,6 +1190,41 @@
             '이달은 내면의 성장과 자기 개발에 집중하기 좋은 시기입니다.',
         ];
 
+        async function selectZodiac(kr){
+            _selZodiac=kr;
+            document.querySelectorAll('[id^="zsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('zsel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const z=ZODIACS_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('zodiac-card-area');
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
+            const post = await fetchFortunePost('별자리운세', kr);
+            const info = extractBlogContent(post);
+            const inner = renderBlogCard(info, z.emoji, z.kr, z.date, 'zcard', '별자리운세_'+kr)
+                || blogFallbackCard(z.emoji, z.kr, z.date, 'zcard', '별자리운세_'+kr, '별자리운세');
+            area.innerHTML = `<div class="fcard">${inner}</div>`;
+        }
+
+        async function selectChinese(kr){
+            _selChinese=kr;
+            document.querySelectorAll('[id^="csel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
+            const btn=document.getElementById('csel-'+kr);
+            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
+            const ch=CHINESE_LIST.find(x=>x.kr===kr);
+            const area=document.getElementById('chinese-card-area');
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
+            const post = await fetchChinesePost('띠운세', ch.kr);
+            const info = extractBlogContent(post);
+            const inner = renderBlogCard(info, ch.emoji, ch.kr, todayStr(), 'ccard-full', '띠운세_'+kr);
+            if (inner) {
+                area.innerHTML = `<div class="fcard">${inner}</div>`;
+            } else {
+                area.innerHTML=`<div class="fcard">
+                    ${blogFallbackCard(ch.emoji, ch.kr, todayStr(), 'ccard-full', '띠운세_'+kr, '띠운세')}
+                </div>`;
+            }
+        }
+
         async function selectZodiacWeekly(kr){
             _selZodiacWeekly=kr;
             document.querySelectorAll('[id^="zwsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
@@ -1122,27 +1262,11 @@
             area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 주간운세를 불러오는 중...</div>`;
             const post = await fetchWeeklyPost('별자리주간', kr);
             const info = extractBlogContent(post);
-            if (info) {
-                const preview = info.text.length > 500 ? info.text.slice(0, 500) + '...' : info.text;
-                area.innerHTML=`<div class="fcard">
-                    <div id="zwcard" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:22px;color:#fff">
-                        <div style="text-align:center;margin-bottom:16px">
-                            <div style="font-size:36px">${z.emoji}</div>
-                            <div style="font-size:20px;font-weight:900;margin:6px 0">${z.kr} 주간운세</div>
-                            <div style="opacity:.8;font-size:13px">${weekRange()}</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;font-size:14px;line-height:1.85">${preview}</div>
-                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${weekRange()}</div>
-                    </div>
-                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
-                        <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
-                            style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                        <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
-                    </div>
-                </div>`;
+            const inner = renderBlogCard(info, z.emoji, z.kr, weekRange(), 'zwcard', '별자리주간운세_'+kr);
+            if (inner) {
+                area.innerHTML=`<div class="fcard">${inner}</div>`;
             } else {
-                // 폴백: 기존 랜덤 방식
-                const fallbackInner = `
+                area.innerHTML=`<div class="fcard">
                     <div id="zwcard" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:22px;color:#fff">
                         <div style="text-align:center;margin-bottom:16px">
                             <div style="font-size:36px">${z.emoji}</div>
@@ -1157,8 +1281,8 @@
                         <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
                             style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
                         <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리주간" target="_blank" class="blog-btn">📖 블로그 더보기</a>
-                    </div>`;
-                area.innerHTML=`<div class="fcard">${fallbackInner}</div>`;
+                    </div>
+                </div>`;
             }
         }
 
@@ -1169,33 +1293,18 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const ch=CHINESE_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('chinese-monthly-area');
-            const periods=[['상순 (1~10일)',rnd(MONTHLY_MSGS)],['중순 (11~20일)',rnd(MONTHLY_MSGS)],['하순 (21~말일)',rnd(MONTHLY_MSGS)]];
-            const periodRows=periods.map(([p,m])=>`<div style="background:#fffbf0;border-left:4px solid #f7b731;border-radius:8px;padding:12px 14px;margin-bottom:8px">
-                <strong style="color:#92400e">${p}</strong><br>
-                <span style="font-size:13px;color:#555;line-height:1.7">${m}</span>
-            </div>`).join('');
-            // Blogger API로 띠별 월간운세 불러오기
             area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 월간운세를 불러오는 중...</div>`;
             const post = await fetchMonthlyPost('띠별월간', ch.kr);
             const info = extractBlogContent(post);
-            if (info) {
-                const preview = info.text.length > 500 ? info.text.slice(0, 500) + '...' : info.text;
-                area.innerHTML=`<div class="fcard">
-                    <div style="background:linear-gradient(135deg,#f093fb,#f5576c);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:16px" id="cmcard">
-                        <div style="font-size:36px">${ch.emoji}</div>
-                        <div style="font-size:20px;font-weight:900;margin:6px 0">${ch.kr} 월간운세</div>
-                        <div style="opacity:.8;font-size:13px">${monthStr()}</div>
-                        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-top:14px;font-size:14px;line-height:1.8;text-align:left">${preview}</div>
-                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">hoholog.github.io · ${monthStr()}</div>
-                    </div>
-                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-                        <button onclick="saveCard('cmcard','띠월간운세_${kr}')"
-                            style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                        <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
-                    </div>
-                </div>`;
+            const inner = renderBlogCard(info, ch.emoji, ch.kr, monthStr(), 'cmcard', '띠월간운세_'+kr);
+            if (inner) {
+                area.innerHTML=`<div class="fcard">${inner}</div>`;
             } else {
-                // 폴백: 기존 랜덤 방식
+                const periods=[['상순 (1~10일)',rnd(MONTHLY_MSGS)],['중순 (11~20일)',rnd(MONTHLY_MSGS)],['하순 (21~말일)',rnd(MONTHLY_MSGS)]];
+                const periodRows=periods.map(([p,m])=>`<div style="background:#fffbf0;border-left:4px solid #f7b731;border-radius:8px;padding:12px 14px;margin-bottom:8px">
+                    <strong style="color:#92400e">${p}</strong><br>
+                    <span style="font-size:13px;color:#555;line-height:1.7">${m}</span>
+                </div>`).join('');
                 area.innerHTML=`<div class="fcard">
                     <div style="background:linear-gradient(135deg,#f093fb,#f5576c);border-radius:16px;padding:20px;color:#fff;text-align:center;margin-bottom:16px" id="cmcard">
                         <div style="font-size:36px">${ch.emoji}</div>
@@ -1210,75 +1319,6 @@
                             style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
                         <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠별월간" target="_blank" class="blog-btn">📖 블로그 더보기</a>
                     </div>
-                </div>`;
-            }
-        }
-
-        async function selectZodiac(kr){
-            _selZodiac=kr;
-            document.querySelectorAll('[id^="zsel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
-            const btn=document.getElementById('zsel-'+kr);
-            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
-            const z=ZODIACS_LIST.find(x=>x.kr===kr);
-            const area=document.getElementById('zodiac-card-area');
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
-            const post = await fetchFortunePost('별자리운세', kr);
-            const info = extractBlogContent(post);
-            const inner = info
-                ? blogCardHTML(info, z.emoji, z.kr, z.date, 'zcard', '별자리운세_'+kr)
-                : blogFallbackCard(z.emoji, z.kr, z.date, 'zcard', '별자리운세_'+kr, '별자리운세');
-            area.innerHTML = `<div class="fcard">${inner}</div>`;
-        }
-
-        async function selectChinese(kr){
-            _selChinese=kr;
-            document.querySelectorAll('[id^="csel-"]').forEach(b=>{b.style.background='#f5f3ff';b.style.borderColor='transparent';});
-            const btn=document.getElementById('csel-'+kr);
-            if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
-            const ch=CHINESE_LIST.find(x=>x.kr===kr);
-            const area=document.getElementById('chinese-card-area');
-
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
-
-            const post = await fetchChinesePost('띠운세', ch.kr);
-            const info = extractBlogContent(post);
-
-            if (info && info.type === 'chinese' && info.yearRowsHTML) {
-                // ✅ Blogger 출생연도별 운세 HTML 그대로 렌더링
-                area.innerHTML=`<div class="fcard">
-                    <div style="text-align:center;margin-bottom:16px">
-                        <div style="font-size:40px">${ch.emoji}</div>
-                        <div style="font-size:20px;font-weight:900;margin:6px 0;color:#7c3aed">${ch.kr} 출생연도별 오늘 운세</div>
-                        <div style="font-size:13px;color:#888">${todayStr()}</div>
-                    </div>
-                    <div style="margin-bottom:16px">${info.yearRowsHTML}</div>
-                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-                        <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
-                    </div>
-                </div>`;
-            } else if (info && info.text) {
-                // fc-text 폴백 (yearRows 파싱 실패 시)
-                const preview = info.text.length > 400
-                    ? info.text.slice(0,400).replace(/\n/g,'<br>') + '...'
-                    : info.text.replace(/\n/g,'<br>');
-                area.innerHTML=`<div class="fcard">
-                    <div id="ccard-full" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:22px;color:#fff">
-                        <div style="text-align:center;margin-bottom:14px">
-                            <div style="font-size:40px">${ch.emoji}</div>
-                            <div style="font-size:20px;font-weight:900;margin:6px 0">${ch.kr} 오늘 운세</div>
-                            <div style="opacity:.8;font-size:13px">${todayStr()}</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${preview}</div>
-                        <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
-                    </div>
-                    <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
-                        <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
-                    </div>
-                </div>`;
-            } else {
-                // Blogger 포스트 없음 → 로컬 랜덤 폴백
-                area.innerHTML=`<div class="fcard">
-                    ${blogFallbackCard(ch.emoji, ch.kr, todayStr(), 'ccard-full', '띠운세_'+kr, '띠운세')}
                 </div>`;
             }
         }
