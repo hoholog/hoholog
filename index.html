@@ -98,7 +98,7 @@
             </div>
             <div>
                 <h4 class="text-white font-bold mb-6">고객 센터</h4>
-                <p class="mb-2">이메일: <a href="mailto:lyh0929mm@gmail.com" class="hover:text-white transition">lyh0929mm@gmail.com</a></p>
+                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection#b3dfcadb838a818adedef3d4ded2dadf9dd0dcde" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="fb978293cbc2c9c29696bb9c969a9297d5989496">[email&#160;protected]</span></a></p>
                 <p>위치: Seoul, Korea</p>
                 <p class="mt-4 text-xs tracking-widest opacity-60 uppercase">Operational: Weekdays 09:00 - 18:00</p>
             </div>
@@ -108,7 +108,7 @@
         </div>
     </footer>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         // 모바일 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
@@ -519,7 +519,7 @@
             const sun=new Date(mon);sun.setUTCDate(mon.getUTCDate()+6);
             return (mon.getUTCMonth()+1)+'/'+mon.getUTCDate()+' ~ '+(sun.getUTCMonth()+1)+'/'+sun.getUTCDate();
         }
-        function monthStr(){const d=kstNow();return d.getUTCFullYear()+'년 '+(d.getUTCMonth()+1)+'월'}
+        function monthStr(){const d=kstNow();return d.getUTCFullYear()+'년 '+String(d.getUTCMonth()+1).padStart(2,'0')+'월'}
         function fmtDate(s){const d=new Date(s);return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()}
 
         // ═══════════════════════════════
@@ -587,65 +587,50 @@
             return String(mon.getUTCMonth()+1).padStart(2,'0') + String(mon.getUTCDate()).padStart(2,'0');
         }
 
-        // 별자리 오늘운세: "물고기자리 2026년 03월 18일 오늘의 운세"
+        // ── Blogger 포스트 검색 공통 헬퍼 ──
+        // Blogger v3 /posts/search 의 labels 파라미터는 무시됨 →
+        // 라벨 기반 목록(최신 20개)을 가져온 뒤 제목 문자열로 매칭
+        async function fetchByLabelAndTitle(label, titleKeywords) {
+            const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
+                + '&labels=' + encodeURIComponent(label)
+                + '&maxResults=20&orderBy=published'
+                + '&fields=items(title,url,published,content)';
+            try {
+                const r = await fetch(url);
+                const d = await r.json();
+                const items = d.items || [];
+                // 모든 키워드가 제목에 포함된 첫 번째 포스트 반환
+                return items.find(p => titleKeywords.every(kw => p.title.includes(kw))) || null;
+            } catch(e) { return null; }
+        }
+
+        // 별자리 오늘운세: 제목 "양자리 2026년 03월 19일 오늘의 운세"
         async function fetchFortunePost(label, name) {
-            const q = name + ' ' + kstYear() + '년 ' + kstMonth() + '월 ' + kstDay() + '일 오늘의 운세';
-            const searchUrl = BASE_URL + '/blogs/' + BLOG_ID + '/posts/search?key=' + API_KEY
-                + '&q=' + encodeURIComponent(q)
-                + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=1&fields=items(title,url,published,content)';
-            try {
-                const r = await fetch(searchUrl);
-                const d2 = await r.json();
-                return (d2.items && d2.items[0]) ? d2.items[0] : null;
-            } catch(e) { return null; }
+            const keywords = [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세'];
+            return fetchByLabelAndTitle(label, keywords);
         }
 
-        // 띠운세: "쥐띠 2026년 03월 18일 오늘의 띠운세"
+        // 띠운세: 제목 "쥐띠 2026년 03월 19일 오늘의 띠운세"
         async function fetchChinesePost(label, name) {
-            const q = name + ' ' + kstYear() + '년 ' + kstMonth() + '월 ' + kstDay() + '일 오늘의 띠운세';
-            const searchUrl = BASE_URL + '/blogs/' + BLOG_ID + '/posts/search?key=' + API_KEY
-                + '&q=' + encodeURIComponent(q)
-                + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=1&fields=items(title,url,published,content)';
-            try {
-                const r = await fetch(searchUrl);
-                const d2 = await r.json();
-                return (d2.items && d2.items[0]) ? d2.items[0] : null;
-            } catch(e) { return null; }
+            const keywords = [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세'];
+            return fetchByLabelAndTitle(label, keywords);
         }
 
-        // 별자리 주간운세: "양자리 2026년 03월 주간운세" (이번 주 월요일 기준)
+        // 별자리 주간운세: 제목 "양자리 2026년 03월 주간운세"
         async function fetchWeeklyPost(label, name) {
-            const q = name + ' ' + kstYear() + '년 ' + kstMonth() + '월 주간운세';
-            const searchUrl = BASE_URL + '/blogs/' + BLOG_ID + '/posts/search?key=' + API_KEY
-                + '&q=' + encodeURIComponent(q)
-                + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=1&orderBy=published&fields=items(title,url,published,content)';
-            try {
-                const r = await fetch(searchUrl);
-                const d2 = await r.json();
-                return (d2.items && d2.items[0]) ? d2.items[0] : null;
-            } catch(e) { return null; }
+            const keywords = [name, kstYear()+'년', kstMonth()+'월', '주간운세'];
+            return fetchByLabelAndTitle(label, keywords);
         }
 
-        // 띠별 월간운세: "쥐띠 2026년 03월 월간운세"
+        // 띠별 월간운세: 제목 "쥐띠 2026년 03월 월간운세"
         async function fetchMonthlyPost(label, name) {
-            const q = name + ' ' + kstYear() + '년 ' + kstMonth() + '월 월간운세';
-            const searchUrl = BASE_URL + '/blogs/' + BLOG_ID + '/posts/search?key=' + API_KEY
-                + '&q=' + encodeURIComponent(q)
-                + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=1&orderBy=published&fields=items(title,url,published,content)';
-            try {
-                const r = await fetch(searchUrl);
-                const d2 = await r.json();
-                return (d2.items && d2.items[0]) ? d2.items[0] : null;
-            } catch(e) { return null; }
+            const keywords = [name, kstYear()+'년', kstMonth()+'월', '월간운세'];
+            return fetchByLabelAndTitle(label, keywords);
         }
 
         // 구버전 호환 (혹시 다른 곳에서 호출 시)
         async function fetchFortunePostSimple(label, name) {
-            return fetchWeeklyPost(label, name);
+            return fetchFortunePost(label, name);
         }
 
         function renderPosts(posts){
@@ -1777,10 +1762,4 @@
         if(e.key==='F12'){e.preventDefault();return false;}
         if(e.ctrlKey && (e.key==='u'||e.key==='U')){e.preventDefault();return false;}
         if(e.ctrlKey && e.shiftKey && (e.key==='I'||e.key==='i')){e.preventDefault();return false;}
-        if(e.ctrlKey && e.shiftKey && (e.key==='J'||e.key==='j')){e.preventDefault();return false;}
-        if(e.ctrlKey && e.shiftKey && (e.key==='C'||e.key==='c')){e.preventDefault();return false;}
-        if(e.ctrlKey && (e.key==='s'||e.key==='S')){e.preventDefault();return false;}
-    });
-    </script>
-</body>
-</html>
+        if(e.ctrlKey && e.shiftKey && (e.key==='J'||e.key==='j')){e.preventDefau
