@@ -534,7 +534,53 @@
         // ── 타입 1: 별자리 오늘운세 ──
         // 제목: "양자리 2026년 03월 19일 오늘의 운세"
         // HTML: <div class="fc-text">{운세본문}</div>  ← fc-lucky 박스 제외
-        function parseFortune_Zodiac(raw) {
+        // ── 운세 지수 파서 (별자리·띠 공통) ──
+        // HTML: <div class="card" style="background:#f8f0ff">
+        //         <span class="badge">📊 오늘의 운세 지수</span>
+        //         <div style="margin-top:10px">
+        //           <div style="display:flex;..."><span>🌟 종합운</span><span>██...░░</span><span>63%</span></div>
+        //           ...4행...
+        //         </div>
+        //       </div>
+        function parseFortune_Score(raw) {
+            // create_post.py 고정 색상으로 4개 운세 지수 추출
+            // 종합:#6c3483 금전:#d4ac0d 건강:#1e8449 애정:#e74c3c
+            if (raw.indexOf('오늘의 운세 지수') === -1) return null;
+            function pick(color) {
+                const m = raw.match(new RegExp('color:' + color + '">([0-9]+)%'));
+                return m ? parseInt(m[1]) : null;
+            }
+            const total  = pick('#6c3483');
+            const money  = pick('#d4ac0d');
+            const health = pick('#1e8449');
+            const love   = pick('#e74c3c');
+            if (total === null || money === null || health === null || love === null) return null;
+            return { total, money, health, love };
+        }
+
+        // score bar HTML 생성 (Blogger 스타일과 동일)
+        function renderScoreBar(emoji, label, pct, color) {
+            const filled = Math.round(pct / 10);
+            const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+                <span style="min-width:62px;font-size:12px;opacity:.9">${emoji} ${label}</span>
+                <span style="font-family:monospace;font-size:13px;color:${color};letter-spacing:1px">${bar}</span>
+                <span style="font-size:12px;font-weight:700;color:${color}">${pct}%</span>
+            </div>`;
+        }
+
+        function renderScoreCard(score) {
+            if (!score) return '';
+            return `<div style="background:rgba(255,255,255,.12);border-radius:12px;padding:14px;margin-top:12px">
+                <div style="font-size:12px;opacity:.8;margin-bottom:8px">📊 오늘의 운세 지수</div>
+                ${renderScoreBar('🌟','종합운', score.total,  '#fde68a')}
+                ${renderScoreBar('💰','금전운', score.money,  '#86efac')}
+                ${renderScoreBar('💪','건강운', score.health, '#6ee7b7')}
+                ${renderScoreBar('❤️','애정운', score.love,   '#fca5a5')}
+            </div>`;
+        }
+
+                function parseFortune_Zodiac(raw) {
             const m = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
             if (!m) return null;
             return m[1]
@@ -619,11 +665,15 @@
 
             if (t.includes('오늘의 운세') && !t.includes('띠운세')) {
                 const text = parseFortune_Zodiac(raw);
-                return text ? { ...meta, type: 'zodiac', text } : null;
+                if (!text) return null;
+                const score = parseFortune_Score(raw);
+                return { ...meta, type: 'zodiac', text, score };
             }
             if (t.includes('띠운세') && t.includes('월') && t.includes('일')) {
                 const html = parseFortune_Chinese(raw);
-                return html ? { ...meta, type: 'chinese', yearRowsHTML: html } : null;
+                if (!html) return null;
+                const score = parseFortune_Score(raw);
+                return { ...meta, type: 'chinese', yearRowsHTML: html, score };
             }
             if (t.includes('주간운세')) {
                 const text = parseFortune_Weekly(raw);
@@ -654,6 +704,7 @@
                     <div style="font-size:13px;color:#888">${sub}</div>
                 </div>
                 <div id="${cardId}">${info.yearRowsHTML}</div>
+                ${renderScoreCard(info.score||null)}
                 <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
                     <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
                 </div>`;
@@ -689,7 +740,7 @@
                 </div>`;
             }
 
-            // 타입 1/3: 별자리 오늘 · 주간 — 운세 본문 카드
+            // 타입 1/3: 별자리 오늘 · 주간 — 운세 본문 + 운세 지수 카드
             const preview = (info.text||'').length > 600
                 ? (info.text||'').slice(0,600).replace(/\n/g,'<br>') + '...'
                 : (info.text||'').replace(/\n/g,'<br>');
@@ -701,6 +752,7 @@
                         <div style="opacity:.8;font-size:13px">${sub}</div>
                     </div>
                     <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${preview}</div>
+                    ${renderScoreCard(info.score||null)}
                     <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
