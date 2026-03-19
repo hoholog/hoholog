@@ -98,7 +98,7 @@
             </div>
             <div>
                 <h4 class="text-white font-bold mb-6">고객 센터</h4>
-                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection#b3dfcadb838a818adedef3d4ded2dadf9dd0dcde" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="fb978293cbc2c9c29696bb9c969a9297d5989496">[email&#160;protected]</span></a></p>
+                <p class="mb-2">이메일: <a href="/cdn-cgi/l/email-protection#90fce9f8a0a9a2a9fdfdd0f7fdf1f9fcbef3fffd" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="0965706139303b306464496e64686065276a6664">[email&#160;protected]</span></a></p>
                 <p>위치: Seoul, Korea</p>
                 <p class="mt-4 text-xs tracking-widest opacity-60 uppercase">Operational: Weekdays 09:00 - 18:00</p>
             </div>
@@ -314,12 +314,10 @@
             }
         }
 
-        let _currentPage = null;
-
         function navigateTo(page) {
             const contentDiv = document.getElementById('content');
             if (!pages[page]) return;
-            _currentPage = page;
+            // 매번 DOM 새로 생성 → 운세 탭 재진입 시 Blogger 데이터 fresh fetch
             contentDiv.innerHTML = pages[page];
             window.location.hash = page;
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -530,20 +528,46 @@
             catch(e){ return [] }
         }
         // ── Blogger 운세 콘텐츠 파싱 헬퍼 ──
-        // Blogger 포스트 제목: "양자리 2025년 3월 운세" 형식
-        // 오늘 연월 기준으로 가장 최신 포스트 본문을 카드에 표시
+        // create_post.py 구조: <div class="fc-text">{운세본문}</div>
+        // fc-text 내용만 추출 → 행운의 아이템/색/숫자(fc-lucky 박스) 제외
         function extractBlogContent(post) {
             if (!post) return null;
-            // HTML 태그 제거 후 텍스트만 추출
             const raw = post.content || '';
-            const text = raw.replace(/<[^>]+>/g, '').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').trim();
+
+            // 1순위: .fc-text div 내용 (별자리/띠 오늘운세 포스트)
+            const fcMatch = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
+            if (fcMatch) {
+                const text = fcMatch[1]
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<[^>]+>/g, '')
+                    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                    .trim();
+                return { title: post.title, url: post.url, text, published: post.published };
+            }
+
+            // 2순위: .card p 텍스트 (주간/월간 포스트)
+            const cardPs = [...raw.matchAll(/<div[^>]*class="card"[^>]*>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/g)];
+            if (cardPs.length) {
+                const text = cardPs.map(m => m[1]
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<[^>]+>/g, '')
+                    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
+                ).filter(Boolean).join('\n\n');
+                return { title: post.title, url: post.url, text, published: post.published };
+            }
+
+            // 3순위: 전체 태그 제거 폴백
+            const text = raw.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
             return { title: post.title, url: post.url, text, published: post.published };
         }
 
         function blogCardHTML(info, emoji, name, sub, cardId, saveLabel) {
             if (!info) return null;
-            // 본문을 문단별로 나눠서 표시 (최대 400자)
-            const preview = info.text.length > 400 ? info.text.slice(0, 400) + '...' : info.text;
+            // 줄바꿈 → <br>, 최대 500자
+            const preview = info.text.length > 500
+                ? info.text.slice(0, 500).replace(/\n/g, '<br>') + '...'
+                : info.text.replace(/\n/g, '<br>');
             return `
                 <div id="${cardId}" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:24px;color:#fff;max-width:480px;margin:0 auto">
                     <div style="text-align:center;margin-bottom:14px">
@@ -552,7 +576,6 @@
                         <div style="opacity:.8;font-size:13px">${sub}</div>
                     </div>
                     <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${preview}</div>
-                    ${scoreCardHtml()}
                     <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
@@ -587,9 +610,9 @@
         }
 
         // ── Blogger 포스트 검색 공통 헬퍼 ──
-        // /posts/search 의 labels 파라미터는 Blogger v3에서 무시됨 →
-        // 라벨 기반 목록(최신 20개) fetch 후 제목 키워드 전체 매칭
-        // cache:false(no-store)로 항상 최신 데이터 강제 요청
+        // Blogger v3 /posts/search 의 labels 파라미터는 무시됨 →
+        // 라벨 기반 목록(최신 20개) 조회 후 제목 키워드 전체 매칭
+        // cache:'no-store' 로 항상 최신 Blogger 데이터 강제 요청
         async function fetchByLabelAndTitle(label, titleKeywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
@@ -599,26 +622,27 @@
                 const r = await fetch(url, {cache: 'no-store'});
                 const d = await r.json();
                 const items = d.items || [];
+                // 모든 키워드가 제목에 포함된 첫 번째 포스트 반환
                 return items.find(p => titleKeywords.every(kw => p.title.includes(kw))) || null;
             } catch(e) { return null; }
         }
 
-        // 별자리 오늘운세: "양자리 2026년 03월 19일 오늘의 운세"
+        // 별자리 오늘운세: 제목 "양자리 2026년 03월 19일 오늘의 운세"
         async function fetchFortunePost(label, name) {
             return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '오늘의 운세']);
         }
 
-        // 띠운세: "쥐띠 2026년 03월 19일 오늘의 띠운세"
+        // 띠운세: 제목 "쥐띠 2026년 03월 19일 오늘의 띠운세"
         async function fetchChinesePost(label, name) {
             return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세']);
         }
 
-        // 별자리 주간운세: "양자리 2026년 03월 주간운세"
+        // 별자리 주간운세: 제목 "양자리 2026년 03월 주간운세"
         async function fetchWeeklyPost(label, name) {
             return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '주간운세']);
         }
 
-        // 띠별 월간운세: "쥐띠 2026년 03월 월간운세"
+        // 띠별 월간운세: 제목 "쥐띠 2026년 03월 월간운세"
         async function fetchMonthlyPost(label, name) {
             return fetchByLabelAndTitle(label, [name, kstYear()+'년', kstMonth()+'월', '월간운세']);
         }
@@ -1258,7 +1282,6 @@
                             <div style="opacity:.8;font-size:13px">${todayStr()}</div>
                         </div>
                         <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${preview}</div>
-                        ${scoreCardHtml()}
                         <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">hoholog.github.io · ${todayStr()}</div>
                     </div>
                     <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
