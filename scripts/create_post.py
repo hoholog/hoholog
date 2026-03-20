@@ -74,19 +74,42 @@ ZODIACS = [
     {"en":"pisces",      "kr":"물고기자리","date":"2/19~3/20",  "emoji":"♓"},
 ]
 
+def _make_chinese_years(base_year: int) -> str:
+    """base_year부터 12년 주기로 과거~미래 연도를 자동 생성.
+    실행 연도 기준 과거 60년(5주기) + 미래 1주기 포함.
+    """
+    current_year = now_kst().year
+    # base_year에서 가장 먼 과거 주기 시작점 계산
+    start = base_year
+    while start - 12 >= current_year - 60:
+        start -= 12
+    years = []
+    y = start
+    while y <= current_year + 12:   # 미래 1주기까지 포함
+        years.append(str(y))
+        y += 12
+    return ",".join(years)
+
+# 각 띠의 기준 연도(1900년대 최초 해당 연도)
+_CHINESE_BASE = {
+    "rat":1900,"ox":1901,"tiger":1902,"rabbit":1903,
+    "dragon":1904,"snake":1905,"horse":1906,"sheep":1907,
+    "monkey":1908,"rooster":1909,"dog":1910,"pig":1911,
+}
+
 CHINESE = [
-    {"en":"rat",     "kr":"쥐띠",    "year":"1960,1972,1984,1996,2008,2020","emoji":"🐭"},
-    {"en":"ox",      "kr":"소띠",    "year":"1961,1973,1985,1997,2009,2021","emoji":"🐮"},
-    {"en":"tiger",   "kr":"호랑이띠","year":"1962,1974,1986,1998,2010,2022","emoji":"🐯"},
-    {"en":"rabbit",  "kr":"토끼띠",  "year":"1963,1975,1987,1999,2011,2023","emoji":"🐰"},
-    {"en":"dragon",  "kr":"용띠",    "year":"1964,1976,1988,2000,2012,2024","emoji":"🐲"},
-    {"en":"snake",   "kr":"뱀띠",    "year":"1965,1977,1989,2001,2013,2025","emoji":"🐍"},
-    {"en":"horse",   "kr":"말띠",    "year":"1966,1978,1990,2002,2014,2026","emoji":"🐴"},
-    {"en":"sheep",   "kr":"양띠",    "year":"1967,1979,1991,2003,2015,2027","emoji":"🐑"},
-    {"en":"monkey",  "kr":"원숭이띠","year":"1968,1980,1992,2004,2016,2028","emoji":"🐵"},
-    {"en":"rooster", "kr":"닭띠",    "year":"1969,1981,1993,2005,2017,2029","emoji":"🐓"},
-    {"en":"dog",     "kr":"개띠",    "year":"1970,1982,1994,2006,2018,2030","emoji":"🐶"},
-    {"en":"pig",     "kr":"돼지띠",  "year":"1971,1983,1995,2007,2019,2031","emoji":"🐷"},
+    {"en":"rat",     "kr":"쥐띠",    "year":_make_chinese_years(_CHINESE_BASE["rat"]),     "emoji":"🐭"},
+    {"en":"ox",      "kr":"소띠",    "year":_make_chinese_years(_CHINESE_BASE["ox"]),      "emoji":"🐮"},
+    {"en":"tiger",   "kr":"호랑이띠","year":_make_chinese_years(_CHINESE_BASE["tiger"]),   "emoji":"🐯"},
+    {"en":"rabbit",  "kr":"토끼띠",  "year":_make_chinese_years(_CHINESE_BASE["rabbit"]),  "emoji":"🐰"},
+    {"en":"dragon",  "kr":"용띠",    "year":_make_chinese_years(_CHINESE_BASE["dragon"]),  "emoji":"🐲"},
+    {"en":"snake",   "kr":"뱀띠",    "year":_make_chinese_years(_CHINESE_BASE["snake"]),   "emoji":"🐍"},
+    {"en":"horse",   "kr":"말띠",    "year":_make_chinese_years(_CHINESE_BASE["horse"]),   "emoji":"🐴"},
+    {"en":"sheep",   "kr":"양띠",    "year":_make_chinese_years(_CHINESE_BASE["sheep"]),   "emoji":"🐑"},
+    {"en":"monkey",  "kr":"원숭이띠","year":_make_chinese_years(_CHINESE_BASE["monkey"]),  "emoji":"🐵"},
+    {"en":"rooster", "kr":"닭띠",    "year":_make_chinese_years(_CHINESE_BASE["rooster"]), "emoji":"🐓"},
+    {"en":"dog",     "kr":"개띠",    "year":_make_chinese_years(_CHINESE_BASE["dog"]),     "emoji":"🐶"},
+    {"en":"pig",     "kr":"돼지띠",  "year":_make_chinese_years(_CHINESE_BASE["pig"]),     "emoji":"🐷"},
 ]
 
 RATINGS = ["★★★☆☆","★★★★☆","★★★★★","★★☆☆☆","★★★★☆","★★★☆☆"]
@@ -314,10 +337,7 @@ def build_quote_post(today_str):
 
 def build_zodiac_post(z, today_str):
     fortune = zodiac_fortune(z['kr'])
-    color = pick_color()
-    number = pick_number()
     rating = stars()
-    lucky_item = pick_lucky_item(z['kr'])
     title = f"{z['kr']} {today_str} 오늘의 운세"
     card_id = f"fc-{z['en']}"
 
@@ -340,11 +360,6 @@ def build_zodiac_post(z, today_str):
     <div class="fc-sub">{today_str} · {z['date']}</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
-    <div class="fc-lucky">
-      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎁 행운의 아이템</div><div class="fc-lucky-val" style="font-size:13px">{lucky_item}</div></div>
-      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎨 행운의 색</div><div class="fc-lucky-val">{color}</div></div>
-      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🔢 행운의 숫자</div><div class="fc-lucky-val">{number}</div></div>
-    </div>
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
 
@@ -361,24 +376,20 @@ def build_zodiac_post(z, today_str):
 
 def build_chinese_post(c, today_str):
     fortune = chinese_fortune(c['en'])
-    color = pick_color()
-    number = pick_number()
     rating = stars()
     title = f"{c['kr']} {today_str} 오늘의 띠운세"
     card_id = f"fc-{c['en']}"
 
-    # 출생연도별 각각 다른 운세
-    years = c['year'].split(',')
+    # 출생연도별 각각 다른 운세 (현재 연도 이하만 표시)
+    current_year = now_kst().year
+    years = [y for y in c['year'].split(',') if int(y) <= current_year]
     year_rows = ""
     for y in years:
         yr_fortune = chinese_fortune(c['en'])
-        yr_color = pick_color()
-        yr_number = pick_number()
         year_rows += f'''<div style="border-bottom:1px solid #ede9fe;padding:12px 0;display:flex;align-items:flex-start;gap:12px">
             <div style="min-width:72px;background:#7c3aed;color:#fff;border-radius:8px;padding:6px 10px;text-align:center;font-size:13px;font-weight:700">{y}년생</div>
             <div style="flex:1">
-                <div style="font-size:13px;color:#444;line-height:1.7;margin-bottom:4px">{yr_fortune}</div>
-                <div style="font-size:11px;color:#888">🎨 {yr_color} &nbsp; 🔢 {yr_number}</div>
+                <div style="font-size:13px;color:#444;line-height:1.7">{yr_fortune}</div>
             </div>
         </div>'''
 
@@ -406,10 +417,6 @@ def build_chinese_post(c, today_str):
     <div class="fc-sub">{today_str}</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
-    <div class="fc-lucky">
-      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🎨 행운의 색</div><div class="fc-lucky-val">{color}</div></div>
-      <div class="fc-lucky-box"><div class="fc-lucky-lbl">🔢 행운의 숫자</div><div class="fc-lucky-val">{number}</div></div>
-    </div>
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
 
