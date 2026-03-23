@@ -2254,74 +2254,204 @@
             return HANJA_BY_SOUND[syllable] || [];
         }
 
+        // ─────────────────────────────────────────
+        // 바텀시트 한자 선택 UI
+        // ─────────────────────────────────────────
+
         // 선택된 한자 배열 (글자별)
         var _selectedHanja = [];  // [{hangul, hanja, strokes}]
+        var _hanjaChars    = [];  // 이름 글자 배열
+        var _hanjaStep     = 0;   // 현재 글자 인덱스
 
-        // 이름 글자별 한자 선택 UI 생성
-        function renderHanjaSelector(hangulName) {
-            var chars = [...hangulName].filter(function(c){ return c.trim(); });
-            _selectedHanja = chars.map(function(c){ return {hangul:c, hanja:null, strokes:null}; });
+        // 바텀시트 삽입 (최초 1회)
+        function _ensureBottomSheet() {
+            if (document.getElementById('hanja-sheet')) return;
+            var sheet = document.createElement('div');
+            sheet.id = 'hanja-sheet';
+            sheet.innerHTML = `
+<div id="hanja-sheet-overlay" onclick="closeHanjaSheet()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;transition:opacity .25s"></div>
+<div id="hanja-sheet-body"
+     style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+            background:#fff;border-radius:22px 22px 0 0;
+            box-shadow:0 -8px 32px rgba(0,0,0,.18);
+            padding:0 0 env(safe-area-inset-bottom,0);
+            transform:translateY(100%);transition:transform .32s cubic-bezier(.32,1,.5,1);
+            max-height:82vh;overflow:hidden;display:flex;flex-direction:column">
 
-            var html = '<div id="hanja-selector" style="margin-top:10px">';
-            html += '<div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px">&#10024; 글자별 한자를 선택하세요</div>';
-            chars.forEach(function(ch, i) {
-                var candidates = getHanjaCandidates(ch);
-                html += '<div style="margin-bottom:10px">';
-                html += '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">&quot;' + ch + '&quot; 에 해당하는 한자</div>';
-                if (candidates.length === 0) {
-                    html += '<div style="font-size:12px;color:#9ca3af;padding:8px;background:#f9fafb;border-radius:8px">후보 없음 — 아래에서 직접 입력해 주세요</div>';
-                } else {
-                    html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
-                    candidates.forEach(function(cand) {
-                        var oh = strokeToOhaeng(cand.s);
-                        var bg = OH_BG[oh];
-                        var tc = OH_TEXT[oh];
-                        var btnId = 'hj-btn-' + i + '-' + cand.h.charCodeAt(0);
-                        html += '<button id="' + btnId + '"'
-                            + ' data-cidx="' + i + '" data-hanja="' + cand.h + '" data-stroke="' + cand.s + '" data-mean="' + cand.m + '"'
-                            + ' onclick="selectHanjaBtn(this)"'
-                            + ' style="display:flex;flex-direction:column;align-items:center;background:#f9fafb;border:2px solid #e5e7eb;border-radius:10px;padding:6px 10px;cursor:pointer;min-width:54px;transition:all .15s">'
-                            + '<span style="font-size:20px;font-family:serif;font-weight:900;color:#1e293b">' + cand.h + '</span>'
-                            + '<span style="font-size:10px;color:#6b7280;margin-top:1px">' + cand.s + '&#26178;</span>'
-                            + '<span style="font-size:10px;color:#6b7280">' + cand.m + '</span>'
-                            + '<span style="font-size:9px;font-weight:700;color:' + tc + ';background:' + bg + ';border-radius:6px;padding:1px 5px;margin-top:2px">' + (OHAENG_KR[oh]||oh) + '</span>'
-                            + '</button>';
-                    });
-                    html += '</div>';
-                }
-                html += '<input type="text" id="hj-custom-' + i + '" maxlength="1" placeholder="직접입력"'
-                    + ' data-cidx="' + i + '" oninput="customHanjaInput(this)"'
-                    + ' style="margin-top:6px;width:70px;padding:6px;border-radius:8px;border:1px solid #e5e7eb;font-size:14px;text-align:center;font-family:serif">';
-                html += '</div>';
+  <!-- 드래그 핸들 -->
+  <div style="text-align:center;padding:12px 0 4px">
+    <div style="width:40px;height:4px;background:#e2e8f0;border-radius:9px;display:inline-block"></div>
+  </div>
+
+  <!-- 헤더 -->
+  <div id="hanja-sheet-header"
+       style="display:flex;align-items:center;justify-content:space-between;
+              padding:8px 20px 10px;border-bottom:1px solid #f1f5f9">
+    <div>
+      <div id="hanja-sheet-title" style="font-size:17px;font-weight:900;color:#1e293b"></div>
+      <div id="hanja-sheet-step"  style="font-size:12px;color:#94a3b8;margin-top:2px"></div>
+    </div>
+    <button onclick="closeHanjaSheet()"
+            style="width:34px;height:34px;border-radius:50%;border:none;background:#f1f5f9;
+                   font-size:18px;cursor:pointer;line-height:34px;text-align:center">✕</button>
+  </div>
+
+  <!-- 후보 스크롤 영역 -->
+  <div id="hanja-sheet-list"
+       style="overflow-y:auto;flex:1;padding:16px 16px 8px"></div>
+
+  <!-- 하단 네비 -->
+  <div style="display:flex;gap:10px;padding:10px 16px 14px;border-top:1px solid #f1f5f9">
+    <button id="hanja-prev-btn" onclick="hanjaSheetPrev()"
+            style="flex:1;padding:14px;border-radius:14px;border:2px solid #e2e8f0;
+                   background:#f8fafc;font-size:15px;font-weight:700;cursor:pointer;color:#64748b">
+      ← 이전
+    </button>
+    <button id="hanja-skip-btn" onclick="hanjaSheetSkip()"
+            style="flex:1;padding:14px;border-radius:14px;border:2px solid #e2e8f0;
+                   background:#f8fafc;font-size:15px;font-weight:700;cursor:pointer;color:#64748b">
+      건너뛰기
+    </button>
+    <button id="hanja-next-btn" onclick="hanjaSheetNext()"
+            style="flex:2;padding:14px;border-radius:14px;border:none;
+                   background:#7c3aed;font-size:15px;font-weight:700;cursor:pointer;color:#fff">
+      다음 →
+    </button>
+  </div>
+</div>`;
+            document.body.appendChild(sheet);
+        }
+
+        function openHanjaSheet(hangulName) {
+            _ensureBottomSheet();
+            _hanjaChars   = [...hangulName].filter(function(c){ return c.trim(); });
+            _selectedHanja= _hanjaChars.map(function(c){ return {hangul:c, hanja:null, strokes:null}; });
+            _hanjaStep    = 0;
+            _renderSheetStep(_hanjaStep);
+
+            var overlay = document.getElementById('hanja-sheet-overlay');
+            var body    = document.getElementById('hanja-sheet-body');
+            overlay.style.display = 'block';
+            body.style.display    = 'flex';
+            // 트랜지션 트리거
+            requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                    body.style.transform = 'translateY(0)';
+                    overlay.style.opacity = '1';
+                });
             });
-            html += '<div id="hanja-result-preview" style="margin-top:10px;display:none"></div>';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHanjaSheet() {
+            var overlay = document.getElementById('hanja-sheet-overlay');
+            var body    = document.getElementById('hanja-sheet-body');
+            if (!body) return;
+            body.style.transform  = 'translateY(100%)';
+            overlay.style.opacity = '0';
+            setTimeout(function(){
+                overlay.style.display = 'none';
+                body.style.display    = 'none';
+                document.body.style.overflow = '';
+            }, 320);
+        }
+
+        function _renderSheetStep(idx) {
+            var ch         = _hanjaChars[idx];
+            var candidates = getHanjaCandidates(ch);
+            var total      = _hanjaChars.length;
+            var selected   = _selectedHanja[idx];
+
+            document.getElementById('hanja-sheet-title').textContent =
+                '"' + ch + '" 에 해당하는 한자';
+            document.getElementById('hanja-sheet-step').textContent =
+                (idx + 1) + ' / ' + total + '  글자';
+
+            // 다음/완료 버튼 텍스트
+            var nextBtn = document.getElementById('hanja-next-btn');
+            nextBtn.textContent = (idx === total - 1) ? '완료 ✓' : '다음 →';
+
+            // 이전 버튼 비활성
+            document.getElementById('hanja-prev-btn').style.opacity = idx === 0 ? '.35' : '1';
+            document.getElementById('hanja-prev-btn').disabled = idx === 0;
+
+            var list = document.getElementById('hanja-sheet-list');
+
+            if (candidates.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:32px 0;font-size:14px">'
+                    + '등록된 후보가 없어요<br><span style="font-size:12px">건너뛰기를 누르세요</span></div>';
+                return;
+            }
+
+            // 후보 카드 렌더
+            var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
+            candidates.forEach(function(cand) {
+                var oh   = strokeToOhaeng(cand.s);
+                var bg   = OH_BG[oh];
+                var tc   = OH_TEXT[oh];
+                var isSel= selected.hanja === cand.h;
+                html += '<button onclick="hanjaSheetSelect(' + idx + ',\'' + cand.h + '\',' + cand.s + ',\'' + cand.m + '\')"'
+                    + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
+                    + 'background:' + (isSel ? '#ede9fe' : '#f8fafc') + ';'
+                    + 'border:2.5px solid ' + (isSel ? '#7c3aed' : '#e2e8f0') + ';'
+                    + 'border-radius:16px;padding:14px 8px;cursor:pointer;transition:all .15s;'
+                    + 'min-height:100px">'
+                    + '<span style="font-size:36px;font-family:serif;font-weight:900;color:#0f172a;line-height:1.1">' + cand.h + '</span>'
+                    + '<span style="font-size:12px;color:#64748b;margin-top:4px">' + cand.s + '획</span>'
+                    + '<span style="font-size:12px;color:#374151;margin-top:1px">' + cand.m + '</span>'
+                    + '<span style="font-size:11px;font-weight:700;color:' + tc + ';background:' + bg
+                    + ';border-radius:8px;padding:2px 8px;margin-top:4px">' + (OHAENG_KR[oh]||oh) + '</span>'
+                    + (isSel ? '<span style="font-size:11px;color:#7c3aed;margin-top:3px">✓ 선택됨</span>' : '')
+                    + '</button>';
+            });
             html += '</div>';
-            return html;
+            list.innerHTML = html;
         }
 
-        // data-* 방식 핸들러
-        function selectHanjaBtn(btn) {
-            var i = parseInt(btn.dataset.cidx);
-            var h = btn.dataset.hanja;
-            var s = parseInt(btn.dataset.stroke);
-            var m = btn.dataset.mean;
-            selectHanja(i, h, s, m);
-        }
-        function customHanjaInput(input) {
-            customHanja(parseInt(input.dataset.cidx), input.value);
+        function hanjaSheetSelect(idx, h, s, m) {
+            _selectedHanja[idx] = { hangul: _hanjaChars[idx], hanja: h, strokes: s };
+            _renderSheetStep(idx);  // 선택 표시 갱신
         }
 
+        function hanjaSheetSkip() {
+            // 현재 글자 선택 없이 다음으로
+            _selectedHanja[_hanjaStep].hanja = null;
+            _hanjaStep < _hanjaChars.length - 1 ? (++_hanjaStep, _renderSheetStep(_hanjaStep)) : _finishHanjaSheet();
+        }
+
+        function hanjaSheetNext() {
+            if (_hanjaStep < _hanjaChars.length - 1) {
+                ++_hanjaStep;
+                _renderSheetStep(_hanjaStep);
+                document.getElementById('hanja-sheet-list').scrollTop = 0;
+            } else {
+                _finishHanjaSheet();
+            }
+        }
+
+        function hanjaSheetPrev() {
+            if (_hanjaStep > 0) {
+                --_hanjaStep;
+                _renderSheetStep(_hanjaStep);
+            }
+        }
+
+        function _finishHanjaSheet() {
+            // 선택된 한자 → input에 자동 입력
+            var result = _selectedHanja.map(function(s){ return s.hanja || s.hangul; }).join('');
+            var hanjaInput = document.getElementById('sj-name-hanja');
+            if (hanjaInput) hanjaInput.value = result;
+            closeHanjaSheet();
+        }
 
         function triggerHanjaSelector() {
             var name = (document.getElementById('sj-name')?.value||'').trim();
             if (!name) { alert('먼저 한글 이름을 입력해 주세요'); return; }
+            // 기존 인라인 selector 제거 (혹시 남아있으면)
             var existing = document.getElementById('hanja-selector');
             if (existing) existing.remove();
-            var nameDiv = document.getElementById('sj-name-wrap');
-            if (nameDiv) nameDiv.insertAdjacentHTML('beforeend', renderHanjaSelector(name));
-            // 한자 input 초기화
-            var hanjaInput = document.getElementById('sj-name-hanja');
-            if (hanjaInput) hanjaInput.value = '';
+            openHanjaSheet(name);
         }
 
         function strokeToOhaeng(n) {
@@ -2720,7 +2850,7 @@
                         </div>
                         <input id="sj-name-hanja" type="text" placeholder="한자 이름 (자동 입력 또는 직접 입력)"
                             style="width:100%;padding:10px 12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;box-sizing:border-box;font-family:serif">
-                        <div style="font-size:11px;color:#7c3aed;margin-top:5px">💡 '漢字 선택' 버튼을 누르면 글자별 한자 후보를 보여드립니다</div>
+                        <div style="font-size:11px;color:#7c3aed;margin-top:5px">💡 '漢字 선택' 버튼을 누르면 글자별로 한자를 골라 자동 입력됩니다</div>
                     </div>
                     <div style="margin-bottom:14px">
                         <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">생년월일</div>
