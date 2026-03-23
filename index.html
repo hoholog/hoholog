@@ -506,6 +506,29 @@
         function rnd(a){return a[Math.floor(Math.random()*a.length)]}
         function rndN(){return Math.floor(Math.random()*99)+1}
 
+        // ── 시드 기반 난수 (같은 시드 → 항상 같은 결과) ──
+        function _seededHash(seed){
+            // 간단한 32bit 해시 (xorshift)
+            let h = 0;
+            for(let i=0;i<seed.length;i++){
+                h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+            }
+            h ^= h >>> 16; h = Math.imul(h, 0x45d9f3b); h ^= h >>> 16;
+            return (h >>> 0) / 4294967296;
+        }
+        // 시드 문자열 → 0~(n-1) 정수
+        function _seededInt(seed, n){ return Math.floor(_seededHash(seed) * n); }
+        // 시드 기반 배열 선택
+        function seededRnd(a, seed){ return a[_seededInt(seed, a.length)]; }
+        // 시드 기반 1~99
+        function seededRndN(seed){ return _seededInt(seed, 99) + 1; }
+
+        // 운세 시드 생성: 오늘날짜 + 생년월일 + 탭 조합
+        function _fortuneSeed(year, month, day, tab){
+            const today = [kstNow().getFullYear(), kstNow().getMonth()+1, kstNow().getDate()].join('-');
+            return today + '|' + year + '-' + month + '-' + day + '|' + tab;
+        }
+
         // KST(UTC+9) 기준 현재 날짜 반환 — 자정 00:00 KST에 날짜 전환
         function kstNow(){
             const now = new Date();
@@ -1104,51 +1127,55 @@
             const userName  = inp.userName  || '';
             const lunarNote = inp.lunarNote || '';
 
-            const rating = rnd(RATINGS);
-            const color  = rnd(COLORS);
-            const num    = rndN();
+            // ── 시드 기반 생성: 날짜+생년월일+탭 조합 → 항상 동일한 결과 ──
+            const S = (suffix) => _fortuneSeed(year, month, day, tab + suffix);
 
-            let headerLabel = '', sections = [];
-
+            let sections = [];
             if(tab==='today'){
-                headerLabel = '🌟 오늘의 운세';
                 sections = [
-                    {icon:'🌟', label:'총운',    text:rnd(FORTUNE_SECTIONS.총운)},
-                    {icon:'❤️', label:'애정운',  text:rnd(FORTUNE_SECTIONS.애정운)},
-                    {icon:'💰', label:'금전운',  text:rnd(FORTUNE_SECTIONS.금전운)},
-                    {icon:'💼', label:'직장운',  text:rnd(FORTUNE_SECTIONS.직장운)},
-                    {icon:'📚', label:'학업·성적운', text:rnd(FORTUNE_SECTIONS.학업운)},
-                    {icon:'💪', label:'건강운',  text:rnd(FORTUNE_SECTIONS.건강운)},
+                    {icon:'🌟', label:'총운',        text:seededRnd(FORTUNE_SECTIONS.총운,    S('총운'))},
+                    {icon:'❤️', label:'애정운',      text:seededRnd(FORTUNE_SECTIONS.애정운,  S('애정'))},
+                    {icon:'💰', label:'금전운',      text:seededRnd(FORTUNE_SECTIONS.금전운,  S('금전'))},
+                    {icon:'💼', label:'직장운',      text:seededRnd(FORTUNE_SECTIONS.직장운,  S('직장'))},
+                    {icon:'📚', label:'학업·성적운', text:seededRnd(FORTUNE_SECTIONS.학업운,  S('학업'))},
+                    {icon:'💪', label:'건강운',      text:seededRnd(FORTUNE_SECTIONS.건강운,  S('건강'))},
                 ];
             } else if(tab==='tomorrow'){
-                headerLabel = '🌙 내일의 운세';
                 sections = [
-                    {icon:'🌟', label:'총운',    text:rnd(FORTUNE_SECTIONS.총운)},
-                    {icon:'❤️', label:'애정운',  text:rnd(FORTUNE_SECTIONS.애정운)},
-                    {icon:'💰', label:'금전운',  text:rnd(FORTUNE_SECTIONS.금전운)},
-                    {icon:'💼', label:'직장운',  text:rnd(FORTUNE_SECTIONS.직장운)},
-                    {icon:'📚', label:'학업·성적운', text:rnd(FORTUNE_SECTIONS.학업운)},
-                    {icon:'💪', label:'건강운',  text:rnd(FORTUNE_SECTIONS.건강운)},
+                    {icon:'🌟', label:'총운',        text:seededRnd(FORTUNE_SECTIONS.총운,    S('총운'))},
+                    {icon:'❤️', label:'애정운',      text:seededRnd(FORTUNE_SECTIONS.애정운,  S('애정'))},
+                    {icon:'💰', label:'금전운',      text:seededRnd(FORTUNE_SECTIONS.금전운,  S('금전'))},
+                    {icon:'💼', label:'직장운',      text:seededRnd(FORTUNE_SECTIONS.직장운,  S('직장'))},
+                    {icon:'📚', label:'학업·성적운', text:seededRnd(FORTUNE_SECTIONS.학업운,  S('학업'))},
+                    {icon:'💪', label:'건강운',      text:seededRnd(FORTUNE_SECTIONS.건강운,  S('건강'))},
                 ];
             } else if(tab==='week'){
-                headerLabel = '📅 이번 주 운세';
                 sections = [
-                    {icon:'🌟', label:'이번 주 총운', text:rnd(FORTUNE_SECTIONS.총운)},
-                    {icon:'❤️', label:'이번 주 애정운', text:rnd(FORTUNE_SECTIONS.애정운)},
-                    {icon:'💰', label:'이번 주 금전운', text:rnd(FORTUNE_SECTIONS.금전운)},
-                    {icon:'💼', label:'이번 주 직장운', text:rnd(FORTUNE_SECTIONS.직장운)},
-                    {icon:'💪', label:'이번 주 건강운', text:rnd(FORTUNE_SECTIONS.건강운)},
+                    {icon:'🌟', label:'이번 주 총운',   text:seededRnd(FORTUNE_SECTIONS.총운,  S('총운'))},
+                    {icon:'❤️', label:'이번 주 애정운', text:seededRnd(FORTUNE_SECTIONS.애정운,S('애정'))},
+                    {icon:'💰', label:'이번 주 금전운', text:seededRnd(FORTUNE_SECTIONS.금전운,S('금전'))},
+                    {icon:'💼', label:'이번 주 직장운', text:seededRnd(FORTUNE_SECTIONS.직장운,S('직장'))},
+                    {icon:'💪', label:'이번 주 건강운', text:seededRnd(FORTUNE_SECTIONS.건강운,S('건강'))},
                 ];
             } else if(tab==='month'){
-                headerLabel = '📆 이달의 운세';
                 sections = [
-                    {icon:'🌟', label:'이달 총운',  text:rnd(FORTUNE_SECTIONS.총운)},
-                    {icon:'❤️', label:'이달 애정운', text:rnd(FORTUNE_SECTIONS.애정운)},
-                    {icon:'💰', label:'이달 금전운', text:rnd(FORTUNE_SECTIONS.금전운)},
-                    {icon:'💼', label:'이달 직장운', text:rnd(FORTUNE_SECTIONS.직장운)},
-                    {icon:'💪', label:'이달 건강운', text:rnd(FORTUNE_SECTIONS.건강운)},
+                    {icon:'🌟', label:'이달 총운',   text:seededRnd(FORTUNE_SECTIONS.총운,  S('총운'))},
+                    {icon:'❤️', label:'이달 애정운', text:seededRnd(FORTUNE_SECTIONS.애정운,S('애정'))},
+                    {icon:'💰', label:'이달 금전운', text:seededRnd(FORTUNE_SECTIONS.금전운,S('금전'))},
+                    {icon:'💼', label:'이달 직장운', text:seededRnd(FORTUNE_SECTIONS.직장운,S('직장'))},
+                    {icon:'💪', label:'이달 건강운', text:seededRnd(FORTUNE_SECTIONS.건강운,S('건강'))},
                 ];
             }
+
+            const rating = seededRnd(RATINGS, S('rating'));
+            const color  = seededRnd(COLORS,  S('color'));
+            const num    = seededRndN(S('num'));
+
+            let headerLabel = '';
+            if(tab==='today')         headerLabel = '🌟 오늘의 운세';
+            else if(tab==='tomorrow') headerLabel = '🌙 내일의 운세';
+            else if(tab==='week')     headerLabel = '📅 이번 주 운세';
+            else if(tab==='month')    headerLabel = '📆 이달의 운세';
 
             const sectionHtml = sections.map(s=>`
                 <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:14px;margin-bottom:10px">
@@ -1183,10 +1210,7 @@
                             style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
                             📸 이미지 저장
                         </button>
-                        <button onclick="generateTodayFortune('${tab}')"
-                            style="background:#e2e8f0;color:#444;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">
-                            🔄 다시 보기
-                        </button>
+
                     </div>
                 </div>`;
         }
