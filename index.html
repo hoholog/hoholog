@@ -1483,8 +1483,31 @@
         // 시간 문자열 → 시(hour) 정수
         function parseHour(timeStr) {
             if (!timeStr || timeStr === 'unknown') return null;
-            const parts = timeStr.split(':');
-            return parseInt(parts[0]);
+            // 공백 제거 후 처리
+            const s = timeStr.trim().replace(/\s+/g, '');
+
+            // HH:MM (공백 제거 후 → "17:50")
+            if (/^\d{1,2}:\d{2}$/.test(s)) {
+                const h = parseInt(s.split(':')[0]);
+                return (h >= 0 && h <= 23) ? h : null;
+            }
+            // "17시50분" / "17시"
+            const mSi = s.match(/^(\d{1,2})시/);
+            if (mSi) {
+                const h = parseInt(mSi[1]);
+                return (h >= 0 && h <= 23) ? h : null;
+            }
+            // 숫자만 3~4자리 (HHMM)
+            if (/^\d{3,4}$/.test(s)) {
+                const h = parseInt(s.length === 3 ? s[0] : s.slice(0,2));
+                return (h >= 0 && h <= 23) ? h : null;
+            }
+            // 숫자만 1~2자리
+            if (/^\d{1,2}$/.test(s)) {
+                const h = parseInt(s);
+                return (h >= 0 && h <= 23) ? h : null;
+            }
+            return null;
         }
 
         // ── 사주 입력 UI 헬퍼 ──
@@ -1543,6 +1566,11 @@
             }
 
             const hour = parseHour(timeVal);
+            // 직접 입력인데 파싱 실패한 경우 경고
+            if (timeVal !== 'unknown' && timeVal !== '' && hour === null) {
+                alert('시간 형식을 확인해주세요.\n예) 17:50 / 17시 50분 / 1750');
+                return;
+            }
             const gender = _sj_gender || '남';
 
             // 네 기둥 계산
@@ -3451,7 +3479,7 @@
                             <option value="custom">✏️ 직접 입력</option>
                             <option value="unknown">⏰ 모름</option>
                         </select>
-                        <input id="sj-time-custom" type="text" placeholder="예) 14:30  (HH:MM 형식)"
+                        <input id="sj-time-custom" type="text" placeholder="예) 17:50 / 17시 50분 / 1750"
                             style="display:none;width:100%;padding:12px;border-radius:12px;border:2px solid #7c3aed;font-size:14px;outline:none;box-sizing:border-box">
                     </div>
                     <div style="margin-bottom:20px">
