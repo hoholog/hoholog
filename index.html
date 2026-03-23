@@ -1609,6 +1609,7 @@
 
             // 대운/세운 계산 (ilgan 확정 후)
             const kstYear = kstNow().getUTCFullYear();
+            const age     = kstYear - year;
             const daewunData = getDaewun(year, month, day, gender, yCG);
             const sewunData  = getSeWun(kstYear, ilgan);
 
