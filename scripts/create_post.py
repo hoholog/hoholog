@@ -537,8 +537,24 @@ def get_access_token():
         print("🔑 Access Token 자동 갱신 완료")
         return resp.json().get("access_token","")
     else:
-        print(f"❌ Token 갱신 실패: {resp.text[:120]}")
-        return os.environ.get("BLOGGER_TOKEN","")
+        data  = resp.json()
+        error = data.get("error","")
+        desc  = data.get("error_description","")
+        print(f"❌ Token 갱신 실패: {error} — {desc}")
+
+        if error == "invalid_grant":
+            print("⛔ Refresh Token이 만료/취소됨.")
+            print("   → GitHub Secrets에서 BLOGGER_REFRESH_TOKEN을 재발급 후 업데이트하세요.")
+            raise SystemExit(1)  # 만료된 토큰으로 401 루프 방지
+
+        # 그 외 일시적 오류는 BLOGGER_TOKEN으로 폴백
+        fallback = os.environ.get("BLOGGER_TOKEN","")
+        if fallback:
+            print("⚠️  BLOGGER_TOKEN으로 폴백 시도")
+        else:
+            print("⛔ 사용 가능한 토큰 없음 — 실행 중단")
+            raise SystemExit(1)
+        return fallback
 
 ACCESS_TOKEN = get_access_token() if REFRESH_TOKEN else os.environ.get("BLOGGER_TOKEN","")
 
