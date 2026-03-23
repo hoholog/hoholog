@@ -1560,12 +1560,19 @@
 
             // 십신 분석 (일간=나)
             const ilgan = dCG;
+            // ── 오행 카운트 (성명학 분석에서도 사용하므로 먼저 계산) ──
+            var cg_list_pre = [yCG, mCG, dCG].concat(hCG !== null ? [hCG] : []);
+            var jj_list_pre = [yJJ, mJJ, dJJ].concat(hJJ !== null ? [hJJ] : []);
+            var ohCount = {'木':0,'火':0,'土':0,'金':0,'水':0};
+            cg_list_pre.forEach(function(cg){ ohCount[OHAENG_CG[cg]]++; });
+            jj_list_pre.forEach(function(jj){ ohCount[OHAENG_JJ[jj]]++; });
+
             // ── 성명학 분석 ──
             const nameAnalysis = (sjName || sjNameHanja)
                 ? analyzeName(sjName, sjNameHanja)
                 : null;
             const nameSajuResult = nameAnalysis
-                ? analyzeNameSaju(nameAnalysis, ohCount || {'木':0,'火':0,'土':0,'金':0,'水':0})
+                ? analyzeNameSaju(nameAnalysis, ohCount)
                 : null;
 
             // ── 결과 렌더 ──
@@ -1638,12 +1645,9 @@
                 ? pillarCard('시주(時柱)', '자식·노년', hCG, hJJ, getSipsin(ilgan, hCG), false)
                 : pillarCardUnknown('시주(時柱)', '자식·노년');
 
-            // ── 오행 카운트 ──
-            var cg_list = [yCG, mCG, dCG].concat(hCG !== null ? [hCG] : []);
-            var jj_list = [yJJ, mJJ, dJJ].concat(hJJ !== null ? [hJJ] : []);
-            var ohCount = {'木':0,'火':0,'土':0,'金':0,'水':0};
-            cg_list.forEach(function(cg){ ohCount[OHAENG_CG[cg]]++; });
-            jj_list.forEach(function(jj){ ohCount[OHAENG_JJ[jj]]++; });
+            // ── 오행 카운트 (위에서 이미 계산, 변수명 통일) ──
+            var cg_list = cg_list_pre;
+            var jj_list = jj_list_pre;
             var totalOH = cg_list.length + jj_list.length;
 
             // ── 편관 분석 ──
