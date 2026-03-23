@@ -2115,6 +2115,8 @@
             '韓':17,'吳':7,'徐':10,'申':5,'權':22,'黃':12,'安':6,'宋':7,'柳':9,'洪':10,
             '全':6,'高':10,'文':4,'梁':11,'丁':2,'盧':19,'許':11,'南':9,'沈':8,'曺':11,
             '成':6,'辛':7,'劉':15,'河':8,'池':6,'趙':14,'康':11,'廉':13,'閔':12,'方':4,
+            // 추가 등록
+            '芃':7,'芊':7,'芬':8,'旼':8,'侖':8,'昀':8,'珊':9,'昱':9,'玹':9,'苑':9,'彧':10,'烋':10,'珮':10,'珹':10,'晅':10,'栩':10,'芸':10,'茱':10,'茴':10,'淚':11,'崙':11,'琇':11,'珺':11,'晟':11,'菀':11,'菘':11,'瑛':12,'琳':12,'琯':12,'琦':12,'琬':12,'渼':12,'渟':12,'湉':12,'晻':12,'菡':12,'菲':12,'瑜':13,'瑗':13,'瑋':13,'熙':13,'煕':13,'楠':13,'椿':13,'葭':13,'綸':14,'榛':14,'蓁':14,'摩':15,'槿':15,'熀':15,'瑤':15,'澐':15,'樺':15,'燔':16,'璘':16,'璟':16,'潾':16,'曄':16,'瞭':17,'磻':17,'曛':17,'薇':17,'爍':19,'曦':20,'爀':20,'鸞':30,
         };
 
         // 한글 자음 오행 배속 (훈민정음 기반)
@@ -2483,7 +2485,7 @@
 
             html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
             visible.forEach(function(cand, ci) {
-                var oh    = strokeToOhaeng(cand.s);
+                var oh    = hanjaToOhaeng(cand.h, cand.s);
                 var bg    = OH_BG[oh];
                 var tc    = OH_TEXT[oh];
                 var isSel = selected.hanja === cand.h;
@@ -2542,7 +2544,7 @@
                     + '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px">💾 저장된 한자</div>'
                     + '<div style="display:flex;flex-wrap:wrap;gap:6px">';
                 saved.forEach(function(item) {
-                    var oh   = item.s ? strokeToOhaeng(item.s) : null;
+                    var oh   = hanjaToOhaeng(item.h, item.s);
                     var bg   = oh ? OH_BG[oh] : '#f1f5f9';
                     var tc   = oh ? OH_TEXT[oh] : '#64748b';
                     var isSel = sel && sel.hanja === item.h;
@@ -2581,7 +2583,7 @@
                 + 'background:#fff;color:#1e293b;outline:none;flex-shrink:0">'
                 + '<div style="flex:1">'
                 + '<div id="hanja-direct-info-' + idx + '" style="font-size:12px;color:#64748b;margin-bottom:6px">'
-                + (curVal ? curStroke + ' · ' + (HANJA_STROKES[curVal] ? strokeToOhaeng(HANJA_STROKES[curVal]) + '행' : '획수미등록') : '입력 후 자동 인식')
+                + (curVal ? curStroke + ' · ' + (HANJA_STROKES[curVal] ? hanjaToOhaeng(curVal, HANJA_STROKES[curVal]) + '행' : (HANJA_OHAENG_MAP[curVal] ? HANJA_OHAENG_MAP[curVal] + '행' : '획수미등록')) : '입력 후 자동 인식')
                 + '</div>'
                 + '<button id="hanja-save-btn-' + idx + '" onclick="_hanjaSaveCustom(' + idx + ')"'
                 + ' style="padding:8px 14px;border-radius:10px;border:none;'
@@ -2611,11 +2613,11 @@
                 return;
             }
             var strokes = HANJA_STROKES[val] || null;
-            var oh      = strokes ? strokeToOhaeng(strokes) : null;
+            var oh      = hanjaToOhaeng(val, strokes);
             _selectedHanja[idx] = { hangul: _hanjaChars[idx], hanja: val, strokes: strokes };
             if (infoEl) {
                 infoEl.innerHTML = strokes
-                    ? '<span style="color:#7c3aed;font-weight:700">' + val + ' · ' + strokes + '획 · ' + (OHAENG_KR[oh]||oh) + '행</span>'
+                    ? '<span style="color:#7c3aed;font-weight:700">' + val + ' · ' + (strokes ? strokes+'획 · ' : '') + (OHAENG_KR[oh]||oh) + '행</span>'
                     : '<span style="color:#f59e0b">획수 미등록 — 저장 후 후보에 추가됩니다</span>';
             }
             if (saveBtn) { saveBtn.style.opacity = '1'; saveBtn.style.pointerEvents = 'auto'; }
@@ -2734,6 +2736,68 @@
             return '水'; // 9, 0
         }
 
+        // ── 부수(偏旁) 기반 오행 테이블 ──
+        // 성명학·작명학 부수 오행 기준
+        const RADICAL_OHAENG = {
+            // 木 (나무·식물·풀)
+            '木':'木','树':'木','林':'木','森':'木','草':'木','艸':'木','竹':'木',
+            '禾':'木','米':'木','豆':'木','瓜':'木','果':'木','木':'木',
+            // 火 (불·빛·열)
+            '火':'火','灬':'火','炎':'火','光':'火','日':'火','曰':'火','明':'火',
+            // 土 (흙·땅·산)
+            '土':'土','山':'土','石':'土','田':'土','地':'土','里':'土',
+            // 金 (금속·쇠·옥·보석)
+            '金':'金','玉':'金','王':'金','⺩':'金','鐵':'金','銀':'金','鈺':'金',
+            '鎬':'金','鍾':'金','鋼':'金','錦':'金','錫':'金','銘':'金','釘':'金',
+            // 水 (물·강·비)
+            '水':'水','氵':'水','汁':'水','海':'水','河':'水','江':'水','泉':'水',
+        };
+
+        // 한자별 부수 오행 직접 매핑 (부수 판단이 어려운 자는 직접 지정)
+        const HANJA_OHAENG_MAP = {
+            // 玉(王변) 계열 → 金
+            '玉':'金','王':'金','瑛':'金','瑜':'金','瑾':'金','琳':'金','琇':'金',
+            '珊':'金','珺':'金','珮':'金','瑗':'金','瑤':'金','璟':'金','璐':'金',
+            '璃':'金','玹':'金','珹':'金','琯':'金','琦':'金','琬':'金','瑋':'金',
+            '琴':'金','瑟':'金','璘':'金','鈺':'金',
+            // 金변 계열 → 金
+            '鎬':'金','鍾':'金','鋼':'金','錦':'金','錫':'金','銘':'金','鴻':'金',
+            '鶴':'金','鷹':'金',
+            // 水변(氵) 계열 → 水
+            '洙':'水','洪':'水','浩':'水','海':'水','河':'水','湖':'水','源':'水',
+            '溫':'水','淑':'水','淳':'水','潤':'水','澤':'水','渼':'水','湉':'水',
+            '潾':'水','澐':'水','渟':'水','淚':'水','濠':'水','泉':'水','洛':'水',
+            // 火변(灬) 계열 → 火
+            '熙':'火','煕':'火','燦':'火','燁':'火','煜':'火','熀':'火','炯':'火',
+            '炳':'火','燮':'火','爀':'火','爍':'火','燔':'火','燿':'火','煌':'火',
+            '焕':'火','煥':'火',
+            // 日변 계열 → 火
+            '明':'火','晟':'火','昱':'火','旼':'火','昀':'火','晅':'火','晁':'火',
+            '曄':'火','曛':'火','曦':'火','晻':'火','映':'火','昭':'火','晶':'火',
+            '星':'火','曜':'火','暎':'火',
+            // 木변 계열 → 木
+            '楠':'木','椿':'木','榛':'木','槿':'木','樺':'木','栩':'木','松':'木',
+            '柳':'木','棟':'木','朴':'木','桓':'木','梅':'木','樂':'木',
+            // 草(艸)변 계열 → 木
+            '芸':'木','苑':'木','茱':'木','茴':'木','菀':'木','菘':'木','菡':'木',
+            '菲':'木','葭':'木','蓁':'木','薇':'木','芃':'木','芊':'木','蓮':'木',
+            '芝':'木','英':'木','芬':'木','芳':'木','蘭':'木','薰':'木',
+            // 山·土변 계열 → 土
+            '嶺':'土','山':'土','岩':'土','崙':'土','崔':'土',
+            // 人변 → 木 (성명학 일반 기준)
+            '仁':'木','俊':'木','偉':'木','健':'木','儒':'木','仙':'木','佑':'木',
+            '保':'木','伴':'木','侖':'木','倫':'木','彬':'木','彦':'木','彧':'木',
+        };
+
+        // 메인 오행 판단 함수 — 부수 우선, 획수 폴백
+        function hanjaToOhaeng(hanja, strokes) {
+            // 1순위: 직접 매핑 테이블
+            if (HANJA_OHAENG_MAP[hanja]) return HANJA_OHAENG_MAP[hanja];
+            // 2순위: 획수 기반 (폴백)
+            if (strokes) return strokeToOhaeng(strokes);
+            return '土'; // 최후 폴백
+        }
+
         // 한글 → 초성 추출
         function getChosung(char) {
             const code = char.charCodeAt(0) - 0xAC00;
@@ -2752,7 +2816,7 @@
                 const hanjaChars = [...hanja.trim()].filter(c => c.trim());
                 hanjaChars.forEach(function(ch, i) {
                     const strokes = HANJA_STROKES[ch] || null;
-                    const oh = strokes ? strokeToOhaeng(strokes) : null;
+                    const oh = hanjaToOhaeng(ch, strokes);
                     const hangulChar = hangul ? [...hangul][i] || '' : '';
                     result.chars.push({
                         hangul: hangulChar,
