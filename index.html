@@ -2260,8 +2260,9 @@
 
         // 선택된 한자 배열 (글자별)
         var _selectedHanja = [];  // [{hangul, hanja, strokes}]
-        var _hanjaChars    = [];  // 이름 글자 배열
-        var _hanjaStep     = 0;   // 현재 글자 인덱스
+        var _hanjaChars      = [];   // 이름 글자 배열
+        var _hanjaStep       = 0;    // 현재 글자 인덱스
+        var _hanjaExpandedIdx = -1;  // 더보기 펼쳐진 인덱스 (-1=없음)
 
         // 바텀시트 삽입 (최초 1회)
         function _ensureBottomSheet() {
@@ -2327,7 +2328,8 @@
             _ensureBottomSheet();
             _hanjaChars   = [...hangulName].filter(function(c){ return c.trim(); });
             _selectedHanja= _hanjaChars.map(function(c){ return {hangul:c, hanja:null, strokes:null}; });
-            _hanjaStep    = 0;
+            _hanjaStep        = 0;
+            _hanjaExpandedIdx = -1;
             _renderSheetStep(_hanjaStep);
 
             var overlay = document.getElementById('hanja-sheet-overlay');
@@ -2384,19 +2386,44 @@
                 return;
             }
 
-            // 후보 카드 렌더
-            var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
-            candidates.forEach(function(cand) {
-                var oh   = strokeToOhaeng(cand.s);
-                var bg   = OH_BG[oh];
-                var tc   = OH_TEXT[oh];
-                var isSel= selected.hanja === cand.h;
+            // 획수 기준 정렬 (7~14획 범위 우선, 벗어날수록 후순위)
+            var scored = candidates.map(function(c) {
+                var penalty = (c.s >= 7 && c.s <= 14) ? 0 : Math.min(Math.abs(c.s - 10), 8);
+                return { cand: c, score: penalty };
+            });
+            scored.sort(function(a, b) { return a.score - b.score; });
+            var sorted  = scored.map(function(x){ return x.cand; });
+
+            var TOP      = 3;
+            var expanded = (_hanjaExpandedIdx === idx);
+            var hasMore  = sorted.length > TOP;
+
+            // 선택된 후보가 TOP3 밖이면 자동 펼치기
+            if (!expanded && selected.hanja) {
+                var selInTop = sorted.slice(0, TOP).some(function(c){ return c.h === selected.hanja; });
+                if (!selInTop) { _hanjaExpandedIdx = idx; expanded = true; }
+            }
+
+            var visible = expanded ? sorted : sorted.slice(0, TOP);
+
+            var html = '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">'
+                + '⭐ 획수 기준 추천 ' + Math.min(TOP, sorted.length) + '개'
+                + (hasMore && !expanded ? '  ·  전체 ' + sorted.length + '개' : '')
+                + '</div>';
+
+            html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
+            visible.forEach(function(cand, ci) {
+                var oh    = strokeToOhaeng(cand.s);
+                var bg    = OH_BG[oh];
+                var tc    = OH_TEXT[oh];
+                var isSel = selected.hanja === cand.h;
+                var isTop1 = (ci === 0 && !expanded);
                 html += '<button onclick="hanjaSheetSelect(' + idx + ',\'' + cand.h + '\',' + cand.s + ',\'' + cand.m + '\')"'
                     + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
                     + 'background:' + (isSel ? '#ede9fe' : '#f8fafc') + ';'
                     + 'border:2.5px solid ' + (isSel ? '#7c3aed' : '#e2e8f0') + ';'
-                    + 'border-radius:16px;padding:14px 8px;cursor:pointer;transition:all .15s;'
-                    + 'min-height:100px">'
+                    + 'border-radius:16px;padding:14px 8px;cursor:pointer;transition:all .15s;min-height:100px;position:relative">'
+                    + (isTop1 ? '<span style="position:absolute;top:6px;right:6px;font-size:9px;font-weight:700;background:#fef9c3;color:#a16207;border-radius:6px;padding:1px 5px">추천</span>' : '')
                     + '<span style="font-size:36px;font-family:serif;font-weight:900;color:#0f172a;line-height:1.1">' + cand.h + '</span>'
                     + '<span style="font-size:12px;color:#64748b;margin-top:4px">' + cand.s + '획</span>'
                     + '<span style="font-size:12px;color:#374151;margin-top:1px">' + cand.m + '</span>'
@@ -2406,12 +2433,25 @@
                     + '</button>';
             });
             html += '</div>';
+
+            if (hasMore) {
+                html += expanded
+                    ? '<button onclick="_hanjaToggleExpand(' + idx + ')" style="width:100%;margin-top:12px;padding:11px;border-radius:12px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:13px;font-weight:700;cursor:pointer">↑ 접기</button>'
+                    : '<button onclick="_hanjaToggleExpand(' + idx + ')" style="width:100%;margin-top:12px;padding:11px;border-radius:12px;border:1.5px dashed #c4b5fd;background:#faf5ff;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer">+ 더보기 (' + (sorted.length - TOP) + '개 더)</button>';
+            }
+
             list.innerHTML = html;
         }
 
         function hanjaSheetSelect(idx, h, s, m) {
             _selectedHanja[idx] = { hangul: _hanjaChars[idx], hanja: h, strokes: s };
-            _renderSheetStep(idx);  // 선택 표시 갱신
+            _renderSheetStep(idx);
+        }
+
+        function _hanjaToggleExpand(idx) {
+            _hanjaExpandedIdx = (_hanjaExpandedIdx === idx) ? -1 : idx;
+            _renderSheetStep(idx);
+            document.getElementById('hanja-sheet-list').scrollTop = 0;
         }
 
         function hanjaSheetSkip() {
@@ -2423,6 +2463,7 @@
         function hanjaSheetNext() {
             if (_hanjaStep < _hanjaChars.length - 1) {
                 ++_hanjaStep;
+                _hanjaExpandedIdx = -1;  // 글자 넘길 때 더보기 초기화
                 _renderSheetStep(_hanjaStep);
                 document.getElementById('hanja-sheet-list').scrollTop = 0;
             } else {
@@ -2433,6 +2474,7 @@
         function hanjaSheetPrev() {
             if (_hanjaStep > 0) {
                 --_hanjaStep;
+                _hanjaExpandedIdx = -1;  // 글자 넘길 때 더보기 초기화
                 _renderSheetStep(_hanjaStep);
             }
         }
