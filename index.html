@@ -1089,17 +1089,40 @@
 
             const result = document.getElementById('today-result');
 
+            // 탭별 총점 미리 계산 (시드 기반 — 항상 동일)
+            function _tabScore(t) {
+                const keys = ['총운','애정','금전','직장','학업','건강'];
+                const suffixes = ['총운','애정','금전','직장','학업','건강'];
+                let sum = 0;
+                suffixes.forEach(function(sf){
+                    sum += _seededInt(_fortuneSeed(year,month,day,t+sf), 40) + 55;
+                });
+                return Math.round(sum / keys.length);
+            }
+            const tabScores = {today:_tabScore('today'), tomorrow:_tabScore('tomorrow'), week:_tabScore('week'), month:_tabScore('month')};
+
+            function _scoreBadge(score, active) {
+                const color = score>=85?'#4ade80':score>=70?'#60a5fa':score>=55?'#fbbf24':'#f87171';
+                const bg    = active ? 'rgba(255,255,255,.22)' : color+'22';
+                const tc    = active ? '#fff' : color;
+                return '<span style="display:inline-block;font-size:10px;font-weight:900;background:'+bg+';color:'+tc+';border-radius:8px;padding:1px 6px;margin-top:3px">'+score+'점</span>';
+            }
+
             // 결과 탭
             result.innerHTML = `
-                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+                <div style="display:flex;gap:6px;margin-bottom:12px">
                     <button onclick="showFortuneTab('today')" id="ftab-today"
-                        style="flex:1;padding:10px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:13px;background:#7c3aed;color:#fff">🌟 오늘</button>
+                        style="flex:1;padding:8px 4px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:12px;background:#7c3aed;color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px">
+                        <span>🌟 오늘</span>${_scoreBadge(tabScores.today, true)}</button>
                     <button onclick="showFortuneTab('tomorrow')" id="ftab-tomorrow"
-                        style="flex:1;padding:10px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:13px;background:#f1f5f9;color:#64748b">🌙 내일</button>
+                        style="flex:1;padding:8px 4px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:12px;background:#f1f5f9;color:#64748b;display:flex;flex-direction:column;align-items:center;gap:2px">
+                        <span>🌙 내일</span>${_scoreBadge(tabScores.tomorrow, false)}</button>
                     <button onclick="showFortuneTab('week')" id="ftab-week"
-                        style="flex:1;padding:10px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:13px;background:#f1f5f9;color:#64748b">📅 이번주</button>
+                        style="flex:1;padding:8px 4px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:12px;background:#f1f5f9;color:#64748b;display:flex;flex-direction:column;align-items:center;gap:2px">
+                        <span>📅 이번주</span>${_scoreBadge(tabScores.week, false)}</button>
                     <button onclick="showFortuneTab('month')" id="ftab-month"
-                        style="flex:1;padding:10px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:13px;background:#f1f5f9;color:#64748b">📆 이달</button>
+                        style="flex:1;padding:8px 4px;border-radius:12px;border:none;font-weight:700;cursor:pointer;font-size:12px;background:#f1f5f9;color:#64748b;display:flex;flex-direction:column;align-items:center;gap:2px">
+                        <span>📆 이달</span>${_scoreBadge(tabScores.month, false)}</button>
                 </div>
                 <div id="fortune-tab-content"></div>`;
 
@@ -1108,12 +1131,28 @@
         }
 
         function showFortuneTab(tab, data){
-            // 탭 버튼 스타일
+            // 탭 버튼 스타일 + 뱃지 색상 갱신
             ['today','tomorrow','week','month'].forEach(t=>{
                 const b = document.getElementById('ftab-'+t);
-                if(b){
-                    b.style.background = t===tab ? '#7c3aed' : '#f1f5f9';
-                    b.style.color = t===tab ? '#fff' : '#64748b';
+                if(!b) return;
+                const active = t === tab;
+                b.style.background = active ? '#7c3aed' : '#f1f5f9';
+                b.style.color      = active ? '#fff'    : '#64748b';
+                // 뱃지 색상 갱신
+                const badge = b.querySelector('span:last-child');
+                if(badge && badge !== b.querySelector('span:first-child')){
+                    const inp2 = data || _savedInput;
+                    if(inp2){
+                        const sc = (function(){
+                            const suffixes=['총운','애정','금전','직장','학업','건강'];
+                            let sum=0;
+                            suffixes.forEach(function(sf){ sum+=_seededInt(_fortuneSeed(inp2.year,inp2.month,inp2.day,t+sf),40)+55; });
+                            return Math.round(sum/suffixes.length);
+                        })();
+                        const color = sc>=85?'#4ade80':sc>=70?'#60a5fa':sc>=55?'#fbbf24':'#f87171';
+                        badge.style.background = active?'rgba(255,255,255,.22)':color+'22';
+                        badge.style.color      = active?'#fff':color;
+                    }
                 }
             });
 
