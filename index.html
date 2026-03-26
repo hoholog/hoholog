@@ -108,7 +108,7 @@
         </div>
     </footer>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    <script>
         // 모바일 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
@@ -2354,22 +2354,22 @@
             }).join('');
             // 보강 오행 문자 (우측 작게)
             var boostColor = {'木':'#166534','火':'#7f1d1d','土':'#78350f','金':'#1e3a5f','水':'#0c4a6e'}[bd2.hanja||'土'] || '#78350f';
-            return '<svg viewBox="0 0 100 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:120px;filter:drop-shadow(2px 4px 8px rgba(0,0,0,.3))">\'
-                + '<rect width="100" height="220" rx="6" fill="#f5c518"/>\'
-                + '<rect x="4" y="4" width="92" height="212" rx="4" fill="none" stroke="#8B0000" stroke-width="2"/>\'
-                + '<rect x="8" y="8" width="84" height="204" rx="3" fill="none" stroke="#8B0000" stroke-width="1" stroke-dasharray="4,3"/>\'
-                + '<circle cx="50" cy="28" r="14" fill="none" stroke="#8B0000" stroke-width="1.5"/>\'
-                + '<path d="M50,14 A7,7 0 0,1 50,28 A7,7 0 0,0 50,42" fill="#8B0000"/>\'
+            return '<svg viewBox="0 0 100 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:120px;filter:drop-shadow(2px 4px 8px rgba(0,0,0,.3))">'
+                + '<rect width="100" height="220" rx="6" fill="#f5c518"/>'
+                + '<rect x="4" y="4" width="92" height="212" rx="4" fill="none" stroke="#8B0000" stroke-width="2"/>'
+                + '<rect x="8" y="8" width="84" height="204" rx="3" fill="none" stroke="#8B0000" stroke-width="1" stroke-dasharray="4,3"/>'
+                + '<circle cx="50" cy="28" r="14" fill="none" stroke="#8B0000" stroke-width="1.5"/>'
+                + '<path d="M50,14 A7,7 0 0,1 50,28 A7,7 0 0,0 50,42" fill="#8B0000"/>'
                 // 등급 텍스트
-                + '<text x="50" y="52" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + scoreGrade + '</text>\'
+                + '<text x="50" y="52" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + scoreGrade + '</text>'
                 // 메인 한자
-                + '<text x="50" y="88" text-anchor="middle" fill="#8B0000" font-size="30" font-family="serif" font-weight="900">' + mainChar + '</text>\'
+                + '<text x="50" y="88" text-anchor="middle" fill="#8B0000" font-size="30" font-family="serif" font-weight="900">' + mainChar + '</text>'
                 // 보조 한자들
                 + svgChars
                 // 보강 오행 (좌측 하단 작게)
-                + '<text x="18" y="210" text-anchor="middle" fill="' + boostColor + '" font-size="11" font-family="serif" font-weight="700">' + boostChar + '</text>\'
+                + '<text x="18" y="210" text-anchor="middle" fill="' + boostColor + '" font-size="11" font-family="serif" font-weight="700">' + boostChar + '</text>'
                 // 이름
-                + '<text x="50" y="212" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + (name?name.slice(0,3):'소원') + '成就</text>\'
+                + '<text x="50" y="212" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + (name?name.slice(0,3):'소원') + '成就</text>'
                 + '</svg>';
         }
 
@@ -2379,40 +2379,40 @@
             // 점수 기반 별 개수
             var stars  = totalScore>=80?'★★★★★':totalScore>=65?'★★★★☆':totalScore>=50?'★★★☆☆':'★★☆☆☆';
             var starColor = totalScore>=80?'#16a34a':totalScore>=65?'#2563eb':totalScore>=50?'#d97706':'#dc2626';
-            return '<svg viewBox="0 0 140 185" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:140px;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">\'
-                + '<rect width="140" height="185" rx="20" fill="#FFD700"/>\'
-                + '<rect x="6" y="6" width="128" height="173" rx="16" fill="none" stroke="#FF6B35" stroke-width="2.5"/>\'
-                + '<text x="20" y="28" font-size="14">' + emoji1 + '</text>\'
-                + '<text x="108" y="28" font-size="14">' + emoji2 + '</text>\'
-                + '<text x="70" y="45" text-anchor="middle" fill="#FF6B35" font-size="11" font-weight="900" font-family="sans-serif">행운 부적 · ' + scoreGrade + '</text>\'
+            return '<svg viewBox="0 0 140 185" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:140px;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">'
+                + '<rect width="140" height="185" rx="20" fill="#FFD700"/>'
+                + '<rect x="6" y="6" width="128" height="173" rx="16" fill="none" stroke="#FF6B35" stroke-width="2.5"/>'
+                + '<text x="20" y="28" font-size="14">' + emoji1 + '</text>'
+                + '<text x="108" y="28" font-size="14">' + emoji2 + '</text>'
+                + '<text x="70" y="45" text-anchor="middle" fill="#FF6B35" font-size="11" font-weight="900" font-family="sans-serif">행운 부적 · ' + scoreGrade + '</text>'
                 // 점수 별
-                + '<text x="70" y="60" text-anchor="middle" fill="' + starColor + '" font-size="11" font-family="sans-serif">' + stars + '</text>\'
+                + '<text x="70" y="60" text-anchor="middle" fill="' + starColor + '" font-size="11" font-family="sans-serif">' + stars + '</text>'
                 // 메인 이모지
-                + '<rect x="38" y="66" width="64" height="64" rx="32" fill="rgba(255,255,255,.55)"/>\'
-                + '<text x="70" y="107" text-anchor="middle" font-size="34">' + emoji1 + '</text>\'
+                + '<rect x="38" y="66" width="64" height="64" rx="32" fill="rgba(255,255,255,.55)"/>'
+                + '<text x="70" y="107" text-anchor="middle" font-size="34">' + emoji1 + '</text>'
                 // 오행 한자
-                + '<text x="70" y="146" text-anchor="middle" fill="#8B0000" font-size="20" font-family="serif" font-weight="900">' + bd.chars[0] + bd2.chars[0] + '</text>\'
+                + '<text x="70" y="146" text-anchor="middle" fill="#8B0000" font-size="20" font-family="serif" font-weight="900">' + bd.chars[0] + bd2.chars[0] + '</text>'
                 // 소원
-                + '<text x="70" y="162" text-anchor="middle" fill="#FF6B35" font-size="9" font-weight="700" font-family="sans-serif">' + bd.wish.slice(0,9) + '</text>\'
-                + '<text x="70" y="177" text-anchor="middle" fill="#92400e" font-size="8" font-family="sans-serif">' + (name?name.slice(0,4):'소원') + ' 성취</text>\'
+                + '<text x="70" y="162" text-anchor="middle" fill="#FF6B35" font-size="9" font-weight="700" font-family="sans-serif">' + bd.wish.slice(0,9) + '</text>'
+                + '<text x="70" y="177" text-anchor="middle" fill="#92400e" font-size="8" font-family="sans-serif">' + (name?name.slice(0,4):'소원') + ' 성취</text>'
                 + '</svg>';
         }
 
         function _bujeokSVG_qr(bd, name, year, scoreGrade, qrUrl) {
             var url = qrUrl || 'https://hoholog.github.io';
             var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&bgcolor=f5c518&color=8B0000&data=' + encodeURIComponent(url);
-            return '<div style="position:relative;width:100%;max-width:140px">\'
-                + '<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">\'
-                + '<rect width="140" height="200" rx="10" fill="#f5c518"/>\'
-                + '<rect x="5" y="5" width="130" height="190" rx="7" fill="none" stroke="#8B0000" stroke-width="2"/>\'
-                + '<text x="70" y="24" text-anchor="middle" fill="#8B0000" font-size="11" font-weight="900" font-family="serif">行運符籍 · ' + scoreGrade + '</text>\'
-                + '<text x="70" y="40" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + bd.wish.slice(0,12) + '</text>\'
-                + '<rect x="25" y="48" width="90" height="90" rx="8" fill="white"/>\'
-                + '<image href="' + qrApiUrl + '" x="30" y="53" width="80" height="80"/>\'
-                + '<text x="70" y="158" text-anchor="middle" fill="#8B0000" font-size="16" font-family="serif" font-weight="900">' + bd.chars[0] + '</text>\'
-                + '<text x="70" y="174" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + (name||'소원') + ' 성취 기원</text>\'
-                + '<text x="70" y="190" text-anchor="middle" fill="#8B0000" font-size="7" font-family="serif">QR 스캔으로 행운을 나누세요</text>\'
-                + '</svg>\'
+            return '<div style="position:relative;width:100%;max-width:140px">'
+                + '<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">'
+                + '<rect width="140" height="200" rx="10" fill="#f5c518"/>'
+                + '<rect x="5" y="5" width="130" height="190" rx="7" fill="none" stroke="#8B0000" stroke-width="2"/>'
+                + '<text x="70" y="24" text-anchor="middle" fill="#8B0000" font-size="11" font-weight="900" font-family="serif">行運符籍 · ' + scoreGrade + '</text>'
+                + '<text x="70" y="40" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + bd.wish.slice(0,12) + '</text>'
+                + '<rect x="25" y="48" width="90" height="90" rx="8" fill="white"/>'
+                + '<image href="' + qrApiUrl + '" x="30" y="53" width="80" height="80"/>'
+                + '<text x="70" y="158" text-anchor="middle" fill="#8B0000" font-size="16" font-family="serif" font-weight="900">' + bd.chars[0] + '</text>'
+                + '<text x="70" y="174" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + (name||'소원') + ' 성취 기원</text>'
+                + '<text x="70" y="190" text-anchor="middle" fill="#8B0000" font-size="7" font-family="serif">QR 스캔으로 행운을 나누세요</text>'
+                + '</svg>'
                 + '</div>';
         }
 
@@ -2502,7 +2502,7 @@
                         + '</div>'
                     + '</div>'
                     + '<div style="display:flex;justify-content:center">'
-                    +   '<button onclick="saveCard('bujeok-section','부적_' + year + '')"'
+                    +   '<button onclick="saveCard(&apos;bujeok-section&apos;,&apos;부적_&apos; + year + &apos;&apos;)"'
                     +     ' style="background:#92400e;color:#fff;border:none;padding:10px 24px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px">📸 부적 저장</button>'
                     + '</div>'
                     + '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px;margin-top:8px;background:#f8fafc;border-radius:10px">'
