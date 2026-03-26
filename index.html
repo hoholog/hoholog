@@ -2156,7 +2156,10 @@
             + '</div>'
 
             // 11. 토정비결 (접기/펼치기)
-            + buildTojeongHTML(year, month, day, ilgan, age, gender, sjName);
+            + buildTojeongHTML(year, month, day, ilgan, age, gender, sjName)
+
+            // 12. 부적 시스템
+            + buildBujeokHTML(year, month, day, ilgan, ohCount, sjName, age, gender, {pwIdx:pwIdx, maxOH:maxOH, minOH:minOH, scores6:scores6, totalScore:totalScore, nameSajuResult:nameSajuResult});
 
             result.scrollIntoView({behavior:'smooth',block:'start'});
         }
@@ -2323,6 +2326,199 @@
                 + '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">' + label + '</div>'
                 + '<div style="font-size:12px;color:#475569;line-height:1.7">' + text + '</div>'
                 + '</div>';
+        }
+
+
+        // ══════════════════════════════════════════════════
+        //  부적 (符籍) 시스템
+        // ══════════════════════════════════════════════════
+
+        // 오행별 부적 문자/의미 테이블
+        var BUJEOK_DATA = {
+            '木':{ hanja:'木', meaning:'생명·성장·도전', color:'#166534', bg:'#dcfce7', wish:'사업·건강·성장 기원', symbol:'⿸', chars:['生','長','木','春','仁'] },
+            '火':{ hanja:'火', meaning:'열정·명예·성공', color:'#7f1d1d', bg:'#fee2e2', wish:'명예·성공·인정 기원', symbol:'☀', chars:['火','明','榮','功','光'] },
+            '土':{ hanja:'土', meaning:'안정·신뢰·재물', color:'#78350f', bg:'#fef3c7', wish:'재물·안정·신뢰 기원', symbol:'⊕', chars:['土','財','福','安','信'] },
+            '金':{ hanja:'金', meaning:'결단·지혜·금전', color:'#1e3a5f', bg:'#f1f5f9', wish:'금전·지혜·결단 기원', symbol:'◈', chars:['金','智','利','斷','清'] },
+            '水':{ hanja:'水', meaning:'지혜·직관·유연', color:'#0c4a6e', bg:'#e0f2fe', wish:'지혜·직관·건강 기원', symbol:'☵', chars:['水','智','流','德','通'] },
+        };
+
+        // 부적 SVG 생성 함수들
+        function _bujeokSVG_traditional(bd, bd2, name, year, scoreGrade, extraChars) {
+            var mainChar  = bd.chars[0];
+            var boostChar = bd2.chars[0];
+            var extras    = extraChars || [];
+            // 세로 보조 문자: 일간 chars + extraChars
+            var subChars  = bd.chars.slice(1).concat(extras).slice(0,4);
+            var svgChars  = subChars.map(function(ch, i) {
+                return '<text x="50" y="' + (108 + i*26) + '" text-anchor="middle" fill="#8B0000" font-size="17" font-family="serif" font-weight="900">' + ch + '</text>';
+            }).join('');
+            // 보강 오행 문자 (우측 작게)
+            var boostColor = {'木':'#166534','火':'#7f1d1d','土':'#78350f','金':'#1e3a5f','水':'#0c4a6e'}[bd2.hanja||'土'] || '#78350f';
+            return '<svg viewBox="0 0 100 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:120px;filter:drop-shadow(2px 4px 8px rgba(0,0,0,.3))">\'
+                + '<rect width="100" height="220" rx="6" fill="#f5c518"/>\'
+                + '<rect x="4" y="4" width="92" height="212" rx="4" fill="none" stroke="#8B0000" stroke-width="2"/>\'
+                + '<rect x="8" y="8" width="84" height="204" rx="3" fill="none" stroke="#8B0000" stroke-width="1" stroke-dasharray="4,3"/>\'
+                + '<circle cx="50" cy="28" r="14" fill="none" stroke="#8B0000" stroke-width="1.5"/>\'
+                + '<path d="M50,14 A7,7 0 0,1 50,28 A7,7 0 0,0 50,42" fill="#8B0000"/>\'
+                // 등급 텍스트
+                + '<text x="50" y="52" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + scoreGrade + '</text>\'
+                // 메인 한자
+                + '<text x="50" y="88" text-anchor="middle" fill="#8B0000" font-size="30" font-family="serif" font-weight="900">' + mainChar + '</text>\'
+                // 보조 한자들
+                + svgChars
+                // 보강 오행 (좌측 하단 작게)
+                + '<text x="18" y="210" text-anchor="middle" fill="' + boostColor + '" font-size="11" font-family="serif" font-weight="700">' + boostChar + '</text>\'
+                // 이름
+                + '<text x="50" y="212" text-anchor="middle" fill="#8B0000" font-size="8" font-family="serif">' + (name?name.slice(0,3):'소원') + '成就</text>\'
+                + '</svg>';
+        }
+
+        function _bujeokSVG_cute(bd, bd2, name, year, scoreGrade, totalScore) {
+            var emoji1 = {'木':'🌱','火':'🔥','土':'🌍','金':'⭐','水':'💧'}[bd.hanja]  || '✨';
+            var emoji2 = {'木':'🌿','火':'☀️','土':'🏅','金':'💫','水':'🌊'}[bd2.hanja] || '🌟';
+            // 점수 기반 별 개수
+            var stars  = totalScore>=80?'★★★★★':totalScore>=65?'★★★★☆':totalScore>=50?'★★★☆☆':'★★☆☆☆';
+            var starColor = totalScore>=80?'#16a34a':totalScore>=65?'#2563eb':totalScore>=50?'#d97706':'#dc2626';
+            return '<svg viewBox="0 0 140 185" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:140px;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">\'
+                + '<rect width="140" height="185" rx="20" fill="#FFD700"/>\'
+                + '<rect x="6" y="6" width="128" height="173" rx="16" fill="none" stroke="#FF6B35" stroke-width="2.5"/>\'
+                + '<text x="20" y="28" font-size="14">' + emoji1 + '</text>\'
+                + '<text x="108" y="28" font-size="14">' + emoji2 + '</text>\'
+                + '<text x="70" y="45" text-anchor="middle" fill="#FF6B35" font-size="11" font-weight="900" font-family="sans-serif">행운 부적 · ' + scoreGrade + '</text>\'
+                // 점수 별
+                + '<text x="70" y="60" text-anchor="middle" fill="' + starColor + '" font-size="11" font-family="sans-serif">' + stars + '</text>\'
+                // 메인 이모지
+                + '<rect x="38" y="66" width="64" height="64" rx="32" fill="rgba(255,255,255,.55)"/>\'
+                + '<text x="70" y="107" text-anchor="middle" font-size="34">' + emoji1 + '</text>\'
+                // 오행 한자
+                + '<text x="70" y="146" text-anchor="middle" fill="#8B0000" font-size="20" font-family="serif" font-weight="900">' + bd.chars[0] + bd2.chars[0] + '</text>\'
+                // 소원
+                + '<text x="70" y="162" text-anchor="middle" fill="#FF6B35" font-size="9" font-weight="700" font-family="sans-serif">' + bd.wish.slice(0,9) + '</text>\'
+                + '<text x="70" y="177" text-anchor="middle" fill="#92400e" font-size="8" font-family="sans-serif">' + (name?name.slice(0,4):'소원') + ' 성취</text>\'
+                + '</svg>';
+        }
+
+        function _bujeokSVG_qr(bd, name, year, scoreGrade, qrUrl) {
+            var url = qrUrl || 'https://hoholog.github.io';
+            var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&bgcolor=f5c518&color=8B0000&data=' + encodeURIComponent(url);
+            return '<div style="position:relative;width:100%;max-width:140px">\'
+                + '<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">\'
+                + '<rect width="140" height="200" rx="10" fill="#f5c518"/>\'
+                + '<rect x="5" y="5" width="130" height="190" rx="7" fill="none" stroke="#8B0000" stroke-width="2"/>\'
+                + '<text x="70" y="24" text-anchor="middle" fill="#8B0000" font-size="11" font-weight="900" font-family="serif">行運符籍 · ' + scoreGrade + '</text>\'
+                + '<text x="70" y="40" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + bd.wish.slice(0,12) + '</text>\'
+                + '<rect x="25" y="48" width="90" height="90" rx="8" fill="white"/>\'
+                + '<image href="' + qrApiUrl + '" x="30" y="53" width="80" height="80"/>\'
+                + '<text x="70" y="158" text-anchor="middle" fill="#8B0000" font-size="16" font-family="serif" font-weight="900">' + bd.chars[0] + '</text>\'
+                + '<text x="70" y="174" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + (name||'소원') + ' 성취 기원</text>\'
+                + '<text x="70" y="190" text-anchor="middle" fill="#8B0000" font-size="7" font-family="serif">QR 스캔으로 행운을 나누세요</text>\'
+                + '</svg>\'
+                + '</div>';
+        }
+
+        var _BUJEOK_QR_URL = 'https://hoholog.github.io';  // ← QR URL 수정 가능
+
+        function buildBujeokHTML(birthYear, birthMonth, birthDay, ilgan, ohCount, name, age, gender, sajuExtra) {
+            var ex         = sajuExtra || {};
+            var pwIdx      = ex.pwIdx      !== undefined ? ex.pwIdx      : 0;
+            var maxOH      = ex.maxOH      || '土';
+            var minOH      = ex.minOH      || '水';
+            var scores6    = ex.scores6    || {};
+            var totalScore = ex.totalScore || 70;
+
+            var oh   = OHAENG_CG[ilgan] || '土';
+            var year = kstNow().getUTCFullYear();
+
+            // ── 부적 키워드 결정 (사주+토정비결 통합 분석) ──
+            // 1) 편관 강도 → 수호/극복 방향
+            var pwLabels = ['평온','도전','강인','불굴'];
+            var pwKind   = pwLabels[Math.min(pwIdx,3)];
+
+            // 2) 부족한 오행 → 보강 방향
+            var boostOH  = minOH;
+
+            // 3) 총운 점수 → 부적 메시지 강도
+            var scoreGrade = totalScore >= 80 ? '대길(大吉)' : totalScore >= 65 ? '길(吉)' : totalScore >= 50 ? '평길(平吉)' : '화해(和解)';
+            var scoreMsg   = totalScore >= 80
+                ? '이미 강한 운기를 타고 있습니다. 이 부적으로 기운을 더욱 굳건히 하세요.'
+                : totalScore >= 65
+                ? '좋은 흐름 속에 있습니다. 부적이 그 기운을 안정적으로 유지해줍니다.'
+                : totalScore >= 50
+                ? '균형을 찾는 시기입니다. 부적이 부족한 오행 기운을 채워드립니다.'
+                : '변화와 도전의 시기입니다. 부적으로 수호의 기운을 얻으세요.';
+
+            // 4) 이름 오행 보완 여부
+            var nameBoost = (ex.nameSajuResult && ex.nameSajuResult.advices && ex.nameSajuResult.advices.length > 0)
+                ? ex.nameSajuResult.advices[0].text : '';
+
+            // 5) 부적 문자 선택 — 일간+보강오행+편관 조합
+            var BD_MAIN = BUJEOK_DATA[oh]    || BUJEOK_DATA['土'];
+            var BD_BOOST= BUJEOK_DATA[boostOH] || BD_MAIN;
+
+            // 편관 강도별 수호 문자 추가
+            var pwChars = [[], ['守','護'], ['克','勝'], ['鎭','魔']];
+            var extraChars = pwChars[Math.min(pwIdx,3)];
+
+            // 부적 제목 문구
+            var bujeokTitle = '【' + (OHAENG_KR[oh]||oh) + '('+oh+') · ' + scoreGrade + ' · ' + pwKind + '】';
+            var bujeokDesc  = (OHAENG_KR[oh]||oh) + ' 일간 · 부족한 ' + (OHAENG_KR[boostOH]||boostOH) + ' 보강 · '
+                + (pwIdx===0 ? '편관 없음 — 안정의 기운' : '편관 '+pwIdx+'개 — '+pwKind+' 수호');
+
+            // ── 부적 SVG 3종 ──
+            var trad = _bujeokSVG_traditional(BD_MAIN, BD_BOOST, name, year, scoreGrade, extraChars);
+            var cute = _bujeokSVG_cute(BD_MAIN, BD_BOOST, name, year, scoreGrade, totalScore);
+            var qr   = _bujeokSVG_qr(BD_MAIN, name, year, scoreGrade, _BUJEOK_QR_URL);
+
+            return '<div id="bujeok-section" style="margin-top:12px">'
+                + '<button onclick="bujeokToggle()" id="bujeok-toggle-btn"'
+                +   ' style="width:100%;padding:16px 18px;background:linear-gradient(135deg,#78350f,#b45309);color:#fff;border:none;border-radius:16px;font-size:15px;font-weight:900;cursor:pointer;display:flex;align-items:center;gap:10px;text-align:left">'
+                +   '<span style="flex:1">🔯 사주 맞춤 부적 (符籍) · ' + scoreGrade + '</span>'
+                +   '<span id="bujeok-chevron" style="font-size:12px;transition:transform .3s">▼ 더보기</span>'
+                + '</button>'
+                + '<div id="bujeok-body" style="display:none;margin-top:8px">'
+                    // 분석 요약 카드
+                    + '<div style="background:linear-gradient(135deg,#78350f,#92400e);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">'
+                    +   '<div style="font-size:13px;font-weight:900;color:#fde68a;margin-bottom:8px">' + bujeokTitle + '</div>'
+                    +   '<div style="font-size:12px;color:#fef3c7;margin-bottom:8px">' + bujeokDesc + '</div>'
+                    +   '<div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px;font-size:12px;color:#fef9c3;line-height:1.75">' + scoreMsg + '</div>'
+                    +   (nameBoost ? '<div style="margin-top:8px;font-size:11px;color:#fde68a;background:rgba(0,0,0,.2);border-radius:8px;padding:6px">📛 이름 분석: ' + nameBoost + '</div>' : '')
+                    + '</div>'
+                    // 부적 3종
+                    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
+                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">📜 전통 부적</div>'
+                        +   trad
+                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">' + (OHAENG_KR[oh]||oh) + '·' + (OHAENG_KR[boostOH]||boostOH) + ' 기운</div>'
+                        + '</div>'
+                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">🌟 행운 부적</div>'
+                        +   cute
+                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">' + scoreGrade + ' · ' + totalScore + '점</div>'
+                        + '</div>'
+                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">📱 QR 부적</div>'
+                        +   qr
+                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">QR로 행운 공유</div>'
+                        + '</div>'
+                    + '</div>'
+                    + '<div style="display:flex;justify-content:center">'
+                    +   '<button onclick="saveCard('bujeok-section','부적_' + year + '')"'
+                    +     ' style="background:#92400e;color:#fff;border:none;padding:10px 24px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px">📸 부적 저장</button>'
+                    + '</div>'
+                    + '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px;margin-top:8px;background:#f8fafc;border-radius:10px">'
+                    +   '⚠️ 전통 민속 문화를 현대적으로 재해석한 콘텐츠입니다. 긍정적 에너지를 위한 참고용입니다.'
+                    + '</div>'
+                + '</div>'
+            + '</div>';
+        }
+
+        function bujeokToggle() {
+            var body = document.getElementById('bujeok-body');
+            var btn  = document.getElementById('bujeok-chevron');
+            if (!body) return;
+            var isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'block';
+            btn.textContent    = isOpen ? '▼ 더보기' : '▲ 접기';
         }
 
         function tjToggle() {
