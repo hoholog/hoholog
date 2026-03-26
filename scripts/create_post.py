@@ -75,17 +75,15 @@ ZODIACS = [
 ]
 
 def _make_chinese_years(base_year: int) -> str:
-    """base_year부터 12년 주기로 과거~미래 연도를 자동 생성.
-    실행 연도 기준 과거 60년(5주기) + 미래 1주기 포함.
-    """
+    """base_year부터 12년 주기로 1940년 이후 ~ 미래 1주기 연도 생성."""
+    START = 1940
     current_year = now_kst().year
-    # base_year에서 가장 먼 과거 주기 시작점 계산
-    start = base_year
-    while start - 12 >= current_year - 60:
-        start -= 12
+    # base_year에서 START 이후 첫 해당 연도 찾기
+    y = base_year
+    while y < START:
+        y += 12
     years = []
-    y = start
-    while y <= current_year + 12:   # 미래 1주기까지 포함
+    while y <= current_year + 12:
         years.append(str(y))
         y += 12
     return ",".join(years)
@@ -537,24 +535,8 @@ def get_access_token():
         print("🔑 Access Token 자동 갱신 완료")
         return resp.json().get("access_token","")
     else:
-        data  = resp.json()
-        error = data.get("error","")
-        desc  = data.get("error_description","")
-        print(f"❌ Token 갱신 실패: {error} — {desc}")
-
-        if error == "invalid_grant":
-            print("⛔ Refresh Token이 만료/취소됨.")
-            print("   → GitHub Secrets에서 BLOGGER_REFRESH_TOKEN을 재발급 후 업데이트하세요.")
-            raise SystemExit(1)  # 만료된 토큰으로 401 루프 방지
-
-        # 그 외 일시적 오류는 BLOGGER_TOKEN으로 폴백
-        fallback = os.environ.get("BLOGGER_TOKEN","")
-        if fallback:
-            print("⚠️  BLOGGER_TOKEN으로 폴백 시도")
-        else:
-            print("⛔ 사용 가능한 토큰 없음 — 실행 중단")
-            raise SystemExit(1)
-        return fallback
+        print(f"❌ Token 갱신 실패: {resp.text[:120]}")
+        return os.environ.get("BLOGGER_TOKEN","")
 
 ACCESS_TOKEN = get_access_token() if REFRESH_TOKEN else os.environ.get("BLOGGER_TOKEN","")
 
@@ -607,17 +589,23 @@ def main():
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
 
-    # ④ 별자리 주간운세 — 매주 월요일만 (별자리별 12개)
-    if kst_now.weekday() == 0:
+    # 수동 실행 시 강제 포함 옵션
+    force_weekly  = os.environ.get("FORCE_WEEKLY",  "false").lower() == "true"
+    force_monthly = os.environ.get("FORCE_MONTHLY", "false").lower() == "true"
+
+    # ④ 별자리 주간운세 — 매주 월요일 or 강제 실행
+    if kst_now.weekday() == 0 or force_weekly:
         posts.extend(build_zodiac_weekly_post(today_str))
-        print("📅 오늘은 월요일 — 별자리 주간운세 12개 포함")
+        label = "강제 포함" if force_weekly and kst_now.weekday() != 0 else "월요일"
+        print(f"📅 별자리 주간운세 12개 포함 ({label})")
     else:
         print("📅 주간운세 스킵 (월요일 아님)")
 
-    # ⑤ 띠별 월간운세 — 매월 1일만 (띠별 12개)
-    if kst_now.day == 1:
+    # ⑤ 띠별 월간운세 — 매월 1일 or 강제 실행
+    if kst_now.day == 1 or force_monthly:
         posts.extend(build_chinese_monthly_post(today_str))
-        print("📅 오늘은 1일 — 띠별 월간운세 12개 포함")
+        label = "강제 포함" if force_monthly and kst_now.day != 1 else "1일"
+        print(f"📅 띠별 월간운세 12개 포함 ({label})")
     else:
         print("📅 월간운세 스킵 (1일 아님)")
 
