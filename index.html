@@ -953,6 +953,11 @@
         // ═══════════════════════════════
         //  이미지 저장
         // ═══════════════════════════════
+        function saveBujeok(btn) {
+            var yr = btn.getAttribute('data-year') || '';
+            saveCard('bujeok-section', '부적_' + yr);
+        }
+
         function saveCard(elId, filename){
             const el = document.getElementById(elId);
             if(!el){ alert('저장할 카드가 없습니다'); return; }
@@ -2401,18 +2406,19 @@
         function _bujeokSVG_qr(bd, name, year, scoreGrade, qrUrl) {
             var url = qrUrl || 'https://hoholog.github.io';
             var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&bgcolor=f5c518&color=8B0000&data=' + encodeURIComponent(url);
-            return '<div style="position:relative;width:100%;max-width:140px">'
-                + '<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">'
+            // SVG는 프레임만, QR은 <img>로 절대위치 오버레이 (SVG <image>는 CORS 차단됨)
+            return '<div style="position:relative;width:100%;max-width:140px;display:inline-block">'
+                + '<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;filter:drop-shadow(2px 4px 10px rgba(0,0,0,.25))">'
                 + '<rect width="140" height="200" rx="10" fill="#f5c518"/>'
                 + '<rect x="5" y="5" width="130" height="190" rx="7" fill="none" stroke="#8B0000" stroke-width="2"/>'
                 + '<text x="70" y="24" text-anchor="middle" fill="#8B0000" font-size="11" font-weight="900" font-family="serif">行運符籍 · ' + scoreGrade + '</text>'
                 + '<text x="70" y="40" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + bd.wish.slice(0,12) + '</text>'
                 + '<rect x="25" y="48" width="90" height="90" rx="8" fill="white"/>'
-                + '<image href="' + qrApiUrl + '" x="30" y="53" width="80" height="80"/>'
                 + '<text x="70" y="158" text-anchor="middle" fill="#8B0000" font-size="16" font-family="serif" font-weight="900">' + bd.chars[0] + '</text>'
                 + '<text x="70" y="174" text-anchor="middle" fill="#8B0000" font-size="9" font-family="serif">' + (name||'소원') + ' 성취 기원</text>'
                 + '<text x="70" y="190" text-anchor="middle" fill="#8B0000" font-size="7" font-family="serif">QR 스캔으로 행운을 나누세요</text>'
                 + '</svg>'
+                + '<img src="' + qrApiUrl + '" style="position:absolute;left:50%;top:48px;transform:translateX(-50%);width:64%;border-radius:6px" crossorigin="anonymous" />'
                 + '</div>';
         }
 
@@ -2440,28 +2446,30 @@
             // 3) 총운 점수 → 부적 메시지 강도
             var scoreGrade = totalScore >= 80 ? '대길(大吉)' : totalScore >= 65 ? '길(吉)' : totalScore >= 50 ? '평길(平吉)' : '화해(和解)';
             var scoreMsg   = totalScore >= 80
-                ? '이미 강한 운기를 타고 있습니다. 이 부적으로 기운을 더욱 굳건히 하세요.'
+                ? boostName + ' 기운이 부족합니다. 이 부적으로 ' + boostName + ' 에너지를 보충하여 완전한 균형을 만드세요.'
                 : totalScore >= 65
-                ? '좋은 흐름 속에 있습니다. 부적이 그 기운을 안정적으로 유지해줍니다.'
+                ? boostName + ' 기운을 보강하면 운세가 더욱 안정됩니다.'
                 : totalScore >= 50
-                ? '균형을 찾는 시기입니다. 부적이 부족한 오행 기운을 채워드립니다.'
-                : '변화와 도전의 시기입니다. 부적으로 수호의 기운을 얻으세요.';
+                ? '사주에서 ' + boostName + ' 기운이 약합니다. 부적으로 균형을 맞추세요.'
+                : boostName + ' 기운이 크게 부족합니다. 부적과 ' + boostName + ' 계열 아이템으로 집중 보강하세요.';
 
             // 4) 이름 오행 보완 여부
             var nameBoost = (ex.nameSajuResult && ex.nameSajuResult.advices && ex.nameSajuResult.advices.length > 0)
                 ? ex.nameSajuResult.advices[0].text : '';
 
-            // 5) 부적 문자 선택 — 일간+보강오행+편관 조합
-            var BD_MAIN = BUJEOK_DATA[oh]    || BUJEOK_DATA['土'];
-            var BD_BOOST= BUJEOK_DATA[boostOH] || BD_MAIN;
+            // 5) 부적 문자 선택 — 보강오행(부족한 기운) 메인
+            var BD_MAIN = BUJEOK_DATA[boostOH] || BUJEOK_DATA['土'];
+            var BD_BOOST= BUJEOK_DATA[oh]       || BD_MAIN;
 
             // 편관 강도별 수호 문자 추가
             var pwChars = [[], ['守','護'], ['克','勝'], ['鎭','魔']];
             var extraChars = pwChars[Math.min(pwIdx,3)];
 
             // 부적 제목 문구
-            var bujeokTitle = '【' + (OHAENG_KR[oh]||oh) + '('+oh+') · ' + scoreGrade + ' · ' + pwKind + '】';
-            var bujeokDesc  = (OHAENG_KR[oh]||oh) + ' 일간 · 부족한 ' + (OHAENG_KR[boostOH]||boostOH) + ' 보강 · '
+            var bujeokTitle = '【' + (OHAENG_KR[boostOH]||boostOH) + '(' + boostOH + ') 보강 부적 · ' + scoreGrade + ' · ' + pwKind + '】';
+            var boostName = OHAENG_KR[boostOH] || boostOH;
+            var ilganName = OHAENG_KR[oh] || oh;
+            var bujeokDesc  = '일간(' + ilganName + ') · ' + boostName + ' 기운 보강 부적 · '
                 + (pwIdx===0 ? '편관 없음 — 안정의 기운' : '편관 '+pwIdx+'개 — '+pwKind+' 수호');
 
             // ── 부적 SVG 3종 ──
@@ -2502,7 +2510,7 @@
                         + '</div>'
                     + '</div>'
                     + '<div style="display:flex;justify-content:center">'
-                    +   '<button onclick="saveCard(&apos;bujeok-section&apos;,&apos;부적_&apos; + year + &apos;&apos;)"'
+                    +   '<button onclick="saveBujeok(this)" data-year="' + year + '"'
                     +     ' style="background:#92400e;color:#fff;border:none;padding:10px 24px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px">📸 부적 저장</button>'
                     + '</div>'
                     + '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px;margin-top:8px;background:#f8fafc;border-radius:10px">'
