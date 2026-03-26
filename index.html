@@ -732,9 +732,7 @@
                 </div>
                 <div id="${cardId}">${info.yearRowsHTML}</div>
                 ${renderScoreCard(info.score||null)}
-                <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap">
-                    <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
-                </div>`;
+`;
             }
 
             // 타입 4: 띠 월간 — 본문 + 상중하순
@@ -763,7 +761,6 @@
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('${cardId}','${saveLabel}')"
                         style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                    <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
                 </div>`;
             }
 
@@ -785,7 +782,6 @@
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('${cardId}','${saveLabel}')"
                         style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                    <a href="${info.url}" target="_blank" class="blog-btn">📖 전체 보기</a>
                 </div>`;
         }
 
@@ -1267,18 +1263,18 @@
             {kr:'물병자리',date:'1/20~2/18',emoji:'♒'},{kr:'물고기자리',date:'2/19~3/20',emoji:'♓'},
         ];
         const CHINESE_LIST=[
-            {kr:'쥐띠',year:'1960,1972,1984,1996,2008,2020',emoji:'🐭'},
-            {kr:'소띠',year:'1961,1973,1985,1997,2009,2021',emoji:'🐮'},
-            {kr:'호랑이띠',year:'1962,1974,1986,1998,2010,2022',emoji:'🐯'},
-            {kr:'토끼띠',year:'1963,1975,1987,1999,2011,2023',emoji:'🐰'},
-            {kr:'용띠',year:'1964,1976,1988,2000,2012,2024',emoji:'🐲'},
-            {kr:'뱀띠',year:'1965,1977,1989,2001,2013,2025',emoji:'🐍'},
-            {kr:'말띠',year:'1966,1978,1990,2002,2014,2026',emoji:'🐴'},
-            {kr:'양띠',year:'1967,1979,1991,2003,2015,2027',emoji:'🐑'},
-            {kr:'원숭이띠',year:'1968,1980,1992,2004,2016,2028',emoji:'🐵'},
-            {kr:'닭띠',year:'1969,1981,1993,2005,2017,2029',emoji:'🐓'},
-            {kr:'개띠',year:'1970,1982,1994,2006,2018,2030',emoji:'🐶'},
-            {kr:'돼지띠',year:'1971,1983,1995,2007,2019,2031',emoji:'🐷'},
+            {kr:'쥐띠',year:'1948,1960,1972,1984,1996,2008,2020',emoji:'🐭'},
+            {kr:'소띠',year:'1949,1961,1973,1985,1997,2009,2021',emoji:'🐮'},
+            {kr:'호랑이띠',year:'1950,1962,1974,1986,1998,2010,2022',emoji:'🐯'},
+            {kr:'토끼띠',year:'1951,1963,1975,1987,1999,2011,2023',emoji:'🐰'},
+            {kr:'용띠',year:'1940,1952,1964,1976,1988,2000,2012,2024',emoji:'🐲'},
+            {kr:'뱀띠',year:'1941,1953,1965,1977,1989,2001,2013,2025',emoji:'🐍'},
+            {kr:'말띠',year:'1942,1954,1966,1978,1990,2002,2014,2026',emoji:'🐴'},
+            {kr:'양띠',year:'1943,1955,1967,1979,1991,2003,2015,2027',emoji:'🐑'},
+            {kr:'원숭이띠',year:'1944,1956,1968,1980,1992,2004,2016,2028',emoji:'🐵'},
+            {kr:'닭띠',year:'1945,1957,1969,1981,1993,2005,2017,2029',emoji:'🐓'},
+            {kr:'개띠',year:'1946,1958,1970,1982,1994,2006,2018,2030',emoji:'🐶'},
+            {kr:'돼지띠',year:'1947,1959,1971,1983,1995,2007,2019,2031',emoji:'🐷'},
         ];
         const FORTUNE_MSGS=[
             '오늘의 별자리 기운이 당신을 포근히 감싸고 있습니다.<br><br>지금 당신이 걷고 있는 길이 때로는 멀게 느껴질 수 있지만, 한 걸음 한 걸음이 모여 큰 변화를 만들어냅니다. 서두르지 않아도 됩니다. 당신만의 속도가 있고, 그 속도는 언제나 옳습니다.<br><br>오늘은 자신을 위한 시간을 조금 더 허락해보세요. 스스로에게 친절해지는 하루를 만들어보세요.<br><br>당신은 생각보다 훨씬 강한 사람입니다. 오늘도 당신의 빛을 믿으세요. ✨',
@@ -3529,7 +3525,7 @@
                     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
                         <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
                             style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/별자리주간" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+
                     </div>
                 </div>`;
             }
@@ -3566,7 +3562,7 @@
                     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
                         <button onclick="saveCard('cmcard','띠월간운세_${kr}')"
                             style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px">📸 이미지 저장</button>
-                        <a href="https://todayhoroscopelaboratory.blogspot.com/search/label/띠별월간" target="_blank" class="blog-btn">📖 블로그 더보기</a>
+
                     </div>
                 </div>`;
             }
