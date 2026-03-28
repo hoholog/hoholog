@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>hohologgame - 프리미엄 웹게임 포털</title>
+    <!-- 캐시 방지: 제작자가 파일 수정 시 항상 최신 버전 로드 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
@@ -18,8 +22,69 @@
         ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- ═══ 캐시 버스팅 & 자동 업데이트 감지 ═══ -->
+    <script>
+    (function() {
+        // version.json 을 no-cache 로 fetch → 빌드 버전이 바뀌면 자동 새로고침
+        var CHECK_INTERVAL = 5 * 60 * 1000; // 5분마다 체크
+
+        function checkVersion() {
+            fetch('/version.json?_=' + Date.now(), {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var stored = sessionStorage.getItem('_app_version');
+                if (!stored) {
+                    // 최초 접속 — 버전 저장
+                    sessionStorage.setItem('_app_version', data.version);
+                } else if (stored !== data.version) {
+                    // 버전 변경 감지 → 사용자에게 알림 후 새로고침
+                    sessionStorage.setItem('_app_version', data.version);
+                    var banner = document.getElementById('_update_banner');
+                    if (banner) banner.style.display = 'flex';
+                }
+            })
+            .catch(function() {
+                // version.json 없으면 (로컬 테스트 등) 조용히 무시
+            });
+        }
+
+        // 페이지 로드 후 첫 체크 + 주기적 체크
+        window.addEventListener('load', function() {
+            setTimeout(checkVersion, 2000);
+            setInterval(checkVersion, CHECK_INTERVAL);
+        });
+
+        // 탭이 다시 활성화될 때도 체크 (오랫동안 탭 열어둔 경우)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') checkVersion();
+        });
+    })();
+    </script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- 업데이트 감지 배너 (평소엔 숨김) -->
+    <div id="_update_banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;
+         background:linear-gradient(90deg,#4f46e5,#7c3aed);color:#fff;
+         padding:10px 20px;align-items:center;justify-content:space-between;
+         font-size:13px;font-weight:700;box-shadow:0 2px 12px rgba(0,0,0,.3)">
+        <span>🔄 새 버전이 업데이트되었습니다!</span>
+        <div style="display:flex;gap:8px">
+            <button onclick="location.reload(true)"
+                style="background:#fff;color:#4f46e5;border:none;padding:5px 14px;
+                       border-radius:8px;font-weight:900;cursor:pointer;font-size:13px">
+                지금 새로고침
+            </button>
+            <button onclick="document.getElementById('_update_banner').style.display='none'"
+                style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:5px 10px;
+                       border-radius:8px;cursor:pointer;font-size:12px">
+                나중에
+            </button>
+        </div>
+    </div>
 
     <!-- 상단 네비게이션 -->
     <nav class="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm">
