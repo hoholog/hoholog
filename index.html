@@ -953,9 +953,67 @@
         // ═══════════════════════════════
         //  이미지 저장
         // ═══════════════════════════════
-        function saveBujeok(btn) {
-            var yr = btn.getAttribute('data-year') || '';
-            saveCard('bujeok-section', '부적_' + yr);
+        // 개별 부적 저장
+        function saveOneBujeok(elId, label) {
+            const el = document.getElementById(elId);
+            if(!el){ alert('저장할 부적이 없습니다'); return; }
+            html2canvas(el, {scale:3, backgroundColor:'#fffbeb', useCORS:true}).then(canvas=>{
+                const a = document.createElement('a');
+                a.download = label + '.png';
+                a.href = canvas.toDataURL('image/png');
+                a.click();
+            });
+        }
+
+        // 폰 배경 저장 (9:16, 1080x1920)
+        function saveBujeokWallpaper(elId, label) {
+            const el = document.getElementById(elId);
+            if(!el){ alert('저장할 부적이 없습니다'); return; }
+            html2canvas(el, {scale:3, backgroundColor:'#fffbeb', useCORS:true}).then(srcCanvas=>{
+                const W = 1080, H = 1920;
+                const dst = document.createElement('canvas');
+                dst.width = W; dst.height = H;
+                const ctx = dst.getContext('2d');
+                const grd = ctx.createLinearGradient(0, 0, W, H);
+                grd.addColorStop(0, '#1a0a00');
+                grd.addColorStop(0.5, '#3b1700');
+                grd.addColorStop(1, '#1a0a00');
+                ctx.fillStyle = grd;
+                ctx.fillRect(0, 0, W, H);
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 12;
+                ctx.strokeRect(30, 30, W-60, H-60);
+                ctx.strokeStyle = '#fde68a';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(44, 44, W-88, H-88);
+                ctx.fillStyle = '#fde68a';
+                ctx.font = 'bold 52px serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🔯 사주 맞춤 부적', W/2, 130);
+                ctx.font = '34px serif';
+                ctx.fillStyle = '#fef3c7';
+                ctx.fillText(label, W/2, 185);
+                const ratio = srcCanvas.width / srcCanvas.height;
+                const imgW = Math.min(W - 160, 800);
+                const imgH = imgW / ratio;
+                const imgX = (W - imgW) / 2;
+                const imgY = (H - imgH) / 2;
+                ctx.save();
+                ctx.shadowColor = '#d97706';
+                ctx.shadowBlur = 40;
+                ctx.drawImage(srcCanvas, imgX, imgY, imgW, imgH);
+                ctx.restore();
+                ctx.fillStyle = '#92400e';
+                ctx.font = '28px serif';
+                ctx.fillText('hoholog.github.io', W/2, H - 80);
+                ctx.fillStyle = '#fde68a';
+                ctx.font = '24px serif';
+                ctx.fillText('행운이 함께하길 기원합니다 ✨', W/2, H - 45);
+                const a = document.createElement('a');
+                a.download = label + '_폰배경.png';
+                a.href = dst.toDataURL('image/png');
+                a.click();
+            });
         }
 
         function saveCard(elId, filename){
@@ -2472,49 +2530,88 @@
             var bujeokDesc  = '일간(' + ilganName + ') · ' + boostName + ' 기운 보강 부적 · '
                 + (pwIdx===0 ? '편관 없음 — 안정의 기운' : '편관 '+pwIdx+'개 — '+pwKind+' 수호');
 
-            // ── 부적 SVG 3종 ──
-            var trad = _bujeokSVG_traditional(BD_MAIN, BD_BOOST, name, year, scoreGrade, extraChars);
-            var cute = _bujeokSVG_cute(BD_MAIN, BD_BOOST, name, year, scoreGrade, totalScore);
-            var qr   = _bujeokSVG_qr(BD_MAIN, name, year, scoreGrade, _BUJEOK_QR_URL);
+                        // ── 부적 카테고리 × SVG 3종 = 9개 부적 ──
+            // 카테고리별 오행 매핑
+            var CAT = [
+                { key:'wealth', label:'💰 재물 부적', desc:'금전·재물·사업 기원',
+                  oh: (function(){ var order={'土':1,'金':2,'水':3,'木':4,'火':5}; return Object.keys(order).sort(function(a,b){return order[a]-order[b];})[0]; })(),
+                  mainOH: ({'土':'金','金':'水','水':'木','木':'火','火':'土'}[boostOH]||boostOH),
+                  chars:['財','富','利','祿','金'] },
+                { key:'love',   label:'❤️ 연애 부적', desc:'인연·사랑·행복 기원',
+                  mainOH: ({'土':'火','金':'土','水':'木','木':'火','火':'土'}[boostOH]||'火'),
+                  chars:['緣','愛','喜','和','福'] },
+                { key:'health', label:'💪 건강 부적', desc:'건강·활력·장수 기원',
+                  mainOH: ({'土':'木','金':'水','水':'木','木':'木','火':'水'}[boostOH]||'木'),
+                  chars:['健','壽','康','力','安'] },
+            ];
+
+            function _makeCatBD(cat) {
+                var base = BUJEOK_DATA[cat.mainOH] || BUJEOK_DATA[boostOH] || BUJEOK_DATA['土'];
+                return { hanja: base.hanja, meaning: cat.desc, color: base.color, bg: base.bg,
+                         wish: cat.desc, symbol: base.symbol, chars: cat.chars };
+            }
+
+            function _saveBtn(elId, filename) {
+                return '<div style="display:flex;gap:6px;justify-content:center;margin-top:8px">'
+                    + '<button onclick="saveOneBujeok(\'' + elId + '\',\'' + filename + '\')" '
+                    +   'style="background:#92400e;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">📥 저장</button>'
+                    + '<button onclick="saveBujeokWallpaper(\'' + elId + '\',\'' + filename + '\')" '
+                    +   'style="background:#1e3a5f;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">📱 폰배경</button>'
+                    + '</div>';
+            }
+
+            var catSections = CAT.map(function(cat, ci) {
+                var bd   = _makeCatBD(cat);
+                var bd2  = BUJEOK_DATA[oh] || bd;
+                var trad = _bujeokSVG_traditional(bd, bd2, name, year, scoreGrade, extraChars);
+                var cute = _bujeokSVG_cute(bd, bd2, name, year, scoreGrade, totalScore);
+                var qr   = _bujeokSVG_qr(bd, name, year, scoreGrade, _BUJEOK_QR_URL);
+                var base = 'bj-' + cat.key + '-' + year;
+                return '<div style="margin-bottom:18px">'
+                    + '<div style="font-size:13px;font-weight:900;color:#92400e;margin-bottom:8px;padding:8px 12px;background:linear-gradient(90deg,#fef3c7,#fffbeb);border-radius:10px;border-left:4px solid #d97706">'
+                    +   cat.label + ' — ' + cat.desc
+                    + '</div>'
+                    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
+                        // 전통
+                        + '<div id="' + base + '-trad" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">📜 전통</div>'
+                        +   trad
+                        +   _saveBtn(base + '-trad', cat.label.replace(/[^\w가-힣]/g,'_') + '_전통')
+                        + '</div>'
+                        // 귀여운
+                        + '<div id="' + base + '-cute" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">🌟 행운</div>'
+                        +   cute
+                        +   _saveBtn(base + '-cute', cat.label.replace(/[^\w가-힣]/g,'_') + '_행운')
+                        + '</div>'
+                        // QR
+                        + '<div id="' + base + '-qr" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">📱 QR</div>'
+                        +   qr
+                        +   _saveBtn(base + '-qr', cat.label.replace(/[^\w가-힣]/g,'_') + '_QR')
+                        + '</div>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
 
             return '<div id="bujeok-section" style="margin-top:12px">'
                 + '<button onclick="bujeokToggle()" id="bujeok-toggle-btn"'
-                +   ' style="width:100%;padding:16px 18px;background:linear-gradient(135deg,#78350f,#b45309);color:#fff;border:none;border-radius:16px;font-size:15px;font-weight:900;cursor:pointer;display:flex;align-items:center;gap:10px;text-align:left">'
-                +   '<span style="flex:1">🔯 사주 맞춤 부적 (符籍) · ' + scoreGrade + '</span>'
+                +   ' style="width:100%;padding:16px 18px;background:linear-gradient(135deg,#78350f,#b45309);color:#fff;border:none;border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:900">'
+                +   '<span style="flex:1">🔯 사주 맞춤 부적 9종 (符籍) · ' + scoreGrade + '</span>'
                 +   '<span id="bujeok-chevron" style="font-size:12px;transition:transform .3s">▼ 더보기</span>'
                 + '</button>'
                 + '<div id="bujeok-body" style="display:none;margin-top:8px">'
                     // 분석 요약 카드
-                    + '<div style="background:linear-gradient(135deg,#78350f,#92400e);border-radius:16px;padding:16px;margin-bottom:12px;color:#fff">'
+                    + '<div style="background:linear-gradient(135deg,#78350f,#92400e);border-radius:16px;padding:16px;margin-bottom:14px;color:#fff">'
                     +   '<div style="font-size:13px;font-weight:900;color:#fde68a;margin-bottom:8px">' + bujeokTitle + '</div>'
                     +   '<div style="font-size:12px;color:#fef3c7;margin-bottom:8px">' + bujeokDesc + '</div>'
-                    +   '<div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px;font-size:12px;color:#fef9c3;line-height:1.75">' + scoreMsg + '</div>'
-                    +   (nameBoost ? '<div style="margin-top:8px;font-size:11px;color:#fde68a;background:rgba(0,0,0,.2);border-radius:8px;padding:6px">📛 이름 분석: ' + nameBoost + '</div>' : '')
+                    +   '<div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px;font-size:12px;color:#fef9c3;line-height:1.8">' + scoreMsg + '</div>'
+                    +   (nameBoost ? '<div style="margin-top:8px;font-size:11px;color:#fde68a;background:rgba(0,0,0,.2);border-radius:8px;padding:8px">🔗 이름 연계: ' + nameBoost + '</div>' : '')
                     + '</div>'
-                    // 부적 3종
-                    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
-                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
-                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">📜 전통 부적</div>'
-                        +   trad
-                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">' + (OHAENG_KR[oh]||oh) + '·' + (OHAENG_KR[boostOH]||boostOH) + ' 기운</div>'
-                        + '</div>'
-                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
-                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">🌟 행운 부적</div>'
-                        +   cute
-                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">' + scoreGrade + ' · ' + totalScore + '점</div>'
-                        + '</div>'
-                        + '<div style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
-                        +   '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px">📱 QR 부적</div>'
-                        +   qr
-                        +   '<div style="font-size:9px;color:#78350f;margin-top:4px">QR로 행운 공유</div>'
-                        + '</div>'
-                    + '</div>'
-                    + '<div style="display:flex;justify-content:center">'
-                    +   '<button onclick="saveBujeok(this)" data-year="' + year + '"'
-                    +     ' style="background:#92400e;color:#fff;border:none;padding:10px 24px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px">📸 부적 저장</button>'
-                    + '</div>'
-                    + '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px;margin-top:8px;background:#f8fafc;border-radius:10px">'
-                    +   '⚠️ 전통 민속 문화를 현대적으로 재해석한 콘텐츠입니다. 긍정적 에너지를 위한 참고용입니다.'
+                    // 9종 부적
+                    + catSections
+                    + '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px;margin-top:4px;background:#f8fafc;border-radius:10px">'
+                    +   '⚠️ 전통 민속 문화를 현대적으로 재해석한 콘텐츠입니다. 각 부적을 📥저장 또는 📱폰배경으로 저장하세요.'
                     + '</div>'
                 + '</div>'
             + '</div>';
