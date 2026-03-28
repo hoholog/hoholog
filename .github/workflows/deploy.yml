@@ -1,0 +1,50 @@
+name: 🚀 Deploy with Cache Busting
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🔨 캐시 버스팅 — index.html 버전 스탬프 삽입
+        run: |
+          # 현재 커밋 해시 앞 8자리를 버전으로 사용
+          VERSION=$(git rev-parse --short=8 HEAD)
+          TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+          BUILD_ID="${TIMESTAMP}_${VERSION}"
+
+          echo "📦 Build ID: $BUILD_ID"
+
+          # index.html 의 </head> 바로 앞에 버전 메타 태그 삽입
+          sed -i "s|</head>|  <meta name=\"build-version\" content=\"${BUILD_ID}\">\n</head>|" index.html
+
+          # JS/CSS 외부 파일이 있을 경우 쿼리스트링으로 캐시 무효화
+          # (현재는 단일 HTML 파일이므로 스킵)
+
+          echo "✅ 버전 스탬프 삽입 완료: $BUILD_ID"
+
+      - name: 📝 버전 파일 생성 (JS에서 읽어 강제 새로고침 체크용)
+        run: |
+          VERSION=$(git rev-parse --short=8 HEAD)
+          TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+          echo "{\"version\":\"${TIMESTAMP}_${VERSION}\",\"updated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > version.json
+          echo "✅ version.json 생성 완료"
+
+      - name: 🚀 GitHub Pages 배포
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          # 배포 시마다 캐시 완전 무효화
+          force_orphan: false
+          commit_message: "🚀 Deploy ${{ github.sha }} [cache-bust]"
