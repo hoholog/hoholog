@@ -63,7 +63,7 @@
         });
     })();
     </script>
-  <meta name="build-version" content="20260328112642_995700c9">
+  <meta name="build-version" content="20260328113337_42a69064">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -1021,9 +1021,17 @@
         // ═══════════════════════════════
         // 개별 부적 저장
         function saveOneBujeok(elId, label) {
-            const el = document.getElementById(elId);
+            // svg- prefix 로 SVG 래퍼만 캡처 (버튼/라벨 제외)
+            const svgEl = document.getElementById('svg-' + elId);
+            const el    = svgEl || document.getElementById(elId);
             if(!el){ alert('저장할 부적이 없습니다'); return; }
-            html2canvas(el, {scale:3, backgroundColor:'#fffbeb', useCORS:true}).then(canvas=>{
+            html2canvas(el, {
+                scale: 4,
+                backgroundColor: '#f5c518',
+                useCORS: true,
+                logging: false,
+                removeContainer: true
+            }).then(canvas=>{
                 const a = document.createElement('a');
                 a.download = label + '.png';
                 a.href = canvas.toDataURL('image/png');
@@ -1033,9 +1041,10 @@
 
         // 폰 배경 저장 (9:16, 1080x1920)
         function saveBujeokWallpaper(elId, label) {
-            const el = document.getElementById(elId);
+            const svgEl = document.getElementById('svg-' + elId);
+            const el    = svgEl || document.getElementById(elId);
             if(!el){ alert('저장할 부적이 없습니다'); return; }
-            html2canvas(el, {scale:3, backgroundColor:'#fffbeb', useCORS:true}).then(srcCanvas=>{
+            html2canvas(el, {scale:4, backgroundColor:'#f5c518', useCORS:true, logging:false}).then(srcCanvas=>{
                 const W = 1080, H = 1920;
                 const dst = document.createElement('canvas');
                 dst.width = W; dst.height = H;
@@ -2632,29 +2641,43 @@
                 var trad = _bujeokSVG_traditional(bd, bd2, name, year, scoreGrade, extraChars);
                 var cute = _bujeokSVG_cute(bd, bd2, name, year, scoreGrade, totalScore);
                 var qr   = _bujeokSVG_qr(bd, name, year, scoreGrade, _BUJEOK_QR_URL);
-                var base = 'bj-' + cat.key + '-' + year;
+                var base  = 'bj-' + cat.key + '-' + year;
+                var lTrad = cat.label.replace(/[^\w가-힣]/g,'_') + '_전통';
+                var lCute = cat.label.replace(/[^\w가-힣]/g,'_') + '_행운';
+                var lQr   = cat.label.replace(/[^\w가-힣]/g,'_') + '_QR';
+
+                // 버튼 행 — SVG 래퍼 바깥에 위치 → 저장 시 캡처 안 됨
+                function btnRow(svgId, label) {
+                    return '<div style="display:flex;gap:5px;justify-content:center;margin-top:6px">'
+                        + '<button onclick="saveOneBujeok(\'' + svgId + '\',\'' + label + '\')" '
+                        +   'style="background:#92400e;color:#fff;border:none;padding:5px 9px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer">📥 저장</button>'
+                        + '<button onclick="saveBujeokWallpaper(\'' + svgId + '\',\'' + label + '\')" '
+                        +   'style="background:#1e3a5f;color:#fff;border:none;padding:5px 9px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer">📱 폰배경</button>'
+                        + '</div>';
+                }
+
                 return '<div style="margin-bottom:18px">'
                     + '<div style="font-size:13px;font-weight:900;color:#92400e;margin-bottom:8px;padding:8px 12px;background:linear-gradient(90deg,#fef3c7,#fffbeb);border-radius:10px;border-left:4px solid #d97706">'
                     +   cat.label + ' — ' + cat.desc
                     + '</div>'
                     + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
-                        // 전통
-                        + '<div id="' + base + '-trad" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        // 전통 — id는 SVG 래퍼에만, 버튼은 바깥
+                        + '<div style="text-align:center">'
                         +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">📜 전통</div>'
-                        +   trad
-                        +   _saveBtn(base + '-trad', cat.label.replace(/[^\w가-힣]/g,'_') + '_전통')
+                        +   '<div id="svg-' + base + '-trad">' + trad + '</div>'
+                        +   btnRow(base + '-trad', lTrad)
                         + '</div>'
                         // 귀여운
-                        + '<div id="' + base + '-cute" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        + '<div style="text-align:center">'
                         +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">🌟 행운</div>'
-                        +   cute
-                        +   _saveBtn(base + '-cute', cat.label.replace(/[^\w가-힣]/g,'_') + '_행운')
+                        +   '<div id="svg-' + base + '-cute">' + cute + '</div>'
+                        +   btnRow(base + '-cute', lCute)
                         + '</div>'
                         // QR
-                        + '<div id="' + base + '-qr" style="background:#fffbeb;border:2px solid #d97706;border-radius:14px;padding:10px;text-align:center">'
+                        + '<div style="text-align:center">'
                         +   '<div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">📱 QR</div>'
-                        +   qr
-                        +   _saveBtn(base + '-qr', cat.label.replace(/[^\w가-힣]/g,'_') + '_QR')
+                        +   '<div id="svg-' + base + '-qr">' + qr + '</div>'
+                        +   btnRow(base + '-qr', lQr)
                         + '</div>'
                     + '</div>'
                     + '</div>';
