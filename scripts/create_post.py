@@ -573,6 +573,119 @@ def post_blogger(title, content, labels, idx, total):
 # ─────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────
+
+# ─────────────────────────────────────────
+# ⑥ 운세SNS — 별자리 12개 통합 (간결 카드형)
+# ─────────────────────────────────────────
+def build_sns_zodiac_post(today_str):
+    """별자리 12개를 한 포스트에 SNS 카드형으로"""
+    title = f"✨ 오늘의 별자리 운세 전체 {today_str} — 12별자리 한눈에"
+
+    cards_html = ""
+    for z in ZODIACS:
+        fortune = zodiac_fortune(z['kr'])
+        # 첫 문장만 (간결하게)
+        short = fortune.replace('<br><br>', ' ').replace('<br>', ' ')
+        short = short.split('. ')[0] + '.' if '. ' in short else short[:60] + ('…' if len(short) > 60 else '')
+        total, money, health, love = pick_score(z['kr'])
+        bar = lambda v: ('●' * round(v/20) + '○' * (5 - round(v/20)))
+        cards_html += f"""
+<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:10px;
+            background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
+            border-left:4px solid #667eea">
+  <div style="font-size:32px;line-height:1">{z['emoji']}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:900;font-size:14px;color:#4c1d95">{z['kr']}
+      <span style="font-size:11px;color:#888;font-weight:400"> {z['date']}</span>
+    </div>
+    <div style="font-size:13px;color:#444;line-height:1.7;margin:4px 0">{short}</div>
+    <div style="display:flex;gap:8px;font-size:11px;color:#666;flex-wrap:wrap">
+      <span>🌟{bar(total)}</span>
+      <span>💰{bar(money)}</span>
+      <span>❤️{bar(love)}</span>
+      <span>💪{bar(health)}</span>
+    </div>
+  </div>
+</div>"""
+
+    content_html = f"""{style()}
+<div class="wrap">
+  <div class="hero" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+    <h1>✨ 오늘의 별자리 운세</h1>
+    <p>{today_str} · 12별자리 전체</p>
+  </div>
+  <div style="background:#f8f7ff;border-radius:16px;padding:16px;margin-bottom:16px">
+    {cards_html}
+  </div>
+  <div style="background:#eef2ff;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
+    🔮 각 별자리를 클릭하면 상세 운세를 확인할 수 있어요
+  </div>
+  {site_link()}
+  <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
+</div>"""
+
+    kw = ["별자리운세", "오늘운세", "별자리", today_str,
+          "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
+          "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리"]
+    return title, content_html, ["별자리운세통합", "운세SNS", "운세"]
+
+
+# ─────────────────────────────────────────
+# ⑦ 운세SNS — 띠 12개 통합 (간결 카드형)
+# ─────────────────────────────────────────
+def build_sns_chinese_post(today_str):
+    """띠 12개를 한 포스트에 SNS 카드형으로"""
+    title = f"🐾 오늘의 띠별 운세 전체 {today_str} — 12띠 한눈에"
+
+    cards_html = ""
+    for c in CHINESE:
+        fortune = chinese_fortune(c['en'])
+        short = str(fortune).split('. ')[0] + '.' if '. ' in str(fortune) else str(fortune)[:60] + ('…' if len(str(fortune)) > 60 else '')
+        total, money, health, love = pick_score(c['kr'])
+        bar = lambda v: ('●' * round(v/20) + '○' * (5 - round(v/20)))
+        # 대표 연도 3개만
+        years_short = ', '.join(c['year'].split(',')[-3:]) + '년생'
+        cards_html += f"""
+<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:10px;
+            background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
+            border-left:4px solid #f59e0b">
+  <div style="font-size:32px;line-height:1">{c['emoji']}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:900;font-size:14px;color:#92400e">{c['kr']}
+      <span style="font-size:11px;color:#888;font-weight:400"> {years_short}</span>
+    </div>
+    <div style="font-size:13px;color:#444;line-height:1.7;margin:4px 0">{short}</div>
+    <div style="display:flex;gap:8px;font-size:11px;color:#666;flex-wrap:wrap">
+      <span>🌟{bar(total)}</span>
+      <span>💰{bar(money)}</span>
+      <span>❤️{bar(love)}</span>
+      <span>💪{bar(health)}</span>
+    </div>
+  </div>
+</div>"""
+
+    content_html = f"""{style()}
+<div class="wrap">
+  <div class="hero" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+    <h1>🐾 오늘의 띠별 운세</h1>
+    <p>{today_str} · 12띠 전체</p>
+  </div>
+  <div style="background:#fffbeb;border-radius:16px;padding:16px;margin-bottom:16px">
+    {cards_html}
+  </div>
+  <div style="background:#fef3c7;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
+    🐾 각 띠를 클릭하면 출생연도별 상세 운세를 확인할 수 있어요
+  </div>
+  {site_link()}
+  <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
+</div>"""
+
+    kw = ["띠운세", "오늘운세", "띠별운세", today_str,
+          "쥐띠", "소띠", "호랑이띠", "토끼띠", "용띠", "뱀띠",
+          "말띠", "양띠", "원숭이띠", "닭띠", "개띠", "돼지띠"]
+    return title, content_html, ["띠운세통합", "운세SNS", "운세"]
+
+
 def main():
     today_str = now_kst().strftime("%Y년 %m월 %d일")
     kst_now   = now_kst()
@@ -588,6 +701,12 @@ def main():
     # ③ 띠 운세 12개
     for c in CHINESE:
         posts.append(build_chinese_post(c, today_str))
+
+    # ⑥ 운세SNS — 별자리 통합 1개 (매일)
+    posts.append(build_sns_zodiac_post(today_str))
+
+    # ⑦ 운세SNS — 띠 통합 1개 (매일)
+    posts.append(build_sns_chinese_post(today_str))
 
     # 수동 실행 시 강제 포함 옵션
     force_weekly  = os.environ.get("FORCE_WEEKLY",  "false").lower() == "true"
@@ -612,9 +731,9 @@ def main():
     total = len(posts)
     weekly  = " + 별자리주간 12" if kst_now.weekday() == 0 else ""
     monthly = " + 띠별월간 12"   if kst_now.day == 1        else ""
-    count   = 25 + (12 if kst_now.weekday() == 0 else 0) + (12 if kst_now.day == 1 else 0)
+    count   = 27 + (12 if kst_now.weekday() == 0 else 0) + (12 if kst_now.day == 1 else 0)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
-    print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12{weekly}{monthly} = {count}개\n")
+    print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12 + SNS통합 2{weekly}{monthly} = {count}개\n")
 
     success = 0
     for i, (title, content, labels) in enumerate(posts, 1):
