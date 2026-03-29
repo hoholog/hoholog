@@ -63,7 +63,7 @@
         });
     })();
     </script>
-  <meta name="build-version" content="20260328122318_6b3dd9a5">
+  <meta name="build-version" content="20260329134947_ef70c7ea">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -4264,16 +4264,17 @@
         ];
         var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
         groups.forEach(function(g) {
-            html += '<div style="background:#f8fafc;border-radius:12px;padding:12px">';
-            html += '<div style="font-size:11px;font-weight:700;color:' + g.color + ';margin-bottom:8px">' + g.label + '</div>';
+            html += '<div style="background:rgba(255,255,255,.05);border-radius:12px;padding:12px;border:1px solid rgba(201,168,76,.15)">';
+            html += '<div style="font-size:11px;font-weight:700;color:#c9a84c;margin-bottom:8px;letter-spacing:.05em">' + g.label + '</div>';
             html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
             g.types.forEach(function(t) {
                 var d = MBTI_DATA[t];
                 html += '<button onclick="' + onSelectFn + '(\'' + t + '\')" id="mbti-btn-' + t + '" '
-                    + 'style="padding:8px 4px;border:2px solid #e2e8f0;border-radius:10px;background:#fff;'
-                    + 'cursor:pointer;font-size:12px;font-weight:700;transition:all .2s">'
+                    + 'style="padding:8px 4px;border:2px solid rgba(201,168,76,.2);border-radius:10px;'
+                    + 'background:rgba(255,255,255,.07);color:#e8e0f0;'
+                    + 'cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;text-align:center">'
                     + d.emoji + ' ' + t
-                    + '<div style="font-size:9px;color:#888;font-weight:400">' + d.name + '</div>'
+                    + '<div style="font-size:9px;color:#9b8fb0;font-weight:400">' + d.name + '</div>'
                     + '</button>';
             });
             html += '</div></div>';
@@ -4362,8 +4363,9 @@
         // 버튼 하이라이트
         Object.keys(MBTI_DATA).forEach(function(t) {
             var btn = document.getElementById('mbti-btn-' + t);
-            if(btn) btn.style.borderColor = t === mbti ? '#c9a84c' : '#e2e8f0';
-            if(btn) btn.style.background  = t === mbti ? 'rgba(201,168,76,.15)' : '#fff';
+            if(btn) btn.style.borderColor = t === mbti ? '#c9a84c' : 'rgba(201,168,76,.2)';
+            if(btn) btn.style.background  = t === mbti ? 'rgba(201,168,76,.25)' : 'rgba(255,255,255,.07)';
+            if(btn) btn.style.color       = '#e8e0f0';
         });
         var d = MBTI_DATA[mbti];
         var badge = document.getElementById('mbti-selected-badge');
@@ -4482,22 +4484,27 @@
 
         try {
             var resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:400,
-                    messages:[{role:'user', content:prompt}] })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 400,
+                    messages: [{role: 'user', content: prompt}]
+                })
             });
             var data = await resp.json();
-            var text = (data.content||[]).map(function(b){ return b.text||''; }).join('');
+            var text = (data.content || []).map(function(b){ return b.text || ''; }).join('');
             resDiv.innerHTML = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);'
                 + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
                 + '<div style="font-size:10px;color:#c9a84c;margin-bottom:6px">✨ AI 합성 해석</div>'
                 + text + '</div>';
         } catch(e) {
-            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">AI 해석을 불러오지 못했습니다.</div>';
+            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">AI 해석을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
         }
         if(btn){ btn.disabled = false; btn.textContent = '✨ AI 합성 해석 받기'; }
     }
+    // 전역 노출
+    window.mbtiTarotAiInterpret   = mbtiTarotAiInterpret;
 
     // ─── MBTI+꿈해몽 로직 ───
     var _mbtiDreamMbti = null, _mbtiDreamKeyword = null;
@@ -4506,8 +4513,9 @@
         _mbtiDreamMbti = mbti;
         Object.keys(MBTI_DATA).forEach(function(t) {
             var btn = document.getElementById('mbti-btn-' + t);
-            if(btn) btn.style.borderColor = t === mbti ? '#c9a84c' : '#e2e8f0';
-            if(btn) btn.style.background  = t === mbti ? 'rgba(201,168,76,.15)' : '#fff';
+            if(btn) btn.style.borderColor = t === mbti ? '#c9a84c' : 'rgba(201,168,76,.2)';
+            if(btn) btn.style.background  = t === mbti ? 'rgba(201,168,76,.25)' : 'rgba(255,255,255,.07)';
+            if(btn) btn.style.color       = '#e8e0f0';
         });
         var d = MBTI_DATA[mbti];
         var badge = document.getElementById('mbti-dream-badge');
@@ -4583,39 +4591,63 @@
         window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: dreamD };
     }
 
+    // 전역 노출 — 동적 HTML onclick에서 호출 가능
+    window.mbtiTarotSelectMbti    = mbtiTarotSelectMbti;
+    window.mbtiTarotSelectQ       = mbtiTarotSelectQ;
+    window.mbtiTarotApplyCustomQ  = mbtiTarotApplyCustomQ;
+    window.mbtiTarotDraw          = mbtiTarotDraw;
+    window.mbtiDreamSelectMbti    = mbtiDreamSelectMbti;
+    window.mbtiDreamSelectKeyword = mbtiDreamSelectKeyword;
+    window.mbtiDreamApplyCustom   = mbtiDreamApplyCustom;
+    window.mbtiDreamInterpret     = mbtiDreamInterpret;
+
     async function mbtiDreamAiInterpret() {
         var ctx = window._mbtiDreamCtx;
-        if(!ctx) return;
-        var btn = document.querySelector('#mbti-dream-ai-wrap button');
+        if (!ctx) {
+            var rd = document.getElementById('mbti-dream-ai-result');
+            if (rd) rd.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">먼저 꿈해몽을 실행해주세요.</div>';
+            return;
+        }
+        var btn   = document.querySelector('#mbti-dream-ai-wrap button');
         var resDiv = document.getElementById('mbti-dream-ai-result');
-        if(btn){ btn.disabled = true; btn.textContent = '⏳ AI 해석 생성 중...'; }
+        if (!resDiv) return;
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ AI 해석 생성 중...'; }
         resDiv.innerHTML = '<div style="color:#9b8fb0;font-size:12px;padding:8px;text-align:center">🌙 생성 중...</div>';
 
         var prompt = 'MBTI ' + ctx.mbti + '(' + ctx.mbtiD.core + ') 성격을 가진 사람이 "' + ctx.keyword + '" 꿈을 꿨습니다.\n'
             + '꿈의 기본 의미: ' + ctx.dreamD.base + '\n'
             + '긍정 의미: ' + ctx.dreamD.positive + ' / 부정 의미: ' + ctx.dreamD.negative + '\n'
-            + 'MBTI 특성(' + ctx.mbtiD.tarot_key + ')을 반드시 반영하여 3~4문장의 합성 꿈해몽을 작성하세요.\n'
-            + '형식: "MBTI인 당신이 꾼 이 꿈은..." 으로 시작하여 꿈의 의미와 MBTI 성격을 자연스럽게 합쳐서 구체적 조언을 주세요.\n'
+            + ctx.mbti + ' 특성(' + ctx.mbtiD.tarot_key + ')을 반드시 반영하여 3~4문장의 합성 꿈해몽을 작성하세요.\n'
+            + '형식: "' + ctx.mbti + '인 당신이 꾼 이 꿈은..." 으로 시작하여 꿈의 의미와 MBTI 성격을 자연스럽게 합쳐서 구체적 조언을 주세요.\n'
             + '한국어로만 답하고 다른 설명 없이 해석만 출력하세요.';
 
         try {
             var resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:400,
-                    messages:[{role:'user', content:prompt}] })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 400,
+                    messages: [{ role: 'user', content: prompt }]
+                })
             });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
             var data = await resp.json();
-            var text = (data.content||[]).map(function(b){ return b.text||''; }).join('');
+            var text = (data.content || []).map(function(b) { return b.text || ''; }).join('').trim();
+            if (!text) throw new Error('빈 응답');
             resDiv.innerHTML = '<div style="background:rgba(76,29,149,.15);border:1px solid rgba(139,92,246,.3);'
                 + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
                 + '<div style="font-size:10px;color:#a78bfa;margin-bottom:6px">🌙 AI 심층 해석</div>'
                 + text + '</div>';
-        } catch(e) {
-            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">AI 해석을 불러오지 못했습니다.</div>';
+        } catch (e) {
+            console.error('mbtiDreamAiInterpret error:', e);
+            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">'
+                + 'AI 해석을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+                + '<br><small style="opacity:.5">' + e.message + '</small></div>';
         }
-        if(btn){ btn.disabled = false; btn.textContent = '🌙 AI 심층 해석 받기'; }
+        if (btn) { btn.disabled = false; btn.textContent = '🌙 AI 심층 해석 받기'; }
     }
+    window.mbtiDreamAiInterpret = mbtiDreamAiInterpret;
 
     // ══════════════════════════════════════════════════
     //  타로 카드 모듈 — data/tarot_cards_78.csv 로드
