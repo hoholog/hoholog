@@ -584,11 +584,23 @@ def build_sns_zodiac_post(today_str):
     cards_html = ""
     for z in ZODIACS:
         fortune = zodiac_fortune(z['kr'])
-        # 첫 문장만 (간결하게)
-        short = fortune.replace('<br><br>', ' ').replace('<br>', ' ')
-        short = short.split('. ')[0] + '.' if '. ' in short else short[:60] + ('…' if len(short) > 60 else '')
-        total, money, health, love = pick_score(z['kr'])
-        bar = lambda v: ('●' * round(v/20) + '○' * (5 - round(v/20)))
+        # 100~200자 범위로 자르기
+        plain = fortune.replace('<br><br>', ' ').replace('<br>', ' ').strip()
+        # 문장 단위로 끊되 최소 100자 확보
+        sentences = plain.split('. ')
+        short = ''
+        for s in sentences:
+            candidate = (short + s + '. ').strip()
+            if len(candidate) >= 100:
+                short = candidate
+                break
+            short = candidate
+        # 200자 초과 시 자르기
+        if len(short) > 200:
+            short = short[:197] + '…'
+        # 너무 짧으면 원문 앞 150자
+        if len(short) < 60:
+            short = plain[:150] + ('…' if len(plain) > 150 else '')
         cards_html += f"""
 <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:10px;
             background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
@@ -599,12 +611,6 @@ def build_sns_zodiac_post(today_str):
       <span style="font-size:11px;color:#888;font-weight:400"> {z['date']}</span>
     </div>
     <div style="font-size:13px;color:#444;line-height:1.7;margin:4px 0">{short}</div>
-    <div style="display:flex;gap:8px;font-size:11px;color:#666;flex-wrap:wrap">
-      <span>🌟{bar(total)}</span>
-      <span>💰{bar(money)}</span>
-      <span>❤️{bar(love)}</span>
-      <span>💪{bar(health)}</span>
-    </div>
   </div>
 </div>"""
 
@@ -649,9 +655,20 @@ def build_sns_chinese_post(today_str):
     cards_html = ""
     for c in CHINESE:
         fortune = chinese_fortune(c['en'])
-        short = str(fortune).split('. ')[0] + '.' if '. ' in str(fortune) else str(fortune)[:60] + ('…' if len(str(fortune)) > 60 else '')
-        total, money, health, love = pick_score(c['kr'])
-        bar = lambda v: ('●' * round(v/20) + '○' * (5 - round(v/20)))
+        plain = str(fortune).strip()
+        # 100~200자 범위로 자르기
+        sentences = plain.split('. ')
+        short = ''
+        for s in sentences:
+            candidate = (short + s + '. ').strip()
+            if len(candidate) >= 100:
+                short = candidate
+                break
+            short = candidate
+        if len(short) > 200:
+            short = short[:197] + '…'
+        if len(short) < 60:
+            short = plain[:150] + ('…' if len(plain) > 150 else '')
         # 대표 연도 3개만
         years_short = ', '.join(c['year'].split(',')[-3:]) + '년생'
         cards_html += f"""
@@ -664,12 +681,6 @@ def build_sns_chinese_post(today_str):
       <span style="font-size:11px;color:#888;font-weight:400"> {years_short}</span>
     </div>
     <div style="font-size:13px;color:#444;line-height:1.7;margin:4px 0">{short}</div>
-    <div style="display:flex;gap:8px;font-size:11px;color:#666;flex-wrap:wrap">
-      <span>🌟{bar(total)}</span>
-      <span>💰{bar(money)}</span>
-      <span>❤️{bar(love)}</span>
-      <span>💪{bar(health)}</span>
-    </div>
   </div>
 </div>"""
 
