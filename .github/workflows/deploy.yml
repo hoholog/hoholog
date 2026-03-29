@@ -37,7 +37,14 @@ jobs:
           VERSION=$(git rev-parse --short=8 HEAD)
           TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
           echo "{\"version\":\"${TIMESTAMP}_${VERSION}\",\"updated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > version.json
-          echo "✅ version.json 생성 완료"
+          echo "✅ version.json 생성 완료: ${TIMESTAMP}_${VERSION}"
+
+      - name: 📋 변경사항 커밋 (version.json + index.html 스탬프)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html version.json
+          git diff --cached --quiet || git commit -m "🔖 cache-bust $(date -u +%Y%m%d%H%M%S)"
 
       - name: 🚀 GitHub Pages 배포
         uses: peaceiris/actions-gh-pages@v3
