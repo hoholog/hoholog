@@ -608,17 +608,23 @@ def build_sns_zodiac_post(today_str):
   </div>
 </div>"""
 
+    card_id = f"sns-zodiac-{today_str.replace(' ','').replace('년','').replace('월','').replace('일','')}"
     content_html = f"""{style()}
 <div class="wrap">
   <div class="hero" style="background:linear-gradient(135deg,#667eea,#764ba2)">
     <h1>✨ 오늘의 별자리 운세</h1>
     <p>{today_str} · 12별자리 전체</p>
   </div>
-  <div style="background:#f8f7ff;border-radius:16px;padding:16px;margin-bottom:16px">
+  <div id="{card_id}" style="background:#f8f7ff;border-radius:16px;padding:16px;margin-bottom:16px">
     {cards_html}
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">✨ hoholog.github.io · {today_str}</div>
   </div>
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '별자리운세전체_{today_str}')">📸 이미지 저장</button>
   <div style="background:#eef2ff;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
     🔮 각 별자리를 클릭하면 상세 운세를 확인할 수 있어요
+  </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span>
+    <div class="tag-cloud">{''.join(f'<span class="tag">{k}</span>' for k in kw)}</div>
   </div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
@@ -626,8 +632,11 @@ def build_sns_zodiac_post(today_str):
 
     kw = ["별자리운세", "오늘운세", "별자리", today_str,
           "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
-          "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리"]
-    return title, content_html, ["별자리운세통합", "운세SNS", "운세"]
+          "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리",
+          "12별자리운세", "별자리운세전체", "오늘의별자리", "별자리총정리",
+          "오늘운세보기", "무료운세", "운세2026"]
+    labels = ["별자리운세통합", "운세SNS", "운세", "별자리운세"]
+    return title, content_html, labels
 
 
 # ─────────────────────────────────────────
@@ -664,17 +673,23 @@ def build_sns_chinese_post(today_str):
   </div>
 </div>"""
 
+    card_id = f"sns-chinese-{today_str.replace(' ','').replace('년','').replace('월','').replace('일','')}"
     content_html = f"""{style()}
 <div class="wrap">
   <div class="hero" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
     <h1>🐾 오늘의 띠별 운세</h1>
     <p>{today_str} · 12띠 전체</p>
   </div>
-  <div style="background:#fffbeb;border-radius:16px;padding:16px;margin-bottom:16px">
+  <div id="{card_id}" style="background:#fffbeb;border-radius:16px;padding:16px;margin-bottom:16px">
     {cards_html}
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">🐾 hoholog.github.io · {today_str}</div>
   </div>
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '띠별운세전체_{today_str}')">📸 이미지 저장</button>
   <div style="background:#fef3c7;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
     🐾 각 띠를 클릭하면 출생연도별 상세 운세를 확인할 수 있어요
+  </div>
+  <div class="card"><span class="badge">🔍 관련 키워드</span>
+    <div class="tag-cloud">{''.join(f'<span class="tag">{k}</span>' for k in kw)}</div>
   </div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
@@ -682,8 +697,11 @@ def build_sns_chinese_post(today_str):
 
     kw = ["띠운세", "오늘운세", "띠별운세", today_str,
           "쥐띠", "소띠", "호랑이띠", "토끼띠", "용띠", "뱀띠",
-          "말띠", "양띠", "원숭이띠", "닭띠", "개띠", "돼지띠"]
-    return title, content_html, ["띠운세통합", "운세SNS", "운세"]
+          "말띠", "양띠", "원숭이띠", "닭띠", "개띠", "돼지띠",
+          "12띠운세", "띠운세전체", "오늘의띠운세", "띠운세총정리",
+          "오늘운세보기", "무료운세", "운세2026"]
+    labels = ["띠운세통합", "운세SNS", "운세", "띠운세"]
+    return title, content_html, labels
 
 
 def main():
