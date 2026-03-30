@@ -289,16 +289,64 @@ function saveFortuneCard(cardId, filename) {
     if (!el) { alert('카드를 찾을 수 없습니다'); return; }
     var btn = document.getElementById('savebtn-' + cardId);
     if (btn) { btn.textContent = '⏳ 저장 중...'; btn.disabled = true; }
-    html2canvas(el, {scale:2, backgroundColor:null, useCORS:true, logging:false}).then(function(canvas) {
-        var a = document.createElement('a');
-        a.download = filename + '.png';
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-        if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isAndroid = /android/i.test(navigator.userAgent);
+
+    html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function(canvas) {
+
+        // ── iOS Safari: Web Share API로 사진첩 저장 ──
+        if (isIOS && navigator.share && navigator.canShare) {
+            canvas.toBlob(function(blob) {
+                var file = new File([blob], filename + '.png', {type:'image/png'});
+                if (navigator.canShare({files:[file]})) {
+                    navigator.share({files:[file], title:filename})
+                    .then(function() {
+                        if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+                    })
+                    .catch(function(e) {
+                        if (e.name !== 'AbortError') { fallbackDownload(canvas, filename); }
+                        if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+                    });
+                } else {
+                    fallbackDownload(canvas, filename);
+                    if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+                }
+            }, 'image/png');
+            return;
+        }
+
+        // ── Android / PC: Blob URL로 직접 다운로드 ──
+        canvas.toBlob(function(blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename + '.png';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() {
+                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 300);
+            if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
+        }, 'image/png');
+
     }).catch(function() {
         alert('저장 실패. 스크린샷을 이용해주세요.');
         if (btn) { btn.textContent = '📸 이미지 저장'; btn.disabled = false; }
     });
+}
+
+function fallbackDownload(canvas, filename) {
+    canvas.toBlob(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename + '.png';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 300);
+    }, 'image/png');
 }
 </script>"""
 
@@ -661,34 +709,40 @@ def build_sns_chinese_post(today_str):
 
     cards_html = ""
     for c in CHINESE:
-        fortune = chinese_fortune(c['en'])
-        # 100~200자 범위로 자르기 (이모지 점수바 없음)
-        plain = str(fortune).strip()
-        sentences = plain.split('. ')
-        short = ''
-        for s in sentences:
-            candidate = (short + s + '. ').strip()
-            if len(candidate) >= 100:
+        # 1940년 이상, 2030년 이하 연도만, 최대 4개
+        years_filtered = [y for y in c['year'].split(',') if 1940 <= int(y) <= 2030][:4]
+
+        year_rows_html = ""
+        for y in years_filtered:
+            yr_fortune = chinese_fortune(c['en'])
+            plain = str(yr_fortune).strip()
+            sentences = plain.split('. ')
+            short = ''
+            for s in sentences:
+                candidate = (short + s + '. ').strip()
+                if len(candidate) >= 80:
+                    short = candidate
+                    break
                 short = candidate
-                break
-            short = candidate
-        if len(short) > 200:
-            short = short[:197] + '…'
-        if len(short) < 60:
-            short = plain[:150] + ('…' if len(plain) > 150 else '')
-        # 대표 연도 3개만
-        years_short = ', '.join(c['year'].split(',')[-3:]) + '년생'
+            if len(short) > 180:
+                short = short[:177] + '…'
+            if len(short) < 40:
+                short = plain[:120] + ('…' if len(plain) > 120 else '')
+            year_rows_html += f"""
+<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #fde68a">
+  <div style="min-width:64px;background:#f59e0b;color:#fff;border-radius:8px;padding:4px 8px;
+              text-align:center;font-size:12px;font-weight:700;flex-shrink:0">{y}년생</div>
+  <div style="font-size:13px;color:#444;line-height:1.7">{short}</div>
+</div>"""
+
         cards_html += f"""
-<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:10px;
-            background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
-            border-left:4px solid #f59e0b">
-  <div style="font-size:32px;line-height:1">{c['emoji']}</div>
-  <div style="flex:1;min-width:0">
-    <div style="font-weight:900;font-size:14px;color:#92400e">{c['kr']}
-      <span style="font-size:11px;color:#888;font-weight:400"> {years_short}</span>
-    </div>
-    <div style="font-size:13px;color:#444;line-height:1.7;margin:4px 0">{short}</div>
+<div style="background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);
+            border-left:4px solid #f59e0b;padding:14px;margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <span style="font-size:28px;line-height:1">{c['emoji']}</span>
+    <span style="font-weight:900;font-size:15px;color:#92400e">{c['kr']}</span>
   </div>
+  {year_rows_html}
 </div>"""
 
     card_id = f"sns-chinese-{today_str.replace(' ','').replace('년','').replace('월','').replace('일','')}"
