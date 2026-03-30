@@ -70,7 +70,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260330005539_af8c0b83">
+  <meta name="build-version" content="20260330011013_c1778b02">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -4634,24 +4634,36 @@
         await loadDreamData();
 
         var mbtiD  = MBTI_DATA[_mbtiDreamMbti];
-        var raw    = DREAM_DATA[_mbtiDreamKeyword] || { base_meaning:'꿈의 상징', positive:'새로운 의미', negative:'불확실성', emoji:'💭' };
-        var dreamD = raw;
+        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+        var coreTrait = mbtiD.core_trait || mbtiD.core || '';
+        var strength  = mbtiD.strength || '';
 
-        // 필드명 정규화
-        var base     = dreamD.base_meaning || dreamD.base || _mbtiDreamKeyword + '의 상징';
-        var positive = dreamD.positive || '';
-        var negative = dreamD.negative || '';
-        var emoji    = dreamD.emoji || '💭';
-        var mbtiKey  = 'mbti_' + _mbtiDreamMbti.toLowerCase();
-        var mbtiSpec = dreamD[mbtiKey] || '';
+        // CSV에 있으면 CSV 데이터, 없으면 MBTI 기반 풍부한 폴백 생성
+        var raw = DREAM_DATA[_mbtiDreamKeyword];
+        var base, positive, negative, emoji, mbtiSpec;
+
+        if (raw) {
+            base     = raw.base_meaning || raw.base || _mbtiDreamKeyword + '의 상징';
+            positive = raw.positive || '새로운 가능성';
+            negative = raw.negative || '불확실성';
+            emoji    = raw.emoji || '💭';
+            var mbtiKey = 'mbti_' + _mbtiDreamMbti.toLowerCase();
+            mbtiSpec = raw[mbtiKey] || positive + '의 의미가 강합니다';
+        } else {
+            // 직접 입력 키워드 — MBTI 특성으로 풍부한 해석 생성
+            base     = '"' + _mbtiDreamKeyword + '"에 대한 꿈은 무의식의 메시지를 담고 있습니다';
+            positive = '내면의 성장과 새로운 시작';
+            negative = '불확실한 감정과 변화에 대한 두려움';
+            emoji    = '🌙';
+            mbtiSpec = _mbtiDreamMbti + '(' + coreTrait + ')인 당신에게 이 꿈은 ' + strength + '을 더욱 발휘할 신호입니다. ' + shortDesc;
+        }
 
         var modifier  = MBTI_DREAM_MODIFIER[_mbtiDreamMbti] || '개인적 관점에서';
-        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
 
         // 기본 합성 해석 — CSV MBTI 컬럼 우선 활용
         var synthesis = modifier + ', ' + emoji + ' "' + _mbtiDreamKeyword + '" 꿈은 '
             + base + '. ' + _mbtiDreamMbti + '인 당신에게는 특히 '
-            + (mbtiSpec || positive + '의 의미가 강합니다') + '. ' + shortDesc;
+            + mbtiSpec + '. ' + shortDesc;
 
         var aiSection = '<div id="mbti-dream-ai-wrap" style="margin-top:12px">'
             + '<button onclick="mbtiDreamAiInterpret()" '
@@ -4678,7 +4690,7 @@
             + aiSection
             + '</div>';
 
-        window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: dreamD, base: base, positive: positive, negative: negative };
+        window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: raw || {}, base: base, positive: positive, negative: negative };
     }
 
     // 전역 노출 — 동적 HTML onclick에서 호출 가능
