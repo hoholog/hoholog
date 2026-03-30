@@ -581,12 +581,19 @@ def build_sns_zodiac_post(today_str):
     """별자리 12개를 한 포스트에 SNS 카드형으로"""
     title = f"✨ 오늘의 별자리 운세 전체 {today_str} — 12별자리 한눈에"
 
+    # kw를 HTML 생성 전에 먼저 정의
+    kw = ["별자리운세", "오늘운세", "별자리", today_str,
+          "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
+          "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리",
+          "12별자리운세", "별자리운세전체", "오늘의별자리", "별자리총정리",
+          "오늘운세보기", "무료운세", "운세2026"]
+    labels = ["별자리운세통합", "운세SNS", "운세", "별자리운세"]
+
     cards_html = ""
     for z in ZODIACS:
         fortune = zodiac_fortune(z['kr'])
-        # 100~200자 범위로 자르기
+        # 100~200자 범위로 자르기 (이모지 점수바 없음)
         plain = fortune.replace('<br><br>', ' ').replace('<br>', ' ').strip()
-        # 문장 단위로 끊되 최소 100자 확보
         sentences = plain.split('. ')
         short = ''
         for s in sentences:
@@ -595,10 +602,8 @@ def build_sns_zodiac_post(today_str):
                 short = candidate
                 break
             short = candidate
-        # 200자 초과 시 자르기
         if len(short) > 200:
             short = short[:197] + '…'
-        # 너무 짧으면 원문 앞 150자
         if len(short) < 60:
             short = plain[:150] + ('…' if len(plain) > 150 else '')
         cards_html += f"""
@@ -636,12 +641,6 @@ def build_sns_zodiac_post(today_str):
   <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
 </div>"""
 
-    kw = ["별자리운세", "오늘운세", "별자리", today_str,
-          "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
-          "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리",
-          "12별자리운세", "별자리운세전체", "오늘의별자리", "별자리총정리",
-          "오늘운세보기", "무료운세", "운세2026"]
-    labels = ["별자리운세통합", "운세SNS", "운세", "별자리운세"]
     return title, content_html, labels
 
 
@@ -652,11 +651,19 @@ def build_sns_chinese_post(today_str):
     """띠 12개를 한 포스트에 SNS 카드형으로"""
     title = f"🐾 오늘의 띠별 운세 전체 {today_str} — 12띠 한눈에"
 
+    # kw를 HTML 생성 전에 먼저 정의
+    kw = ["띠운세", "오늘운세", "띠별운세", today_str,
+          "쥐띠", "소띠", "호랑이띠", "토끼띠", "용띠", "뱀띠",
+          "말띠", "양띠", "원숭이띠", "닭띠", "개띠", "돼지띠",
+          "12띠운세", "띠운세전체", "오늘의띠운세", "띠운세총정리",
+          "오늘운세보기", "무료운세", "운세2026"]
+    labels = ["띠운세통합", "운세SNS", "운세", "띠운세"]
+
     cards_html = ""
     for c in CHINESE:
         fortune = chinese_fortune(c['en'])
+        # 100~200자 범위로 자르기 (이모지 점수바 없음)
         plain = str(fortune).strip()
-        # 100~200자 범위로 자르기
         sentences = plain.split('. ')
         short = ''
         for s in sentences:
@@ -706,12 +713,6 @@ def build_sns_chinese_post(today_str):
   <div class="meta">※ 재미로 보는 운세 콘텐츠 · 매일 업데이트</div>
 </div>"""
 
-    kw = ["띠운세", "오늘운세", "띠별운세", today_str,
-          "쥐띠", "소띠", "호랑이띠", "토끼띠", "용띠", "뱀띠",
-          "말띠", "양띠", "원숭이띠", "닭띠", "개띠", "돼지띠",
-          "12띠운세", "띠운세전체", "오늘의띠운세", "띠운세총정리",
-          "오늘운세보기", "무료운세", "운세2026"]
-    labels = ["띠운세통합", "운세SNS", "운세", "띠운세"]
     return title, content_html, labels
 
 
