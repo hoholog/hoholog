@@ -70,7 +70,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260329140708_fa913c7f">
+  <meta name="build-version" content="20260330005521_f863fe51">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -2761,9 +2761,15 @@
                 + '{"caution":"이번 달 주의 포인트 한 문장","love":"연애운 한줄 해석","money":"재물운 한줄 조언"}';
 
             try {
+                var apiKey = window.getAiApiKey ? window.getAiApiKey() : '';
                 var resp = await fetch('https://api.anthropic.com/v1/messages', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
                     body: JSON.stringify({
                         model: 'claude-sonnet-4-20250514',
                         max_tokens: 300,
@@ -4177,7 +4183,8 @@
             }
 
             else if(type==='mbti-dream'){
-                c.innerHTML = buildMbtiDreamUI();
+                c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8fb0">⏳ 꿈해몽 데이터 로드 중...</div>';
+                buildMbtiDreamUI().then(function(html){ c.innerHTML = html; });
             }
 
             else if(type==='tarot'){
@@ -4230,24 +4237,82 @@
         'ESFP':{ name:'연예인', emoji:'🎉', core:'자유로운 엔터테이너', short:'기쁨과 축제가 당신을 기다립니다', color:'#7f1d1d', tarot_key:'삶을 축제처럼 즐기며 에너지를 나누는 타입' },
     };
 
+    // mbti_personalities.csv 로드 — MBTI_DATA 보강 (short_desc, core_trait, strength 등)
+    (async function loadMbtiCSV() {
+        try {
+            var res = await fetch('data/mbti_personalities.csv');
+            if (!res.ok) return;
+            var text = await res.text();
+            var lines = text.trim().split('\n');
+            var headers = lines[0].split(',').map(function(h){ return h.trim(); });
+            lines.slice(1).forEach(function(line) {
+                var cols = line.split(',');
+                var obj = {};
+                headers.forEach(function(h, i){ obj[h] = (cols[i]||'').trim(); });
+                var mbti = obj.mbti;
+                if (mbti && MBTI_DATA[mbti]) {
+                    // CSV 필드를 MBTI_DATA에 병합
+                    MBTI_DATA[mbti].core_trait  = obj.core_trait  || MBTI_DATA[mbti].core;
+                    MBTI_DATA[mbti].short_desc  = obj.short_desc  || MBTI_DATA[mbti].short;
+                    MBTI_DATA[mbti].strength    = obj.strength    || '';
+                    MBTI_DATA[mbti].weakness    = obj.weakness    || '';
+                    MBTI_DATA[mbti].tarot_affinity = obj.tarot_affinity || '';
+                }
+            });
+        } catch(e) { /* 폴백: 하드코딩 데이터 그대로 사용 */ }
+    })();
+
     // 꿈 키워드 데이터
-    var DREAM_DATA = {
-        '하늘':{ base:'무한한 가능성과 자유를 상징합니다', positive:'희망·목표 달성', negative:'이상과 현실 괴리', emoji:'☁️' },
-        '물':{ base:'감정과 무의식의 흐름을 나타냅니다', positive:'정화·치유·새 출발', negative:'감정 과부하·불안', emoji:'💧' },
-        '불':{ base:'열정·변화·정화의 에너지입니다', positive:'성공·추진력·변화', negative:'충동·파괴·갈등', emoji:'🔥' },
-        '뱀':{ base:'지혜·변화·위험의 상징입니다', positive:'지혜·재생·변화', negative:'배신·위험·불안', emoji:'🐍' },
-        '돈':{ base:'물질적 풍요와 가치를 뜻합니다', positive:'재물운·성공·안정', negative:'물질 집착·가치관 혼란', emoji:'💰' },
-        '죽음':{ base:'끝과 새 시작을 상징합니다', positive:'변화·재생·새 출발', negative:'두려움·상실·변화 거부', emoji:'🌑' },
-        '비행':{ base:'자유·초월·목표 달성을 의미합니다', positive:'성공·해방·새로운 관점', negative:'현실 도피·불안정', emoji:'✈️' },
-        '시험':{ base:'자신의 능력에 대한 도전입니다', positive:'성취·인정·성장', negative:'불안·자기 의심', emoji:'📝' },
-        '추락':{ base:'통제력 상실과 두려움을 나타냅니다', positive:'자아 성찰·재정비', negative:'실패 공포·자신감 부족', emoji:'⬇️' },
-        '결혼':{ base:'결합·약속·새로운 시작입니다', positive:'사랑·안정·행복', negative:'책임·변화에 대한 두려움', emoji:'💍' },
-        '학교':{ base:'배움과 성장의 공간을 뜻합니다', positive:'성장·기회·새로운 시작', negative:'평가에 대한 불안', emoji:'🏫' },
-        '집':{ base:'자아와 안전의 공간입니다', positive:'안정·보호·내면 탐구', negative:'갇힌 느낌·변화 두려움', emoji:'🏠' },
-        '길':{ base:'인생의 방향과 여정입니다', positive:'새로운 시작·기회', negative:'방향 상실·혼란', emoji:'🛤️' },
-        '동물':{ base:'본능과 자연스러운 감정입니다', positive:'직관·활력·자유', negative:'통제되지 않은 충동', emoji:'🐾' },
-        '바다':{ base:'광대한 감정과 무의식입니다', positive:'자유·풍요·가능성', negative:'두려움·압도감', emoji:'🌊' },
-    };
+    // dream_interpretations.csv 로드 (MBTI별 컬럼 포함)
+    var DREAM_DATA = {};
+    var DREAM_DATA_LOADED = false;
+
+    async function loadDreamData() {
+        if (DREAM_DATA_LOADED) return;
+        try {
+            var res = await fetch('data/dream_interpretations.csv');
+            if (!res.ok) throw new Error('load fail');
+            var text = await res.text();
+            var lines = text.trim().split('\n');
+            var headers = lines[0].split(',').map(function(h){ return h.trim(); });
+            lines.slice(1).forEach(function(line) {
+                var cols = [];
+                var cur = '', inQ = false;
+                for (var i = 0; i < line.length; i++) {
+                    if (line[i] === '"') { inQ = !inQ; }
+                    else if (line[i] === ',' && !inQ) { cols.push(cur); cur = ''; }
+                    else { cur += line[i]; }
+                }
+                cols.push(cur);
+                var obj = {};
+                headers.forEach(function(h, i){ obj[h] = (cols[i]||'').trim(); });
+                var kw = obj.keyword;
+                if (kw) DREAM_DATA[kw] = obj;
+            });
+        } catch(e) {
+            // 폴백: 기존 하드코딩 데이터
+            DREAM_DATA = {
+                '하늘':{ keyword:'하늘', base_meaning:'무한한 가능성과 자유', positive:'희망·목표 달성', negative:'이상과 현실 괴리', emoji:'☁️',
+                    mbti_intj:'전략이 빛을 발할 시기', mbti_intp:'새로운 이론이 완성될 조짐', mbti_entj:'리더십 확장의 기회', mbti_entp:'혁신적 아이디어가 떠오름',
+                    mbti_infj:'직관이 올바른 방향을 가리킴', mbti_infp:'꿈과 이상이 현실에 가까워짐', mbti_enfj:'사람들을 이끌 기회가 옴', mbti_enfp:'열정이 폭발할 시기',
+                    mbti_istj:'안정적 성과가 인정받을 때', mbti_isfj:'헌신이 결실을 맺는 시기', mbti_estj:'목표 달성의 신호', mbti_esfj:'따뜻한 관계가 깊어질 때',
+                    mbti_istp:'실용적 도전의 순간', mbti_isfp:'감성이 풍부해지는 시기', mbti_estp:'즉각적 행동이 빛날 때', mbti_esfp:'기쁨과 자유를 만끽할 시기' },
+                '물':{ keyword:'물', base_meaning:'감정과 무의식의 흐름', positive:'정화·치유·새 출발', negative:'감정 과부하·불안', emoji:'💧',
+                    mbti_intj:'감정보다 분석이 필요한 시기', mbti_intp:'무의식적 통찰을 활용할 때', mbti_entj:'감정적 장벽을 넘어설 때', mbti_entp:'유연한 사고로 문제를 풀 때',
+                    mbti_infj:'깊은 감정이 통찰로 이어질 때', mbti_infp:'감정을 솔직히 표현할 때', mbti_enfj:'공감 능력이 빛을 발할 때', mbti_enfp:'감수성으로 새 길을 열 때',
+                    mbti_istj:'흐름을 따르면 안정됨', mbti_isfj:'부드러움으로 상황을 풀 때', mbti_estj:'감정 소통이 관계를 강화', mbti_esfj:'실용적으로 감정을 다룰 때',
+                    mbti_istp:'내면의 감성을 믿을 때', mbti_isfp:'유연하게 흐름을 탈 때', mbti_estp:'감정 표현이 관계를 풀어줌', mbti_esfp:'감성이 넘치는 시기' },
+            };
+        }
+        // emoji 폴백 매핑
+        var emojiMap = {'하늘':'☁️','물':'💧','불':'🔥','뱀':'🐍','돈':'💰','죽음':'🌑','비행':'✈️','시험':'📝','추락':'⬇️','결혼':'💍','학교':'🏫','집':'🏠','길':'🛤️','동물':'🐾','바다':'🌊'};
+        Object.keys(DREAM_DATA).forEach(function(k){
+            if (!DREAM_DATA[k].emoji) DREAM_DATA[k].emoji = emojiMap[k] || '💭';
+            // base 필드 통일
+            if (!DREAM_DATA[k].base) DREAM_DATA[k].base = DREAM_DATA[k].base_meaning || k + '의 상징';
+        });
+        DREAM_DATA_LOADED = true;
+    }
 
     // MBTI별 꿈 해석 수식어
     var MBTI_DREAM_MODIFIER = {
@@ -4327,10 +4392,13 @@
     }
 
     // ── MBTI+꿈해몽 UI ──
-    function buildMbtiDreamUI() {
+    async function buildMbtiDreamUI() {
+        await loadDreamData();
         var dreamBtns = Object.keys(DREAM_DATA).map(function(k) {
+            var d = DREAM_DATA[k];
+            var emoji = d.emoji || '💭';
             return '<button class="tarot-q-btn" onclick="mbtiDreamSelectKeyword(\'' + k + '\',this)">'
-                + DREAM_DATA[k].emoji + ' ' + k + '</button>';
+                + emoji + ' ' + k + '</button>';
         }).join('');
         return '<div class="tarot-wrap">'
             + '<div class="tarot-title"><h2>🌙 MBTI + 꿈해몽</h2>'
@@ -4425,12 +4493,13 @@
         cards.forEach(function(item, i) {
             var c = item.card;
             var dir = item.reversed ? '역방향' : '정방향';
-            var meaning = item.reversed ? (c.meaning_rev || c.meaning || '') : (c.meaning || '');
+            var meaning = item.reversed ? (c.reversed_meaning || c.meaning_rev || c.upright_meaning || '') : (c.upright_meaning || c.meaning || '');
+            var nameKo = c.card_name_ko || c.name_ko || c.card_name || c.name || '카드';
             cardsHtml += '<div style="background:linear-gradient(160deg,#1e1235,#150d28);border:1px solid rgba(201,168,76,.4);'
                 + 'border-radius:12px;padding:12px;text-align:center">'
                 + '<div style="font-size:9px;color:#9b8fb0;margin-bottom:6px;letter-spacing:.1em">' + positions[i] + '</div>'
                 + '<div style="font-size:2rem;margin-bottom:6px' + (item.reversed?';transform:rotate(180deg)':'') + '">' + (c.emoji||'🃏') + '</div>'
-                + '<div style="font-size:11px;color:#c9a84c;font-weight:700;margin-bottom:3px">' + (c.name_ko||c.name||'카드') + '</div>'
+                + '<div style="font-size:11px;color:#c9a84c;font-weight:700;margin-bottom:3px">' + nameKo + '</div>'
                 + '<div style="font-size:9px;padding:2px 6px;border-radius:8px;display:inline-block;margin-bottom:6px;'
                 + (item.reversed ? 'background:rgba(100,80,180,.25);color:#a090dd' : 'background:rgba(201,168,76,.15);color:#c9a84c')
                 + '">' + dir + '</div>'
@@ -4441,15 +4510,16 @@
 
         // MBTI 합성 해석
         var mainCard = cards[1].card;
-        var mainMeaning = cards[1].reversed ? (mainCard.meaning_rev || mainCard.meaning || '') : (mainCard.meaning || '');
+        var mainNameKo = mainCard.card_name_ko || mainCard.name_ko || mainCard.card_name || mainCard.name || '이 카드';
+        var mainMeaning = cards[1].reversed ? (mainCard.reversed_meaning || mainCard.meaning_rev || mainCard.upright_meaning || '') : (mainCard.upright_meaning || mainCard.meaning || '');
         var synthesis = _mbtiTarotMbti + '인 당신은 ' + mbtiD.tarot_key + '입니다. '
-            + '"' + (mainCard.name_ko||mainCard.name||'이 카드') + '"이 나타내는 "' + mainMeaning.slice(0,20) + '"의 의미를 ' + _mbtiTarotQ + '와 연결해보면, '
+            + '"' + mainNameKo + '"이 나타내는 "' + mainMeaning.slice(0,20) + '"의 의미를 ' + _mbtiTarotQ + '와 연결해보면, '
             + mbtiD.short;
 
         var aiSection = '<div id="mbti-tarot-ai-wrap" style="margin-top:12px">'
             + '<button onclick="mbtiTarotAiInterpret()" '
             + 'style="width:100%;padding:10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;'
-            + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">✨ AI 합성 해석 받기</button>'
+            + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">✨ 합성 해석 받기</button>'
             + '<div id="mbti-tarot-ai-result"></div>'
             + '</div>';
 
@@ -4472,43 +4542,45 @@
         if(!ctx) return;
         var btn = document.querySelector('#mbti-tarot-ai-wrap button');
         var resDiv = document.getElementById('mbti-tarot-ai-result');
-        if(btn){ btn.disabled = true; btn.textContent = '⏳ AI 해석 생성 중...'; }
+        if(btn){ btn.disabled = true; btn.textContent = '⏳ 해석 생성 중...'; }
         resDiv.innerHTML = '<div style="color:#9b8fb0;font-size:12px;padding:8px;text-align:center">✨ 생성 중...</div>';
 
-        var cardDesc = ctx.cards.map(function(item,i){
+        // CSV 기반 타로+MBTI 합성 해석
+        var mbtiKey = 'mbti_' + ctx.mbti.toLowerCase();
+        var cards = ctx.cards;
+        var mbtiD = ctx.mbtiD;
+
+        // 카드별 MBTI 맞춤 해석 조합
+        var cardLines = cards.map(function(item, i) {
             var pos = ['과거','현재','미래'][i];
             var c = item.card;
-            var m = item.reversed ? (c.meaning_rev||c.meaning||'') : (c.meaning||'');
-            return pos + ': ' + (c.name_ko||c.name) + '(' + (item.reversed?'역방향':'정방향') + ') — ' + m.slice(0,30);
-        }).join(' / ');
+            var nameKo = c.card_name_ko || c.name_ko || c.card_name || '카드';
+            var meaning = item.reversed
+                ? (c.reversed_meaning || c.upright_meaning || '')
+                : (c.upright_meaning || c.meaning || '');
+            return pos + ' 자리의 <b>' + nameKo + '</b>는 "' + meaning.split(' ').slice(0,4).join(' ') + '"의 에너지를 전합니다.';
+        }).join('<br>');
 
-        var prompt = 'MBTI ' + ctx.mbti + '(' + ctx.mbtiD.core + ') 성격을 가진 사람의 타로 리딩 결과입니다.\n'
-            + '질문: ' + ctx.q + '\n'
-            + '카드: ' + cardDesc + '\n'
-            + 'MBTI 특성(' + ctx.mbtiD.tarot_key + ')을 반드시 반영하여 3~4문장의 합성 해석을 작성하세요.\n'
-            + '형식: "MBTI인 당신은..." 으로 시작하여 타로 카드 의미와 MBTI 성격을 자연스럽게 합쳐서 구체적 조언을 주세요.\n'
-            + '한국어로만 답하고 다른 설명 없이 해석만 출력하세요.';
+        // MBTI short_desc + tarot_affinity 기반 종합 조언
+        var affinity = mbtiD.tarot_affinity || '';
+        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+        var coreTrait = mbtiD.core_trait || mbtiD.core || '';
+        var strength  = mbtiD.strength || '';
 
-        try {
-            var resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 400,
-                    messages: [{role: 'user', content: prompt}]
-                })
-            });
-            var data = await resp.json();
-            var text = (data.content || []).map(function(b){ return b.text || ''; }).join('');
-            resDiv.innerHTML = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);'
-                + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
-                + '<div style="font-size:10px;color:#c9a84c;margin-bottom:6px">✨ AI 합성 해석</div>'
-                + text + '</div>';
-        } catch(e) {
-            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">AI 해석을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
-        }
-        if(btn){ btn.disabled = false; btn.textContent = '✨ AI 합성 해석 받기'; }
+        var synthesis = ctx.mbti + '인 당신(' + coreTrait + ')은 ' + strength + '이 강점입니다. '
+            + '이번 리딩에서 "' + ctx.q + '"에 대한 답을 찾고 있군요. '
+            + cardLines.replace(/<b>/g,'').replace(/<\/b>/g,'') + ' '
+            + shortDesc;
+
+        resDiv.innerHTML = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);'
+            + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
+            + '<div style="font-size:10px;color:#c9a84c;margin-bottom:8px">✨ MBTI × 타로 합성 해석</div>'
+            + '<p style="margin-bottom:8px">' + cardLines + '</p>'
+            + '<p style="color:#c9a84c;font-weight:600">' + ctx.mbti + '(' + coreTrait + ')인 당신에게 — ' + shortDesc + '</p>'
+            + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:6px">🃏 친화 카드: ' + affinity + '</p>' : '')
+            + '</div>';
+
+        if(btn){ btn.disabled = false; btn.textContent = '✨ 합성 해석 받기'; }
     }
     // 전역 노출
     window.mbtiTarotAiInterpret   = mbtiTarotAiInterpret;
@@ -4559,35 +4631,46 @@
         var resultDiv = document.getElementById('mbti-dream-result');
         resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#9b8fb0"><div class="tarot-spinner"></div> 꿈을 해석하는 중...</div>';
 
-        var mbtiD  = MBTI_DATA[_mbtiDreamMbti];
-        var dreamD = DREAM_DATA[_mbtiDreamKeyword] || { base:'꿈의 상징입니다', positive:'새로운 의미', negative:'불확실성', emoji:'💭' };
-        var modifier = MBTI_DREAM_MODIFIER[_mbtiDreamMbti] || '개인적 관점에서';
+        await loadDreamData();
 
-        // 기본 합성 해석
-        var synthesis = modifier + ', ' + dreamD.emoji + ' "' + _mbtiDreamKeyword + '" 꿈은 '
-            + dreamD.base + ' ' + _mbtiDreamMbti + '인 당신에게는 특히 '
-            + dreamD.positive + '의 의미가 강합니다. ' + mbtiD.short;
+        var mbtiD  = MBTI_DATA[_mbtiDreamMbti];
+        var raw    = DREAM_DATA[_mbtiDreamKeyword] || { base_meaning:'꿈의 상징', positive:'새로운 의미', negative:'불확실성', emoji:'💭' };
+        var dreamD = raw;
+
+        // 필드명 정규화
+        var base     = dreamD.base_meaning || dreamD.base || _mbtiDreamKeyword + '의 상징';
+        var positive = dreamD.positive || '';
+        var negative = dreamD.negative || '';
+        var emoji    = dreamD.emoji || '💭';
+        var mbtiKey  = 'mbti_' + _mbtiDreamMbti.toLowerCase();
+        var mbtiSpec = dreamD[mbtiKey] || '';
+
+        var modifier  = MBTI_DREAM_MODIFIER[_mbtiDreamMbti] || '개인적 관점에서';
+        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+
+        // 기본 합성 해석 — CSV MBTI 컬럼 우선 활용
+        var synthesis = modifier + ', ' + emoji + ' "' + _mbtiDreamKeyword + '" 꿈은 '
+            + base + '. ' + _mbtiDreamMbti + '인 당신에게는 특히 '
+            + (mbtiSpec || positive + '의 의미가 강합니다') + '. ' + shortDesc;
 
         var aiSection = '<div id="mbti-dream-ai-wrap" style="margin-top:12px">'
             + '<button onclick="mbtiDreamAiInterpret()" '
             + 'style="width:100%;padding:10px;background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:#fff;'
-            + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🌙 AI 심층 해석 받기</button>'
+            + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🌙 심층 해석 받기</button>'
             + '<div id="mbti-dream-ai-result"></div>'
             + '</div>';
 
         resultDiv.innerHTML = '<div style="background:rgba(255,255,255,.03);border-radius:14px;padding:16px">'
             + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:12px">STEP 3 — 꿈해몽 결과</div>'
-            // 꿈 카드
             + '<div style="background:linear-gradient(135deg,#0d0818,#1e1b4b);border:1px solid rgba(201,168,76,.3);'
             + 'border-radius:14px;padding:18px;text-align:center;margin-bottom:12px">'
-            + '<div style="font-size:3rem;margin-bottom:8px">' + dreamD.emoji + '</div>'
+            + '<div style="font-size:3rem;margin-bottom:8px">' + emoji + '</div>'
             + '<div style="font-size:18px;font-weight:900;color:#c9a84c;margin-bottom:6px">' + _mbtiDreamKeyword + ' 꿈</div>'
-            + '<div style="font-size:13px;color:#9b8fb0;margin-bottom:10px">' + dreamD.base + '</div>'
+            + '<div style="font-size:13px;color:#9b8fb0;margin-bottom:10px">' + base + '</div>'
             + '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
-            + '<span style="background:rgba(74,222,128,.15);color:#4ade80;padding:4px 10px;border-radius:20px;font-size:11px">✅ ' + dreamD.positive + '</span>'
-            + '<span style="background:rgba(248,113,113,.15);color:#f87171;padding:4px 10px;border-radius:20px;font-size:11px">⚠️ ' + dreamD.negative + '</span>'
+            + '<span style="background:rgba(74,222,128,.15);color:#4ade80;padding:4px 10px;border-radius:20px;font-size:11px">✅ ' + positive + '</span>'
+            + '<span style="background:rgba(248,113,113,.15);color:#f87171;padding:4px 10px;border-radius:20px;font-size:11px">⚠️ ' + negative + '</span>'
             + '</div></div>'
-            // MBTI 합성
             + '<div style="background:linear-gradient(135deg,rgba(30,27,75,.6),rgba(76,29,149,.3));border-radius:12px;padding:14px;margin-bottom:10px">'
             + '<div style="font-size:11px;color:#9b8fb0;margin-bottom:6px">🧠 MBTI(' + _mbtiDreamMbti + ') × 꿈해몽 합성</div>'
             + '<div style="font-size:14px;color:#e8e0f0;line-height:1.9;font-weight:600">' + synthesis + '</div>'
@@ -4595,7 +4678,7 @@
             + aiSection
             + '</div>';
 
-        window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: dreamD };
+        window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: dreamD, base: base, positive: positive, negative: negative };
     }
 
     // 전역 노출 — 동적 HTML onclick에서 호출 가능
@@ -4615,46 +4698,38 @@
             if (rd) rd.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">먼저 꿈해몽을 실행해주세요.</div>';
             return;
         }
-        var btn   = document.querySelector('#mbti-dream-ai-wrap button');
+        var btn    = document.querySelector('#mbti-dream-ai-wrap button');
         var resDiv = document.getElementById('mbti-dream-ai-result');
         if (!resDiv) return;
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ AI 해석 생성 중...'; }
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ 해석 생성 중...'; }
         resDiv.innerHTML = '<div style="color:#9b8fb0;font-size:12px;padding:8px;text-align:center">🌙 생성 중...</div>';
 
-        var prompt = 'MBTI ' + ctx.mbti + '(' + ctx.mbtiD.core + ') 성격을 가진 사람이 "' + ctx.keyword + '" 꿈을 꿨습니다.\n'
-            + '꿈의 기본 의미: ' + ctx.dreamD.base + '\n'
-            + '긍정 의미: ' + ctx.dreamD.positive + ' / 부정 의미: ' + ctx.dreamD.negative + '\n'
-            + ctx.mbti + ' 특성(' + ctx.mbtiD.tarot_key + ')을 반드시 반영하여 3~4문장의 합성 꿈해몽을 작성하세요.\n'
-            + '형식: "' + ctx.mbti + '인 당신이 꾼 이 꿈은..." 으로 시작하여 꿈의 의미와 MBTI 성격을 자연스럽게 합쳐서 구체적 조언을 주세요.\n'
-            + '한국어로만 답하고 다른 설명 없이 해석만 출력하세요.';
+        // CSV dream_interpretations.csv의 MBTI별 컬럼 직접 활용
+        var mbtiD    = ctx.mbtiD;
+        var mbtiKey  = 'mbti_' + ctx.mbti.toLowerCase();
+        var mbtiSpec = ctx.dreamD[mbtiKey] || ctx.positive || '';
+        var coreTrait = mbtiD.core_trait || mbtiD.core || '';
+        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+        var strength  = mbtiD.strength || '';
 
-        try {
-            var resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 400,
-                    messages: [{ role: 'user', content: prompt }]
-                })
-            });
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            var data = await resp.json();
-            var text = (data.content || []).map(function(b) { return b.text || ''; }).join('').trim();
-            if (!text) throw new Error('빈 응답');
-            resDiv.innerHTML = '<div style="background:rgba(76,29,149,.15);border:1px solid rgba(139,92,246,.3);'
-                + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
-                + '<div style="font-size:10px;color:#a78bfa;margin-bottom:6px">🌙 AI 심층 해석</div>'
-                + text + '</div>';
-        } catch (e) {
-            console.error('mbtiDreamAiInterpret error:', e);
-            resDiv.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">'
-                + 'AI 해석을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
-                + '<br><small style="opacity:.5">' + e.message + '</small></div>';
-        }
-        if (btn) { btn.disabled = false; btn.textContent = '🌙 AI 심층 해석 받기'; }
+        var lines = [
+            ctx.mbti + '인 당신이 꾼 <b>"' + ctx.keyword + '"</b> 꿈은 <b>' + ctx.base + '</b>을(를) 상징합니다.',
+            ctx.mbti + '(' + coreTrait + ')의 관점에서 보면, <b>' + mbtiSpec + '</b>',
+            '긍정적으로는 <b>' + ctx.positive + '</b>의 의미가 있으며, 주의할 점은 ' + ctx.negative + '입니다.',
+            shortDesc
+        ];
+
+        resDiv.innerHTML = '<div style="background:rgba(76,29,149,.15);border:1px solid rgba(139,92,246,.3);'
+            + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:2;margin-top:8px">'
+            + '<div style="font-size:10px;color:#a78bfa;margin-bottom:8px">🌙 MBTI × 꿈해몽 합성 해석</div>'
+            + lines.map(function(l){ return '<p style="margin-bottom:6px">' + l + '</p>'; }).join('')
+            + '</div>';
+
+        if (btn) { btn.disabled = false; btn.textContent = '🌙 심층 해석 받기'; }
     }
     window.mbtiDreamAiInterpret = mbtiDreamAiInterpret;
+
+    // ── API Key 관련 잔여 코드 제거 완료 ──
 
     // ══════════════════════════════════════════════════
     //  타로 카드 모듈 — data/tarot_cards_78.csv 로드
