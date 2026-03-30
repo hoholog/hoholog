@@ -4391,11 +4391,22 @@
     }
 
     // ── MBTI+꿈해몽 UI ──
+    // 키워드별 이모지 맵 (CSV 로드 전 폴백 + 보장)
+    var DREAM_EMOJI_MAP = {
+        '하늘':'☁️','물':'💧','불':'🔥','뱀':'🐍','돈':'💰','죽음':'🌑',
+        '비행':'✈️','시험':'📝','추락':'⬇️','결혼':'💍','학교':'🏫',
+        '집':'🏠','길':'🛤️','동물':'🐾','바다':'🌊'
+    };
     async function buildMbtiDreamUI() {
         await loadDreamData();
-        var dreamBtns = Object.keys(DREAM_DATA).map(function(k) {
+        // CSV 키워드 + 폴백으로 15개 보장
+        var allKeywords = ['하늘','물','불','뱀','돈','죽음','비행','시험','추락','결혼','학교','집','길','동물','바다'];
+        allKeywords.forEach(function(k) {
+            if (!DREAM_DATA[k]) DREAM_DATA[k] = { base_meaning: k + '의 상징', positive:'새로운 가능성', negative:'불확실성', emoji: DREAM_EMOJI_MAP[k]||'💭' };
+        });
+        var dreamBtns = allKeywords.map(function(k) {
             var d = DREAM_DATA[k];
-            var emoji = d.emoji || '💭';
+            var emoji = d.emoji || DREAM_EMOJI_MAP[k] || '💭';
             return '<button class="tarot-q-btn" onclick="mbtiDreamSelectKeyword(\'' + k + '\',this)">'
                 + emoji + ' ' + k + '</button>';
         }).join('');
@@ -4409,15 +4420,17 @@
                 + '</div>'
                 + '<div id="mbti-dream-step2" style="display:none">'
                     + '<div style="background:rgba(255,255,255,.05);border-radius:14px;padding:16px;margin-bottom:16px">'
-                    + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:8px">STEP 2 — 꿈에서 본 것을 선택하거나 입력하세요</div>'
+                    + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:8px">STEP 2 — 꿈에서 본 것을 선택하거나 직접 입력하세요</div>'
                     + '<div id="mbti-dream-badge" style="margin-bottom:12px"></div>'
                     + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">' + dreamBtns + '</div>'
+                    + '<div style="font-size:11px;color:#9b8fb0;margin-bottom:6px">✏️ 목록에 없는 꿈은 직접 입력 후 Enter 또는 입력 버튼을 누르세요</div>'
                     + '<div style="display:flex;gap:8px;margin-bottom:12px">'
-                    + '<input id="mbti-dream-custom" placeholder="직접 입력 (예: 흰 고양이, 산, 친구)" '
+                    + '<input id="mbti-dream-custom" placeholder="예: 불에 나무가 타는 꿈, 바다에서 수영, 흰 고양이" '
                     + 'style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(201,168,76,.2);color:#e8e0f0;'
-                    + 'padding:.6rem;border-radius:.6rem;font-size:.85rem"/>'
+                    + 'padding:.6rem;border-radius:.6rem;font-size:.85rem"'
+                    + ' onkeydown="if(event.key===\'Enter\'){mbtiDreamApplyCustom();}" />'
                     + '<button onclick="mbtiDreamApplyCustom()" '
-                    + 'style="background:rgba(201,168,76,.2);border:1px solid #c9a84c;color:#c9a84c;padding:.5rem 1rem;border-radius:.6rem;cursor:pointer">입력</button>'
+                    + 'style="background:rgba(201,168,76,.2);border:1px solid #c9a84c;color:#c9a84c;padding:.5rem 1rem;border-radius:.6rem;cursor:pointer;white-space:nowrap">입력 후 해석</button>'
                     + '</div>'
                     + '<button id="mbti-dream-btn" onclick="mbtiDreamInterpret()" disabled '
                     + 'style="display:block;width:100%;padding:.9rem;background:linear-gradient(135deg,#1e1b4b,#4c1d95);'
@@ -4520,7 +4533,10 @@
             + 'style="width:100%;padding:10px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;'
             + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">✨ 합성 해석 받기</button>'
             + '<div id="mbti-tarot-ai-result"></div>'
-            + '</div>';
+            + '</div>'
+            + '<button onclick="mbtiTarotReset()" '
+            + 'style="width:100%;margin-top:10px;padding:10px;background:rgba(255,255,255,.07);color:#9b8fb0;'
+            + 'border:1px solid rgba(255,255,255,.15);border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🔄 MBTI+타로 다시보기</button>';
 
         resultDiv.innerHTML = '<div style="background:rgba(255,255,255,.03);border-radius:14px;padding:16px">'
             + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:12px">STEP 3 — 결과</div>'
@@ -4623,6 +4639,8 @@
         document.querySelectorAll('#mbti-dream-step2 .tarot-q-btn').forEach(function(b){ b.classList.remove('tq-active'); });
         var btn2 = document.getElementById('mbti-dream-btn');
         if(btn2){ btn2.disabled = false; btn2.style.opacity = '1'; }
+        // 바로 해석 실행
+        mbtiDreamInterpret();
     }
 
     async function mbtiDreamInterpret() {
@@ -4669,7 +4687,10 @@
             + 'style="width:100%;padding:10px;background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:#fff;'
             + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🌙 심층 해석 받기</button>'
             + '<div id="mbti-dream-ai-result"></div>'
-            + '</div>';
+            + '</div>'
+            + '<button onclick="mbtiDreamReset()" '
+            + 'style="width:100%;margin-top:10px;padding:10px;background:rgba(255,255,255,.07);color:#9b8fb0;'
+            + 'border:1px solid rgba(255,255,255,.15);border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🔄 MBTI+꿈해몽 다시보기</button>';
 
         resultDiv.innerHTML = '<div style="background:rgba(255,255,255,.03);border-radius:14px;padding:16px">'
             + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:12px">STEP 3 — 꿈해몽 결과</div>'
@@ -4701,6 +4722,28 @@
     window.mbtiDreamSelectKeyword = mbtiDreamSelectKeyword;
     window.mbtiDreamApplyCustom   = mbtiDreamApplyCustom;
     window.mbtiDreamInterpret     = mbtiDreamInterpret;
+
+    // 다시보기 리셋 함수
+    window.mbtiDreamReset = function() {
+        _mbtiDreamMbti = null;
+        _mbtiDreamKeyword = null;
+        window._mbtiDreamCtx = null;
+        // UI 재구성
+        var c = document.getElementById('fortune-content');
+        if (c) {
+            c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8fb0">⏳ 초기화 중...</div>';
+            buildMbtiDreamUI().then(function(html){ c.innerHTML = html; });
+        }
+        window.scrollTo({ top: document.getElementById('fortune-content') ? document.getElementById('fortune-content').offsetTop - 80 : 0, behavior: 'smooth' });
+    };
+    window.mbtiTarotReset = function() {
+        _mbtiTarotMbti = null;
+        _mbtiTarotQ = null;
+        window._mbtiTarotCtx = null;
+        var c = document.getElementById('fortune-content');
+        if (c) c.innerHTML = buildMbtiTarotUI();
+        window.scrollTo({ top: document.getElementById('fortune-content') ? document.getElementById('fortune-content').offsetTop - 80 : 0, behavior: 'smooth' });
+    };
 
     async function mbtiDreamAiInterpret() {
         var ctx = window._mbtiDreamCtx;
