@@ -628,7 +628,7 @@ def build_sns_zodiac_post(today_str):
   </div>
   <div id="{card_id}" style="background:#f8f7ff;border-radius:16px;padding:16px;margin-bottom:16px">
     {cards_html}
-    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">✨ hoholog.github.io · {today_str}</div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">✨ todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
   <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '별자리운세전체_{today_str}')">📸 이미지 저장</button>
   <div style="background:#eef2ff;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
@@ -700,7 +700,7 @@ def build_sns_chinese_post(today_str):
   </div>
   <div id="{card_id}" style="background:#fffbeb;border-radius:16px;padding:16px;margin-bottom:16px">
     {cards_html}
-    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">🐾 hoholog.github.io · {today_str}</div>
+    <div style="text-align:center;margin-top:8px;font-size:11px;color:#aaa">🐾 todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
   <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '띠별운세전체_{today_str}')">📸 이미지 저장</button>
   <div style="background:#fef3c7;border-radius:12px;padding:12px;font-size:12px;color:#666;text-align:center;margin-bottom:16px">
