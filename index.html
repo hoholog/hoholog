@@ -4161,11 +4161,11 @@
                     <div style="font-size:12px;color:#888;margin-bottom:18px">태어난 연·월·일·시로 네 기둥(四柱)과 오행·편관(偏官)을 풀어드립니다</div>
                     <div id="sj-name-wrap" style="margin-bottom:14px">
                         <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px">이름 (선택)</div>
-                        <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
                             <input id="sj-name" type="text" placeholder="한글 이름 (예: 홍길동)"
-                                style="flex:1;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none">
+                                style="width:55%;min-width:0;padding:12px;border-radius:12px;border:2px solid #e2e8f0;font-size:15px;outline:none;box-sizing:border-box">
                             <button onclick="triggerHanjaSelector()"
-                                style="padding:12px 14px;border-radius:12px;border:2px solid #7c3aed;background:#ede9fe;color:#7c3aed;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">
+                                style="flex-shrink:0;padding:12px 14px;border-radius:12px;border:2px solid #7c3aed;background:#ede9fe;color:#7c3aed;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">
                                 漢字 선택
                             </button>
                         </div>
@@ -4782,21 +4782,29 @@
         _mbtiDreamMbti = null;
         _mbtiDreamKeyword = null;
         window._mbtiDreamCtx = null;
-        // UI 재구성
         var c = document.getElementById('fortune-content');
         if (c) {
             c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8fb0">⏳ 초기화 중...</div>';
-            buildMbtiDreamUI().then(function(html){ c.innerHTML = html; });
+            buildMbtiDreamUI().then(function(html){
+                c.innerHTML = html;
+                // UI 재구성 완료 후 상단 스크롤
+                setTimeout(function(){
+                    c.scrollIntoView({behavior:'smooth', block:'start'});
+                }, 50);
+            });
         }
-        window.scrollTo({ top: document.getElementById('fortune-content') ? document.getElementById('fortune-content').offsetTop - 80 : 0, behavior: 'smooth' });
     };
     window.mbtiTarotReset = function() {
         _mbtiTarotMbti = null;
         _mbtiTarotQ = null;
         window._mbtiTarotCtx = null;
         var c = document.getElementById('fortune-content');
-        if (c) c.innerHTML = buildMbtiTarotUI();
-        window.scrollTo({ top: document.getElementById('fortune-content') ? document.getElementById('fortune-content').offsetTop - 80 : 0, behavior: 'smooth' });
+        if (c) {
+            c.innerHTML = buildMbtiTarotUI();
+            setTimeout(function(){
+                c.scrollIntoView({behavior:'smooth', block:'start'});
+            }, 50);
+        }
     };
 
     async function mbtiDreamAiInterpret() {
@@ -5231,6 +5239,14 @@
       tDrawnCards = [];
       tRevealedCount = 0;
       renderTarotUI();
+      // 다시 뽑기 시 타로 섹션 상단으로 스크롤
+      const tarotWrap = document.querySelector('.tarot-wrap');
+      if (tarotWrap) {
+        tarotWrap.scrollIntoView({behavior:'smooth', block:'start'});
+      } else {
+        const fc = document.getElementById('fortune-content');
+        if (fc) fc.scrollIntoView({behavior:'smooth', block:'start'});
+      }
     }
 
     // CSV 로드 실패 시 최소 폴백 (메이저 아르카나 22장만)
