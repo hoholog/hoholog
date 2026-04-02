@@ -172,7 +172,7 @@
             </div>
             <div>
                 <h4 class="text-white font-bold mb-6">고객 센터</h4>
-                <p>이메일: <a href="mailto:lyh0929mm@gmail.com" class="hover:text-white transition">lyh0929mm@gmail.com</a></p>
+                <p>이메일: <a href="/cdn-cgi/l/email-protection#177b6e7f272e252e7a7a57707a767e7b3974787a" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="b2decbda828b808bdfdff2d5dfd3dbde9cd1dddf">[email&#160;protected]</span></a></p>
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 mt-16 pt-8 border-t border-slate-800 text-center text-sm font-medium tracking-wide">
@@ -180,7 +180,7 @@
         </div>
     </footer>
 
-    <script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         // 모바일 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
@@ -910,7 +910,7 @@
         async function fetchByLabelAndTitle(label, keywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=20&orderBy=published'
+                + '&maxResults=40&orderBy=updated'
                 + '&fields=items(title,url,published,content)';
             try {
                 const r = await fetch(url, {cache: 'no-store'});
@@ -5272,6 +5272,4 @@
     document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
     document.addEventListener('keydown', function(e){
         if(e.key==='F12'){e.preventDefault();return false;}
-        if(e.ctrlKey && (e.key==='u'||e.key==='U')){e.preventDefault();return false;}
-        if(e.ctrlKey && e.shiftKey && (e.key==='I'||e.key==='i')){e.preventDefault();return false;}
-        if(e.ctrlKey && e.shiftKey && (e.key==='J'||e.key==='j')){e.preventDefau
+        if(e.ctrlKey &&
