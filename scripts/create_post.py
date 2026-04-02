@@ -23,6 +23,9 @@ def now_kst():
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(BASE, '..', 'data')
+# GitHub Actions에서 DATA_DIR 환경변수로 경로 오버라이드 가능
+if os.environ.get('DATA_DIR'):
+    DATA = os.environ['DATA_DIR']
 
 def csv(name):
     try:
@@ -478,12 +481,37 @@ def build_chinese_post(c, today_str):
 
 
 def zodiac_weekly_fortune(kr_name):
-    """주간 운세 CSV에서 가져오기"""
+    """주간 운세 CSV에서 가져오기 — zodiac_weekly_1000.csv"""
     if not zodiac_weekly.empty and 'zodiac' in zodiac_weekly.columns:
         m = zodiac_weekly[zodiac_weekly['zodiac'] == kr_name]
         if not m.empty:
             text = m.sample(1).iloc[0]['fortune']
             return str(text).replace('\n\n', '<br><br>').replace('\n', '<br>')
+    return sentence()
+
+def zodiac_monthly_fortune(kr_name):
+    """월간 운세 CSV에서 가져오기 — zodiac_monthly_1000.csv"""
+    if not zodiac_monthly.empty and 'zodiac' in zodiac_monthly.columns:
+        m = zodiac_monthly[zodiac_monthly['zodiac'] == kr_name]
+        if not m.empty:
+            text = m.sample(1).iloc[0]['fortune']
+            return str(text).replace('\n\n', '<br><br>').replace('\n', '<br>')
+    return sentence()
+
+def chinese_weekly_fortune(en_name):
+    """띠 주간 운세 CSV에서 가져오기 — chinese_weekly_1000.csv"""
+    if not chinese_weekly.empty and 'animal_zodiac' in chinese_weekly.columns:
+        m = chinese_weekly[chinese_weekly['animal_zodiac'] == en_name]
+        if not m.empty:
+            return m.sample(1).iloc[0]['fortune']
+    return sentence()
+
+def chinese_monthly_fortune(en_name):
+    """띠 월간 운세 CSV에서 가져오기 — chinese_monthly_1000.csv"""
+    if not chinese_monthly.empty and 'animal_zodiac' in chinese_monthly.columns:
+        m = chinese_monthly[chinese_monthly['animal_zodiac'] == en_name]
+        if not m.empty:
+            return m.sample(1).iloc[0]['fortune']
     return sentence()
 
 def build_zodiac_weekly_post(today_str):
@@ -493,10 +521,8 @@ def build_zodiac_weekly_post(today_str):
     results = []
     for z in ZODIACS:
         fortune = zodiac_weekly_fortune(z['kr'])
-        color   = pick_color()
-        number  = pick_number()
         rating  = stars()
-        # 제목: "양자리 2026년 03월 주간운세" — html fetchWeeklyPost 검색 키워드와 일치
+        card_id = f"zwfc-{z['en']}"
         title = f"{z['kr']} {month_str} 주간운세 {week_range}"
         kw_list = [
             z['kr'], f"{z['kr']} 주간운세", f"{z['kr']} 이번주운세",
@@ -506,14 +532,18 @@ def build_zodiac_weekly_post(today_str):
         content_html = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>📅 {z['emoji']} {z['kr']} 주간운세</h1><p>{week_range} · {z['date']}</p></div>
-  <div class="card">
-    <span class="badge">{z['emoji']} {z['kr']} ({z['date']}) {rating}</span>
-    <p style="line-height:1.9">{fortune}</p>
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 행운의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 행운의 숫자</div><div class="val">{number}</div></div>
-    </div>
+
+  <div id="{card_id}" class="fortune-card">
+    <div class="fc-emoji">{z['emoji']}</div>
+    <div class="fc-title">{z['kr']} 주간운세</div>
+    <div class="fc-sub">{week_range} · {z['date']}</div>
+    <div class="fc-stars">{rating}</div>
+    <div class="fc-text">{fortune}</div>
+    <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {week_range}</div>
   </div>
+
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{z['kr']}_주간운세')">📸 이미지 저장</button>
+
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
@@ -527,17 +557,15 @@ def build_chinese_monthly_post(today_str):
     month_str = get_month()
     results = []
     for c in CHINESE:
-        fortune = chinese_fortune(c['en'])
+        fortune = chinese_monthly_fortune(c['en'])
         f1, _   = monthly_fortune_general()
-        color   = pick_color()
-        number  = pick_number()
         rating  = stars()
+        card_id = f"cmfc-{c['en']}"
         periods = [("상순 (1~10일)", sentence()), ("중순 (11~20일)", sentence()), ("하순 (21~말일)", sentence())]
         period_html = "".join(
             f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
             for p, s in periods
         )
-        # 제목: "쥐띠 2026년 03월 월간운세" — html fetchMonthlyPost 검색 키워드와 일치
         title = f"{c['kr']} {month_str} 월간운세"
         kw_list = [
             c['kr'], f"{c['kr']} 월간운세", f"{c['kr']} 이달운세",
@@ -547,14 +575,21 @@ def build_chinese_monthly_post(today_str):
         content_html = f"""{style()}
 <div class="wrap">
   <div class="hero"><h1>🌙 {c['emoji']} {c['kr']} 월간운세</h1><p>{month_str}</p></div>
+
+  <div id="{card_id}" class="fortune-card">
+    <div class="fc-emoji">{c['emoji']}</div>
+    <div class="fc-title">{c['kr']} 월간운세</div>
+    <div class="fc-sub">{month_str}</div>
+    <div class="fc-stars">{rating}</div>
+    <div class="fc-text">{fortune}<br><br>{f1}</div>
+    <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {month_str}</div>
+  </div>
+
+  <button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{c['kr']}_월간운세')">📸 이미지 저장</button>
+
   <div class="card">
-    <span class="badge">{c['emoji']} {c['kr']} ({c['year'].split(',')[0]}년생~) {rating}</span>
-    <p>{fortune}</p><br><p>{f1}</p>
-    <div class="lucky">
-      <div class="lucky-box"><div class="lbl">🎨 이달의 색</div><div class="val">{color}</div></div>
-      <div class="lucky-box"><div class="lbl">🔢 이달의 숫자</div><div class="val">{number}</div></div>
-    </div>
-    <br>{period_html}
+    <span class="badge">📅 {month_str} 기간별 운세</span>
+    <div style="margin-top:8px">{period_html}</div>
   </div>
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
