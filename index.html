@@ -172,7 +172,7 @@
             </div>
             <div>
                 <h4 class="text-white font-bold mb-6">고객 센터</h4>
-                <p>이메일: <a href="/cdn-cgi/l/email-protection#177b6e7f272e252e7a7a57707a767e7b3974787a" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="b2decbda828b808bdfdff2d5dfd3dbde9cd1dddf">[email&#160;protected]</span></a></p>
+                <p>이메일: <a href="/cdn-cgi/l/email-protection#7d1104154d444f4410103d1a101c1411531e1210" class="hover:text-white transition"><span class="__cf_email__" data-cfemail="0864716038313a316565486f65696164266b6765">[email&#160;protected]</span></a></p>
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 mt-16 pt-8 border-t border-slate-800 text-center text-sm font-medium tracking-wide">
@@ -903,10 +903,24 @@
             mon.setUTCDate(d.getUTCDate() - d.getUTCDay() + 1);
             return String(mon.getUTCMonth()+1).padStart(2,'0') + String(mon.getUTCDate()).padStart(2,'0');
         }
+        // 이번 주 월요일의 연도/월 반환 (주간운세 포스트 제목 매칭용)
+        // create_post.py는 월요일에 발행하므로 포스트 제목의 "XX년 YY월"은
+        // 이번 주 월요일 기준이다. 현재 날짜가 화~일이어도 월요일 월을 써야 매칭됨.
+        function kstWeekMondayYear() {
+            const d = kstNow();
+            const mon = new Date(d);
+            mon.setUTCDate(d.getUTCDate() - d.getUTCDay() + 1);
+            return mon.getUTCFullYear();
+        }
+        function kstWeekMondayMonth() {
+            const d = kstNow();
+            const mon = new Date(d);
+            mon.setUTCDate(d.getUTCDate() - d.getUTCDay() + 1);
+            return String(mon.getUTCMonth()+1).padStart(2,'0');
+        }
 
         // ── Blogger 포스트 fetch ──
-        // /posts/search 의 labels는 Blogger v3에서 무시됨 →
-        // 라벨 목록(최신 20개) 조회 후 제목 키워드 전체 매칭
+        // orderBy=updated → 최신 글부터 반환, maxResults=40으로 여유있게 조회
         async function fetchByLabelAndTitle(label, keywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
@@ -928,8 +942,10 @@
                 [name, kstYear()+'년', kstMonth()+'월', kstDay()+'일', '띠운세']);
         }
         async function fetchWeeklyPost(label, name) {
+            // 주간운세 포스트는 월요일에 발행됨 → 제목의 연/월은 "이번 주 월요일" 기준
+            // 예: 오늘이 4월 3일(목)이어도 포스트 제목은 "2026년 03월 주간운세 03/30~04/05"
             return fetchByLabelAndTitle(label,
-                [name, kstYear()+'년', kstMonth()+'월', '주간운세']);
+                [name, kstWeekMondayYear()+'년', kstWeekMondayMonth()+'월', '주간운세']);
         }
         async function fetchMonthlyPost(label, name) {
             return fetchByLabelAndTitle(label,
