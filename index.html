@@ -9,6 +9,39 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ═══ Google AdSense (Publisher ID 입력 후 활성화) ═══ -->
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+    <style>
+        /* ── 로딩 중 광고 슬롯 ── */
+        .loading-ad-slot {
+            width: 100%;
+            max-width: 360px;
+            margin: 16px auto 0;
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 11px;
+            gap: 6px;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+        .loading-ad-slot .ad-label {
+            font-size: 10px;
+            color: #cbd5e1;
+            letter-spacing: .05em;
+        }
+        /* 실제 애드센스 ins 태그 */
+        .loading-ad-slot ins {
+            display: block;
+            width: 100%;
+        }
+    </style>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; }
@@ -20,6 +53,10 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
+        /* ── 버튼 로딩 스피너 ── */
+        @keyframes btnSpin { to { transform: rotate(360deg); } }
+        .btn-loading { position:relative; pointer-events:none; opacity:.75; }
+        .btn-loading .btn-spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:btnSpin .7s linear infinite; vertical-align:middle; margin-right:7px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- ═══ 캐시 버스팅 & 자동 업데이트 감지 ═══ -->
@@ -328,7 +365,7 @@
                         <button onclick="showFortune('mbti-tarot')"  id="tab-mbti-tarot"  class="ftab px-4 py-2 rounded-2xl font-bold transition text-sm whitespace-nowrap">🧠 MBTI+타로</button>
                         <button onclick="showFortune('mbti-dream')"  id="tab-mbti-dream"  class="ftab px-4 py-2 rounded-2xl font-bold transition text-sm whitespace-nowrap">🌙 MBTI+꿈해몽</button>
                     </div>
-                    <div id="fortune-content"><div style="text-align:center;padding:60px;color:#aaa">⏳ 운세를 불러오는 중...</div></div>
+                    <div id="fortune-content"><div style="text-align:center;padding:60px;color:#aaa"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>운세를 불러오는 중...</div></div>
                 </div>
             `,
                         guide: `
@@ -1276,6 +1313,12 @@
             const userName = (document.getElementById('inp-name')?.value||'').trim();
             if(!rawYear||!rawMonth||!rawDay){alert('생년월일을 모두 입력해주세요!');return;}
             if(!_gender){alert('성별을 선택해주세요!');return;}
+            // ── 버튼 로딩 시작 (2초) ──
+            const _todayBtn = document.querySelector('button[onclick*="generateTodayFortune"]');
+            showBtnLoading(_todayBtn, '운세 불러오는 중...');
+            const _todayResult = document.getElementById('today-result');
+            if(_todayResult) _todayResult.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:24px;height:24px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9ca3af;font-size:14px">운세를 불러오는 중...</span></div>' + getLoadingAdHTML();
+            setTimeout(function(){ hideBtnLoading(_todayBtn); }, 2000);
             // 음력 → 양력 변환
             const sol = resolveToSolar(rawYear, rawMonth, rawDay, _calType);
             const year = sol.year, month = sol.month, day = sol.day;
@@ -1335,6 +1378,11 @@
         }
 
         function showFortuneTab(tab, data){
+            // ── 탭 전환 로딩 ──
+            const _tabContentEl = document.getElementById('fortune-tab-content');
+            if(_tabContentEl && data===undefined){
+                _tabContentEl.innerHTML = '<div style="text-align:center;padding:32px;color:#aaa"><span style="display:inline-block;width:22px;height:22px;border:3px solid rgba(124,58,237,.25);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>운세를 불러오는 중...</div>' + getLoadingAdHTML();
+            }
             // 탭 버튼 스타일 + 뱃지 색상 갱신
             ['today','tomorrow','week','month'].forEach(t=>{
                 const b = document.getElementById('ftab-'+t);
@@ -1796,6 +1844,12 @@
             const sjNameHanja = (document.getElementById('sj-name-hanja')?.value||'').trim();
             if (!rawYear || !rawMonth || !rawDay) { alert('생년월일을 모두 입력해주세요!'); return; }
             if (rawYear < 1900 || rawYear > 2010) { alert('1900~2010년 사이로 입력해주세요.'); return; }
+            // ── 버튼 로딩 시작 (2초) ──
+            const _sajuBtn = document.querySelector('button[onclick*="generateSaju"]');
+            showBtnLoading(_sajuBtn, '사주 분석 중...');
+            const _sajuResult = document.getElementById('saju-result');
+            if(_sajuResult) _sajuResult.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:24px;height:24px;border:3px solid rgba(79,70,229,.2);border-top-color:#4f46e5;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9ca3af;font-size:14px">사주를 분석하는 중...</span></div>' + getLoadingAdHTML();
+            setTimeout(function(){ hideBtnLoading(_sajuBtn); }, 2000);
             const sol = resolveToSolar(rawYear, rawMonth, rawDay, _sj_calType);
             const year = sol.year, month = sol.month, day = sol.day;
             const lunarNote = _sj_calType==='음력'
@@ -3908,7 +3962,7 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const z=ZODIACS_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('zodiac-card-area');
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>운세를 불러오는 중...</div>${getLoadingAdHTML()}`;
             const post = await fetchFortunePost('별자리운세', kr);
             const info = extractBlogContent(post);
             const inner = renderBlogCard(info, z.emoji, z.kr, z.date, 'zcard', '별자리운세_'+kr)
@@ -3923,7 +3977,7 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const ch=CHINESE_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('chinese-card-area');
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 운세를 불러오는 중...</div>`;
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>운세를 불러오는 중...</div>${getLoadingAdHTML()}`;
             const post = await fetchChinesePost('띠운세', ch.kr);
             const info = extractBlogContent(post);
             const inner = renderBlogCard(info, ch.emoji, ch.kr, todayStr(), 'ccard-full', '띠운세_'+kr);
@@ -3970,7 +4024,7 @@
             ).join('');
 
             // Blogger API로 별자리 주간운세 불러오기
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 주간운세를 불러오는 중...</div>`;
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>주간운세를 불러오는 중...</div>${getLoadingAdHTML()}`;
             const post = await fetchWeeklyPost('별자리주간', kr);
             const info = extractBlogContent(post);
             const inner = renderBlogCard(info, z.emoji, z.kr, weekRange(), 'zwcard', '별자리주간운세_'+kr);
@@ -4004,7 +4058,7 @@
             if(btn){btn.style.background='#ede9fe';btn.style.borderColor='#7c3aed';}
             const ch=CHINESE_LIST.find(x=>x.kr===kr);
             const area=document.getElementById('chinese-monthly-area');
-            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa">⏳ 월간운세를 불러오는 중...</div>`;
+            area.innerHTML=`<div class="fcard" style="text-align:center;padding:30px;color:#aaa"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>월간운세를 불러오는 중...</div>${getLoadingAdHTML()}`;
             const post = await fetchMonthlyPost('띠별월간', ch.kr);
             const info = extractBlogContent(post);
             const inner = renderBlogCard(info, ch.emoji, ch.kr, monthStr(), 'cmcard', '띠월간운세_'+kr);
@@ -4244,7 +4298,7 @@
             }
 
             else if(type==='mbti-dream'){
-                c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8fb0">⏳ 꿈해몽 데이터 로드 중...</div>';
+                c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8fb0"><span style="display:inline-block;width:18px;height:18px;border:2px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>꿈해몽 데이터 로드 중...</div>';
                 buildMbtiDreamUI().then(function(html){ c.innerHTML = html; });
             }
 
@@ -4549,7 +4603,13 @@
     async function mbtiTarotDraw() {
         if(!_mbtiTarotMbti || !_mbtiTarotQ) return;
         var resultDiv = document.getElementById('mbti-tarot-result');
-        resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#9b8fb0"><div class="tarot-spinner"></div> 카드를 뽑는 중...</div>';
+        // ── MBTI 타로 카드 뽑기 로딩 ──
+        var _mbtiDrawBtn = document.getElementById('mbti-tarot-draw-btn');
+        showBtnLoading(_mbtiDrawBtn, '카드를 뽑는 중...');
+        resultDiv.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:22px;height:22px;border:2px solid rgba(201,168,76,.2);border-top-color:#c9a84c;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9b8fb0;font-size:14px">카드를 뽑는 중...</span></div>' + getLoadingAdHTML();
+        await new Promise(r => setTimeout(r, 2000));
+        hideBtnLoading(_mbtiDrawBtn);
+        _mbtiDrawBtn.disabled = true;
 
         await loadTarotDeck();
         if(!tDeck.length) { resultDiv.innerHTML = '<div style="color:#f87171;padding:1rem">카드 덱 로드 실패</div>'; return; }
@@ -4619,8 +4679,10 @@
         if(!ctx) return;
         var btn = document.querySelector('#mbti-tarot-ai-wrap button');
         var resDiv = document.getElementById('mbti-tarot-ai-result');
-        if(btn){ btn.disabled = true; btn.textContent = '⏳ 해석 생성 중...'; }
-        resDiv.innerHTML = '<div style="color:#9b8fb0;font-size:12px;padding:8px;text-align:center">✨ 생성 중...</div>';
+        // ── 합성 해석 로딩 ──
+        showBtnLoading(btn, 'MBTI×타로 해석 중...');
+        resDiv.innerHTML = '<div style="text-align:center;padding:16px;color:#9b8fb0"><span style="display:inline-block;width:20px;height:20px;border:2px solid rgba(201,168,76,.25);border-top-color:#c9a84c;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>합성 해석을 생성하고 있어요...</div>' + getLoadingAdHTML();
+        await new Promise(r => setTimeout(r, 2000));
 
         // CSV 기반 타로+MBTI 합성 해석
         var mbtiKey = 'mbti_' + ctx.mbti.toLowerCase();
@@ -4657,7 +4719,7 @@
             + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:6px">🃏 친화 카드: ' + affinity + '</p>' : '')
             + '</div>';
 
-        if(btn){ btn.disabled = false; btn.textContent = '✨ 합성 해석 받기'; }
+        hideBtnLoading(btn);
     }
     // 전역 노출
     window.mbtiTarotAiInterpret   = mbtiTarotAiInterpret;
@@ -4708,7 +4770,11 @@
     async function mbtiDreamInterpret() {
         if(!_mbtiDreamMbti || !_mbtiDreamKeyword) return;
         var resultDiv = document.getElementById('mbti-dream-result');
-        resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:#9b8fb0"><div class="tarot-spinner"></div> 꿈을 해석하는 중...</div>';
+        // ── 꿈해몽 심층해석 로딩 ──
+        var _dreamBtn = document.getElementById('mbti-dream-btn');
+        showBtnLoading(_dreamBtn, '꿈 해석 중...');
+        resultDiv.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:22px;height:22px;border:2px solid rgba(167,139,250,.25);border-top-color:#a78bfa;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9b8fb0;font-size:14px">꿈을 해석하는 중...</span></div>' + getLoadingAdHTML();
+        await new Promise(r => setTimeout(r, 2000));
 
         await loadDreamData();
 
@@ -4779,11 +4845,15 @@
     window.mbtiTarotSelectMbti    = mbtiTarotSelectMbti;
     window.mbtiTarotSelectQ       = mbtiTarotSelectQ;
     window.mbtiTarotApplyCustomQ  = mbtiTarotApplyCustomQ;
+    // 꿈해몽 버튼 복구는 함수 내 async 완료 후 처리됨
     window.mbtiTarotDraw          = mbtiTarotDraw;
     window.mbtiDreamSelectMbti    = mbtiDreamSelectMbti;
     window.mbtiDreamSelectKeyword = mbtiDreamSelectKeyword;
     window.mbtiDreamApplyCustom   = mbtiDreamApplyCustom;
-    window.mbtiDreamInterpret     = mbtiDreamInterpret;
+    window.mbtiDreamInterpret     = async function() {
+        await mbtiDreamInterpret();
+        hideBtnLoading(document.getElementById('mbti-dream-btn'));
+    };
 
     // 다시보기 리셋 함수
     window.mbtiDreamReset = function() {
@@ -4983,16 +5053,25 @@
 
     function tDrawCards() {
       if(!tQuestion || !tDeck.length) return;
-      tRevealedCount = 0;
-      const pool = tShuffle(tDeck);
-      tDrawnCards = pool.slice(0,3).map(card => ({
-        ...card,
-        isReversed: Math.random() < 0.33
-      }));
-      document.getElementById('tarot-draw-btn').disabled = true;
-      document.getElementById('tarot-cards-area').style.display = 'block';
-      document.getElementById('tarot-result-area').style.display = 'none';
-      renderTarotCards();
+      // ── 카드 뽑기 로딩 ──
+      const _drawBtn = document.getElementById('tarot-draw-btn');
+      showBtnLoading(_drawBtn, '카드를 섞는 중...');
+      // 로딩 중 광고 슬롯 표시
+      const _tarotResultArea = document.getElementById('tarot-result-area');
+      if(_tarotResultArea){ _tarotResultArea.style.display='block'; _tarotResultArea.innerHTML='<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:24px;height:24px;border:3px solid rgba(120,60,200,.2);border-top-color:#7c3aed;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9b8fb0;font-size:14px">카드를 섞는 중...</span></div>' + getLoadingAdHTML(); }
+      setTimeout(function(){
+        tRevealedCount = 0;
+        const pool = tShuffle(tDeck);
+        tDrawnCards = pool.slice(0,3).map(card => ({
+          ...card,
+          isReversed: Math.random() < 0.33
+        }));
+        hideBtnLoading(_drawBtn);
+        _drawBtn.disabled = true;
+        document.getElementById('tarot-cards-area').style.display = 'block';
+        if(_tarotResultArea){ _tarotResultArea.style.display='none'; _tarotResultArea.innerHTML=''; }
+        renderTarotCards();
+      }, 2000);
     }
 
     const T_POS = [
@@ -5282,6 +5361,45 @@
       {card_name:'Judgement',card_name_ko:'심판',arcana:'Major',upright_meaning:'성찰 재탄생 내면의 부름 용서',reversed_meaning:'자기 의심 내면 비판',keywords_ko:'심판·재탄생·반성',emoji:'🎺'},
       {card_name:'The World',card_name_ko:'세계',arcana:'Major',upright_meaning:'완성 통합 성취 여행 마무리',reversed_meaning:'미완성 지름길 지연',keywords_ko:'완성·성취·통합',emoji:'🌍'},
     ];
+    </script>
+    <script>
+    /* ── 버튼 로딩 유틸 ── */
+
+    /* ── 로딩 중 광고 슬롯 생성 ── */
+    function getLoadingAdHTML() {
+        return `<div class="loading-ad-slot">
+            <div class="ad-label">AD</div>
+            <!-- 애드센스 활성화 시 아래 ins 태그의 주석 해제 후 Publisher ID·Slot ID 입력 -->
+            <!--
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});<\/script>
+            -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <span style="color:#cbd5e1;font-size:11px">광고 영역</span>
+            <span style="color:#e2e8f0;font-size:10px">애드센스 승인 후 자동 표시됩니다</span>
+        </div>`;
+    }
+    function showBtnLoading(btn, loadingText) {
+        if (!btn) return;
+        btn._origHTML = btn.innerHTML;
+        btn._origDisabled = btn.disabled;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-spinner"></span>' + (loadingText || '처리 중...');
+        btn.classList.add('btn-loading');
+    }
+    function hideBtnLoading(btn) {
+        if (!btn || btn._origHTML === undefined) return;
+        btn.innerHTML = btn._origHTML;
+        btn.disabled = btn._origDisabled || false;
+        btn.classList.remove('btn-loading');
+        delete btn._origHTML;
+        delete btn._origDisabled;
+    }
     </script>
     <script>
     // ── 보안 ──
