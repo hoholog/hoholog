@@ -285,17 +285,19 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 .fortune-card .fc-watermark{font-size:11px;opacity:.5;text-align:center;margin-top:12px}
 .save-btn{display:block;width:100%;background:#7c3aed;color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px}
 .save-btn:hover{background:#6d28d9}
-.share-wrap{margin-bottom:14px}
-.share-label{font-size:13px;font-weight:700;color:#555;margin-bottom:8px;text-align:center}
-.share-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.share-btn{display:flex;align-items:center;gap:6px;border:none;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer;color:#fff;transition:opacity .15s}
-.share-btn:hover{opacity:.85}
-.share-btn.kakao{background:#FEE500;color:#3C1E1E}
-.share-btn.instagram{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
-.share-btn.line{background:#06C755}
-.share-btn.twitter{background:#000}
-.share-btn.facebook{background:#1877F2}
-.share-btn.copyurl{background:#6b7280}
+.share-btn-main{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#f3f4f6;color:#333;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px}
+.share-btn-main:hover{background:#e5e7eb}
+.share-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:flex-end}
+.share-overlay.open{display:flex}
+.share-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;margin:0 auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-title{text-align:center;font-size:13px;color:#888;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0f0f0}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.sheet-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;border:none;background:none;padding:0}
+.sheet-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.sheet-item span{font-size:11px;color:#444;font-weight:600}
+.sheet-cancel{display:block;width:100%;background:#f3f4f6;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;color:#333;cursor:pointer;margin-top:4px}
+.sheet-cancel:hover{background:#e5e7eb}
 </style>
 <script>
 function saveFortuneCard(cardId, filename) {
@@ -365,82 +367,110 @@ function fallbackDownload(canvas, filename) {
 </script>"""
 
 def share_buttons(card_id, filename):
-    """카카오·인스타·라인·X·페북·URL복사 공유버튼 + 이미지저장버튼"""
+    """공유하기 버튼 1개 → 바텀시트 펼침 (카카오·인스타·라인·X·페북·URL복사) + 이미지저장"""
+    sheet_id = f"sheet-{card_id}"
     return f"""
-<div class="share-wrap">
-  <div class="share-label">📤 공유하기</div>
-  <div class="share-row">
-    <button class="share-btn kakao" onclick="shareKakao()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41C22 6.477 17.523 3 12 3z"/></svg>
-      카카오톡
-    </button>
-    <button class="share-btn instagram" onclick="shareInstagram('{card_id}','{filename}')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/></svg>
-      인스타그램
-    </button>
-    <button class="share-btn line" onclick="shareLine()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-      라인
-    </button>
-    <button class="share-btn twitter" onclick="shareTwitter()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.245 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      X(트위터)
-    </button>
-    <button class="share-btn facebook" onclick="shareFacebook()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.887v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
-      페이스북
-    </button>
-    <button class="share-btn copyurl" onclick="copyURL()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-      URL복사
-    </button>
+<button class="share-btn-main" onclick="openShareSheet('{sheet_id}','{card_id}','{filename}')">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+  공유하기
+</button>
+<button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{filename}')">📸 이미지 저장</button>
+
+<div id="{sheet_id}" class="share-overlay" onclick="closeShareSheet('{sheet_id}')">
+  <div class="share-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">공유하기</div>
+    <div class="sheet-grid">
+      <button class="sheet-item" onclick="sheetKakao()">
+        <div class="sheet-icon" style="background:#FEE500">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41C22 6.477 17.523 3 12 3z"/></svg>
+        </div>
+        <span>카카오톡</span>
+      </button>
+      <button class="sheet-item" onclick="sheetInstagram(_sheetCardId, _sheetFilename, '{sheet_id}')">
+        <div class="sheet-icon" style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/></svg>
+        </div>
+        <span>인스타그램</span>
+      </button>
+      <button class="sheet-item" onclick="sheetLine()">
+        <div class="sheet-icon" style="background:#06C755">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+        </div>
+        <span>라인</span>
+      </button>
+      <button class="sheet-item" onclick="sheetX()">
+        <div class="sheet-icon" style="background:#000">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.245 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <span>X(트위터)</span>
+      </button>
+      <button class="sheet-item" onclick="sheetFacebook()">
+        <div class="sheet-icon" style="background:#1877F2">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.887v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+        </div>
+        <span>페이스북</span>
+      </button>
+      <button class="sheet-item" onclick="sheetCopy('{sheet_id}')">
+        <div class="sheet-icon" style="background:#6b7280">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <span>URL 복사</span>
+      </button>
+    </div>
+    <button class="sheet-cancel" onclick="closeShareSheet('{sheet_id}')">취소</button>
   </div>
 </div>
-<button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{filename}')">📸 이미지 저장</button>
-<script>
-(function(){{
-  var _pageURL = location.href;
-  var _pageTitle = document.title;
 
-  window.shareKakao = function() {{
-    var url = 'https://story.kakao.com/share?url=' + encodeURIComponent(_pageURL);
-    window.open(url, '_blank', 'width=600,height=500');
-  }};
-  window.shareInstagram = function(cardId, fname) {{
-    // 인스타는 직접 URL 공유 불가 → 이미지 저장 후 안내
-    saveFortuneCard(cardId, fname);
-    setTimeout(function() {{
-      alert('📸 이미지가 저장되었습니다!\\n인스타그램 앱에서 이미지를 불러와 스토리/피드에 올려주세요 📲');
-    }}, 1500);
-  }};
-  window.shareLine = function() {{
-    var url = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(_pageURL);
-    window.open(url, '_blank', 'width=600,height=500');
-  }};
-  window.shareTwitter = function() {{
-    var url = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(_pageURL) + '&text=' + encodeURIComponent(_pageTitle);
-    window.open(url, '_blank', 'width=600,height=500');
-  }};
-  window.shareFacebook = function() {{
-    var url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(_pageURL);
-    window.open(url, '_blank', 'width=600,height=500');
-  }};
-  window.copyURL = function() {{
-    if (navigator.clipboard) {{
-      navigator.clipboard.writeText(_pageURL).then(function() {{
-        alert('✅ 링크가 복사되었습니다!');
-      }});
-    }} else {{
-      var ta = document.createElement('textarea');
-      ta.value = _pageURL;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+<script>
+var _sheetCardId = '';
+var _sheetFilename = '';
+function openShareSheet(sheetId, cardId, fname) {{
+  _sheetCardId = cardId;
+  _sheetFilename = fname;
+  document.getElementById(sheetId).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}}
+function closeShareSheet(sheetId) {{
+  document.getElementById(sheetId).classList.remove('open');
+  document.body.style.overflow = '';
+}}
+function sheetKakao() {{
+  window.open('https://story.kakao.com/share?url=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
+}}
+function sheetInstagram(cardId, fname, sheetId) {{
+  closeShareSheet(sheetId);
+  saveFortuneCard(cardId, fname);
+  setTimeout(function() {{
+    alert('📸 이미지가 저장되었습니다!\\n인스타그램 앱에서 이미지를 불러와 스토리/피드에 올려주세요 📲');
+  }}, 1500);
+}}
+function sheetLine() {{
+  window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
+}}
+function sheetX() {{
+  window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(location.href) + '&text=' + encodeURIComponent(document.title), '_blank', 'width=600,height=500');
+}}
+function sheetFacebook() {{
+  window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
+}}
+function sheetCopy(sheetId) {{
+  var url = location.href;
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(url).then(function() {{
+      closeShareSheet(sheetId);
       alert('✅ 링크가 복사되었습니다!');
-    }}
-  }};
-}})();
+    }});
+  }} else {{
+    var ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    closeShareSheet(sheetId);
+    alert('✅ 링크가 복사되었습니다!');
+  }}
+}}
 </script>"""
 
 
