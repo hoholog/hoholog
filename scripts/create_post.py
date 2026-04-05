@@ -292,7 +292,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f8f9ff;color:#333;padding
 .share-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;margin:0 auto;animation:slideUp .25s ease}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .sheet-title{text-align:center;font-size:13px;color:#888;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0f0f0}
-.sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.sheet-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
 .sheet-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;border:none;background:none;padding:0}
 .sheet-icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center}
 .sheet-item span{font-size:11px;color:#444;font-weight:600}
@@ -367,7 +367,7 @@ function fallbackDownload(canvas, filename) {
 </script>"""
 
 def share_buttons(card_id, filename):
-    """공유하기 버튼 1개 → 바텀시트 펼침 (카카오·인스타·라인·X·페북·URL복사) + 이미지저장"""
+    """공유하기 버튼 1개 → 바텀시트 (카카오톡·네이버밴드·쓰레드·인스타·URL복사) + 이미지저장"""
     sheet_id = f"sheet-{card_id}"
     return f"""
 <button class="share-btn-main" onclick="openShareSheet('{sheet_id}','{card_id}','{filename}')">
@@ -380,42 +380,51 @@ def share_buttons(card_id, filename):
   <div class="share-sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">공유하기</div>
     <div class="sheet-grid">
-      <button class="sheet-item" onclick="sheetKakao()">
+
+      <!-- ① 카카오톡 -->
+      <button class="sheet-item" onclick="sheetKakaoTalk()">
         <div class="sheet-icon" style="background:#FEE500">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41C22 6.477 17.523 3 12 3z"/></svg>
         </div>
         <span>카카오톡</span>
       </button>
+
+      <!-- ② 네이버 밴드 -->
+      <button class="sheet-item" onclick="sheetBand()">
+        <div class="sheet-icon" style="background:#03C75A">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+          </svg>
+        </div>
+        <span>네이버밴드</span>
+      </button>
+
+      <!-- ③ 쓰레드 (Threads) -->
+      <button class="sheet-item" onclick="sheetThreads()">
+        <div class="sheet-icon" style="background:#000">
+          <svg width="24" height="24" viewBox="0 0 192 192" fill="#fff">
+            <path d="M141.537 88.988a66.667 66.667 0 00-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.264-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.683 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.351-22.809-.169-40.06-7.484-51.275-21.742C88.809 149.438 83 132.938 82.432 112h-16.57c.6 24.74 8.355 44.742 22.637 57.967C101.243 182.022 121.22 190.169 144 190.351l.402-.002c24.203-.172 42.426-6.856 56.189-20.6 18.386-18.366 17.861-41.25 11.755-55.348-4.325-10.083-12.754-18.279-26.809-23.413z"/>
+          </svg>
+        </div>
+        <span>쓰레드</span>
+      </button>
+
+      <!-- ④ 인스타그램 (이미지 저장 후 안내) -->
       <button class="sheet-item" onclick="sheetInstagram(_sheetCardId, _sheetFilename, '{sheet_id}')">
         <div class="sheet-icon" style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/></svg>
         </div>
         <span>인스타그램</span>
       </button>
-      <button class="sheet-item" onclick="sheetLine()">
-        <div class="sheet-icon" style="background:#06C755">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
-        </div>
-        <span>라인</span>
-      </button>
-      <button class="sheet-item" onclick="sheetX()">
-        <div class="sheet-icon" style="background:#000">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.245 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        </div>
-        <span>X(트위터)</span>
-      </button>
-      <button class="sheet-item" onclick="sheetFacebook()">
-        <div class="sheet-icon" style="background:#1877F2">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.887v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
-        </div>
-        <span>페이스북</span>
-      </button>
+
+      <!-- ⑤ URL 복사 -->
       <button class="sheet-item" onclick="sheetCopy('{sheet_id}')">
         <div class="sheet-icon" style="background:#6b7280">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         </div>
         <span>URL 복사</span>
       </button>
+
     </div>
     <button class="sheet-cancel" onclick="closeShareSheet('{sheet_id}')">취소</button>
   </div>
@@ -434,24 +443,38 @@ function closeShareSheet(sheetId) {{
   document.getElementById(sheetId).classList.remove('open');
   document.body.style.overflow = '';
 }}
-function sheetKakao() {{
-  window.open('https://story.kakao.com/share?url=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
+function sheetKakaoTalk() {{
+  /* 카카오톡 공유 — send.kakao.com 딥링크 (앱 설치 시 앱으로, 미설치 시 웹으로) */
+  var url = 'https://sharer.kakao.com/talk/friends/picker/link'
+    + '?app_key=KAKAO_JS_KEY'          /* ← 카카오 개발자 콘솔에서 발급한 JavaScript 키 입력 */
+    + '&validation_action=default'
+    + '&validation_params=%7B%7D';
+  /* JS 키 미설정 시 카카오스토리 웹 공유로 폴백 */
+  var fallback = 'https://story.kakao.com/share?url=' + encodeURIComponent(location.href);
+  try {{
+    window.open(url, '_blank', 'width=600,height=500');
+  }} catch(e) {{
+    window.open(fallback, '_blank', 'width=600,height=500');
+  }}
+}}
+function sheetBand() {{
+  /* 네이버 밴드 공유 */
+  var url = 'https://band.us/plugin/share?body=' + encodeURIComponent(document.title + '\n' + location.href)
+    + '&route=' + encodeURIComponent(location.href);
+  window.open(url, '_blank', 'width=600,height=600');
+}}
+function sheetThreads() {{
+  /* 쓰레드 공유 — 웹 공유 URL */
+  var url = 'https://www.threads.net/intent/post?text=' + encodeURIComponent(document.title + '\n' + location.href);
+  window.open(url, '_blank', 'width=600,height=600');
 }}
 function sheetInstagram(cardId, fname, sheetId) {{
+  /* 인스타그램은 웹 직접 공유 불가 → 이미지 저장 후 앱에서 업로드 안내 */
   closeShareSheet(sheetId);
   saveFortuneCard(cardId, fname);
   setTimeout(function() {{
     alert('📸 이미지가 저장되었습니다!\\n인스타그램 앱에서 이미지를 불러와 스토리/피드에 올려주세요 📲');
   }}, 1500);
-}}
-function sheetLine() {{
-  window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
-}}
-function sheetX() {{
-  window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(location.href) + '&text=' + encodeURIComponent(document.title), '_blank', 'width=600,height=500');
-}}
-function sheetFacebook() {{
-  window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(location.href), '_blank', 'width=600,height=500');
 }}
 function sheetCopy(sheetId) {{
   var url = location.href;
