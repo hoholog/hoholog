@@ -237,9 +237,9 @@ def stars():
 
 def get_week_range():
     today = now_kst().date()
-    mon = today.strftime("%m/%d")
-    sun_day = today.toordinal() - today.weekday() + 6
-    sun = date.fromordinal(sun_day).strftime("%m/%d")
+    mon_day = today.toordinal() - today.weekday()   # 이번 주 월요일
+    mon = date.fromordinal(mon_day).strftime("%m/%d")
+    sun = date.fromordinal(mon_day + 6).strftime("%m/%d")
     return f"{mon} ~ {sun}"
 
 def get_month():
@@ -710,7 +710,10 @@ def chinese_monthly_fortune(en_name):
 def build_zodiac_weekly_post(today_str):
     """별자리별 주간운세 12개 개별 발행 — 매주 월요일"""
     week_range = get_week_range()
-    month_str  = now_kst().strftime("%Y년 %m월")
+    # 월말 경계 버그 방지: month_str은 항상 이번 주 월요일 기준
+    today_date = now_kst().date()
+    mon_date   = date.fromordinal(today_date.toordinal() - today_date.weekday())
+    month_str  = mon_date.strftime("%Y년 %m월")
     results = []
     for z in ZODIACS:
         fortune = zodiac_weekly_fortune(z['kr'])
