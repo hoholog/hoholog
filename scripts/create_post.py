@@ -373,7 +373,7 @@ def share_buttons(card_id, filename):
     """
     sheet_id = f"sheet-{card_id}"
     return f"""
-<button class="share-btn-main" onclick="fortOpenSheet(\'{card_id}\',\'{filename}\')">
+<button class="share-btn-main" onclick="fortOpenSheet(\'{card_id}\',\'{filename}\')" ontouchstart="" style="cursor:pointer">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
   공유하기
 </button>
@@ -398,9 +398,10 @@ def share_buttons(card_id, filename):
     'padding-bottom:14px;border-bottom:1px solid #f0f0f0}}' +
     '.fort-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}}' +
     '.fort-btn{{display:flex;flex-direction:column;align-items:center;gap:5px;' +
-    'border:none;background:none;cursor:pointer;padding:6px 2px;' +
-    '-webkit-tap-highlight-color:transparent;touch-action:manipulation}}' +
-    '.fort-ico{{width:50px;height:50px;border-radius:14px;display:flex;' +
+    'border:none;background:none;cursor:pointer;padding:10px 4px;' +
+    '-webkit-tap-highlight-color:rgba(0,0,0,.08);touch-action:manipulation;' +
+    'user-select:none;-webkit-user-select:none;min-width:58px}}' +
+    '.fort-ico{{width:56px;height:56px;border-radius:16px;display:flex;' +
     'align-items:center;justify-content:center;flex-shrink:0}}' +
     '.fort-btn span{{font-size:10px;color:#444;font-weight:600;text-align:center;line-height:1.3;word-break:keep-all}}' +
     '.fort-cancel{{display:block;width:100%;background:#f3f4f6;border:none;' +
@@ -509,7 +510,31 @@ def share_buttons(card_id, filename):
     _close();
   }}
   document.getElementById('__fb_kk').addEventListener('click', function() {{
-    _open('https://story.kakao.com/share?url='+encodeURIComponent(location.href), 600, 500);
+    var url = location.href;
+    var title = document.title;
+    /* 1) 카카오링크 딥링크 (앱 설치 시 바로 열림) */
+    var kakaoDeep = 'kakaolink://send?msg=' + encodeURIComponent(title + '\n' + url);
+    /* 2) 카카오톡 모바일 공유 URL (fallback) */
+    var kakaoWeb = 'https://sharer.kakao.com/talk/friends/picker/link?app_key=NONE&validation_action=custom&validation_params=' + encodeURIComponent(JSON.stringify({{web_url:url,mobile_web_url:url,description:title}}));
+    /* 3) 최종 fallback: 링크 복사 */
+    var isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    _close();
+    if (isMobile) {{
+      /* 모바일: location.href로 딥링크 시도 → 앱 없으면 웹 fallback */
+      var timer = setTimeout(function() {{
+        /* 앱으로 안 넘어가면 클립보드 복사 후 안내 */
+        if (navigator.clipboard) {{
+          navigator.clipboard.writeText(url).then(function() {{
+            alert('📋 링크가 복사되었습니다!\n카카오톡을 열어 붙여넣어 공유하세요.');
+          }}).catch(function() {{ alert('카카오톡 앱을 열어 링크를 공유해 주세요:\n' + url); }});
+        }} else {{
+          alert('카카오톡 앱을 열어 아래 링크를 공유해 주세요:\n' + url);
+        }}
+      }}, 1500);
+      window.location.href = kakaoDeep;
+    }} else {{
+      _open('https://story.kakao.com/share?url='+encodeURIComponent(url), 600, 500);
+    }}
   }});
   document.getElementById('__fb_bd').addEventListener('click', function() {{
     _open('https://band.us/plugin/share?body='+encodeURIComponent(document.title+'\n'+location.href)+'&route='+encodeURIComponent(location.href), 600, 600);
