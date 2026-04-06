@@ -107,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260406080137_8d3b4416">
+  <meta name="build-version" content="20260406111408_8e4fde54">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -761,9 +761,17 @@
 
         // ── 타입 3: 별자리 주간운세 ──
         // 제목: "양자리 2026년 03월 주간운세 03/17 ~ 03/23"
-        // HTML: <div class="card"><span class="badge">...</span><p style="line-height:1.9">{본문}</p>...
+        // HTML: fortune-card > fc-text div (create_post.py build_zodiac_weekly_post 구조)
         function parseFortune_Weekly(raw) {
-            // 첫 번째 .card 안의 모든 <p> 태그 전체 수집 (기존: 첫 p만 가져오던 버그 수정)
+            // 1순위: fortune-card 안의 fc-text div (create_post.py 현재 구조)
+            const fcM = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
+            if (fcM) {
+                const text = fcM[1]
+                    .replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')
+                    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+                if (text) return text;
+            }
+            // 2순위: .card 안의 <p> 태그 (구버전 호환)
             const cardM = raw.match(/<div[^>]*class="card"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|$)/);
             const scope = cardM ? cardM[1] : raw;
             const parts = [...scope.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
@@ -953,14 +961,22 @@
         // ── Blogger 포스트 fetch ──
         // orderBy=updated → 최신 글부터 반환, maxResults=40으로 여유있게 조회
         async function fetchByLabelAndTitle(label, keywords) {
-            const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
+            // 1단계: 제목만 가져와서 키워드 매칭 (content 잘림 방지)
+            const urlTitles = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=40&orderBy=updated'
-                + '&fields=items(title,url,published,content)';
+                + '&maxResults=50&orderBy=published'
+                + '&fields=items(id,title,url,published)';
             try {
-                const r = await fetch(url, {cache: 'no-store'});
+                const r = await fetch(urlTitles, {cache: 'no-store'});
                 const d = await r.json();
-                return (d.items||[]).find(p => keywords.every(k => p.title.includes(k))) || null;
+                const matched = (d.items||[]).find(p => keywords.every(k => p.title.includes(k)));
+                if (!matched) return null;
+                // 2단계: 매칭된 포스트의 content만 별도 fetch (잘림 없이 전체 수신)
+                const urlPost = BASE_URL + '/blogs/' + BLOG_ID + '/posts/' + matched.id
+                    + '?key=' + API_KEY + '&fields=title,url,published,content';
+                const r2 = await fetch(urlPost, {cache: 'no-store'});
+                const d2 = await r2.json();
+                return d2 || null;
             } catch(e) { return null; }
         }
 
