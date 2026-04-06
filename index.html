@@ -4763,11 +4763,12 @@
         mbtiDreamInterpret();
     }
 
-    async function mbtiDreamInterpret() {
+    async function _mbtiDreamInterpretCore() {
         if(!_mbtiDreamMbti || !_mbtiDreamKeyword) return;
         var resultDiv = document.getElementById('mbti-dream-result');
         // ── 꿈해몽 심층해석 로딩 ──
         var _dreamBtn = document.getElementById('mbti-dream-btn');
+        if(_dreamBtn) { _dreamBtn.disabled = true; _dreamBtn.style.opacity = '.4'; }
         showBtnLoading(_dreamBtn, '꿈 해석 중...');
         resultDiv.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:22px;height:22px;border:2px solid rgba(167,139,250,.25);border-top-color:#a78bfa;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9b8fb0;font-size:14px">꿈을 해석하는 중...</span></div>' + getLoadingAdHTML();
         await new Promise(r => setTimeout(r, 2000));
@@ -4847,7 +4848,7 @@
     window.mbtiDreamSelectKeyword = mbtiDreamSelectKeyword;
     window.mbtiDreamApplyCustom   = mbtiDreamApplyCustom;
     window.mbtiDreamInterpret     = async function() {
-        await mbtiDreamInterpret();
+        await _mbtiDreamInterpretCore();
         hideBtnLoading(document.getElementById('mbti-dream-btn'));
     };
 
