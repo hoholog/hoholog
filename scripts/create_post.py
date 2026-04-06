@@ -367,136 +367,185 @@ function fallbackDownload(canvas, filename) {
 </script>"""
 
 def share_buttons(card_id, filename):
-    """공유하기 버튼 1개 → 바텀시트 (카카오톡·네이버밴드·쓰레드·인스타·URL복사) + 이미지저장"""
+    """공유하기 버튼 1개 → 바텀시트 (카카오톡·네이버밴드·쓰레드·인스타·URL복사) + 이미지저장
+    바텀시트를 document.body에 동적 append → Blogger z-index/iframe 문제 완전 해결
+    window.__fortuneShareInited 가드로 게시글마다 스크립트 중복 실행 방지
+    """
     sheet_id = f"sheet-{card_id}"
     return f"""
-<button class="share-btn-main" onclick="openShareSheet('{sheet_id}','{card_id}','{filename}')">
+<button class="share-btn-main" onclick="fortOpenSheet(\'{card_id}\',\'{filename}\')">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
   공유하기
 </button>
-<button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard('{card_id}', '{filename}')">📸 이미지 저장</button>
-
-<div id="{sheet_id}" class="share-overlay" onclick="closeShareSheet('{sheet_id}')">
-  <div class="share-sheet" onclick="event.stopPropagation()">
-    <div class="sheet-title">공유하기</div>
-    <div class="sheet-grid">
-
-      <!-- ① 카카오톡 -->
-      <button class="sheet-item" onclick="sheetKakaoTalk()">
-        <div class="sheet-icon" style="background:#FEE500">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41C22 6.477 17.523 3 12 3z"/></svg>
-        </div>
-        <span>카카오톡</span>
-      </button>
-
-      <!-- ② 네이버 밴드 -->
-      <button class="sheet-item" onclick="sheetBand()">
-        <div class="sheet-icon" style="background:#03C75A">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
-          </svg>
-        </div>
-        <span>네이버밴드</span>
-      </button>
-
-      <!-- ③ 쓰레드 (Threads) -->
-      <button class="sheet-item" onclick="sheetThreads()">
-        <div class="sheet-icon" style="background:#000">
-          <svg width="24" height="24" viewBox="0 0 192 192" fill="#fff">
-            <path d="M141.537 88.988a66.667 66.667 0 00-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.264-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.683 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.351-22.809-.169-40.06-7.484-51.275-21.742C88.809 149.438 83 132.938 82.432 112h-16.57c.6 24.74 8.355 44.742 22.637 57.967C101.243 182.022 121.22 190.169 144 190.351l.402-.002c24.203-.172 42.426-6.856 56.189-20.6 18.386-18.366 17.861-41.25 11.755-55.348-4.325-10.083-12.754-18.279-26.809-23.413z"/>
-          </svg>
-        </div>
-        <span>쓰레드</span>
-      </button>
-
-      <!-- ④ 인스타그램 (이미지 저장 후 안내) -->
-      <button class="sheet-item" onclick="sheetInstagram(_sheetCardId, _sheetFilename, '{sheet_id}')">
-        <div class="sheet-icon" style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/></svg>
-        </div>
-        <span>인스타그램</span>
-      </button>
-
-      <!-- ⑤ URL 복사 -->
-      <button class="sheet-item" onclick="sheetCopy('{sheet_id}')">
-        <div class="sheet-icon" style="background:#6b7280">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-        </div>
-        <span>URL 복사</span>
-      </button>
-
-    </div>
-    <button class="sheet-cancel" onclick="closeShareSheet('{sheet_id}')">취소</button>
-  </div>
-</div>
-
+<button id="savebtn-{card_id}" class="save-btn" onclick="saveFortuneCard(\'{card_id}\', \'{filename}\')">📸 이미지 저장</button>
 <script>
-var _sheetCardId = '';
-var _sheetFilename = '';
-function openShareSheet(sheetId, cardId, fname) {{
-  _sheetCardId = cardId;
-  _sheetFilename = fname;
-  document.getElementById(sheetId).classList.add('open');
-  document.body.style.overflow = 'hidden';
-}}
-function closeShareSheet(sheetId) {{
-  document.getElementById(sheetId).classList.remove('open');
-  document.body.style.overflow = '';
-}}
-function sheetKakaoTalk() {{
-  /* 카카오톡 공유 — send.kakao.com 딥링크 (앱 설치 시 앱으로, 미설치 시 웹으로) */
-  var url = 'https://sharer.kakao.com/talk/friends/picker/link'
-    + '?app_key=KAKAO_JS_KEY'          /* ← 카카오 개발자 콘솔에서 발급한 JavaScript 키 입력 */
-    + '&validation_action=default'
-    + '&validation_params=%7B%7D';
-  /* JS 키 미설정 시 카카오스토리 웹 공유로 폴백 */
-  var fallback = 'https://story.kakao.com/share?url=' + encodeURIComponent(location.href);
-  try {{
-    window.open(url, '_blank', 'width=600,height=500');
-  }} catch(e) {{
-    window.open(fallback, '_blank', 'width=600,height=500');
+(function(){{
+  /* ── 중복 초기화 방지 ── */
+  if (window.__fortuneShareInited) return;
+  window.__fortuneShareInited = true;
+
+  /* ── 공통 CSS 삽입 ── */
+  var css = document.createElement('style');
+  css.textContent =
+    '.fort-ov{{display:none;position:fixed;top:0;left:0;width:100%;height:100%;' +
+    'background:rgba(0,0,0,.52);z-index:2147483647;align-items:flex-end;justify-content:center}}' +
+    '.fort-ov.on{{display:flex!important}}' +
+    '.fort-sh{{background:#fff;border-radius:20px 20px 0 0;padding:22px 16px 38px;' +
+    'width:100%;max-width:480px;box-sizing:border-box;' +
+    'animation:fortUp .25s cubic-bezier(.4,0,.2,1)}}' +
+    '@keyframes fortUp{{from{{transform:translateY(100%)}}to{{transform:translateY(0)}}}}' +
+    '.fort-ttl{{text-align:center;font-size:13px;color:#888;margin-bottom:18px;' +
+    'padding-bottom:14px;border-bottom:1px solid #f0f0f0}}' +
+    '.fort-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}}' +
+    '.fort-btn{{display:flex;flex-direction:column;align-items:center;gap:5px;' +
+    'border:none;background:none;cursor:pointer;padding:6px 2px;' +
+    '-webkit-tap-highlight-color:transparent;touch-action:manipulation}}' +
+    '.fort-ico{{width:50px;height:50px;border-radius:14px;display:flex;' +
+    'align-items:center;justify-content:center;flex-shrink:0}}' +
+    '.fort-btn span{{font-size:10px;color:#444;font-weight:600;text-align:center;line-height:1.3;word-break:keep-all}}' +
+    '.fort-cancel{{display:block;width:100%;background:#f3f4f6;border:none;' +
+    'border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:#333;' +
+    'cursor:pointer;-webkit-tap-highlight-color:transparent}}';
+  document.head.appendChild(css);
+
+  /* ── 바텀시트 DOM 생성 ── */
+  var ov = document.createElement('div');
+  ov.id = '__fort_ov';
+  ov.className = 'fort-ov';
+  ov.innerHTML =
+    '<div class="fort-sh" id="__fort_sh">' +
+      '<div class="fort-ttl">공유하기</div>' +
+      '<div class="fort-grid">' +
+
+        /* 카카오톡 */
+        '<button class="fort-btn" id="__fb_kk">' +
+          '<div class="fort-ico" style="background:#FEE500">' +
+            '<svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E">' +
+              '<path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27' +
+              'l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41' +
+              'C22 6.477 17.523 3 12 3z"/>' +
+            '</svg>' +
+          '</div><span>카카오톡</span>' +
+        '</button>' +
+
+        /* 네이버밴드 */
+        '<button class="fort-btn" id="__fb_bd">' +
+          '<div class="fort-ico" style="background:#03C75A">' +
+            '<svg width="26" height="26" viewBox="0 0 40 40" fill="#fff">' +
+              '<rect x="4" y="4" width="32" height="32" rx="8"/>' +
+              '<rect x="11" y="12" width="6" height="16" fill="#03C75A"/>' +
+              '<rect x="23" y="12" width="6" height="16" fill="#03C75A"/>' +
+            '</svg>' +
+          '</div><span>네이버밴드</span>' +
+        '</button>' +
+
+        /* 쓰레드 */
+        '<button class="fort-btn" id="__fb_th">' +
+          '<div class="fort-ico" style="background:#000">' +
+            '<svg width="22" height="22" viewBox="0 0 192 192" fill="#fff">' +
+              '<path d="M141.537 88.988a66.667 66.667 0 00-2.518-1.143' +
+              'c-1.482-27.307-16.403-42.94-41.457-43.1h-.34' +
+              'c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452' +
+              'c5.73-8.695 14.724-10.548 21.348-10.548h.229' +
+              'c8.249.053 14.474 2.452 18.503 7.129' +
+              'c2.932 3.405 4.893 8.111 5.864 14.05' +
+              'c-7.314-1.243-15.224-1.626-23.68-1.14' +
+              'c-23.82 1.371-39.134 15.264-38.105 34.568' +
+              'c.522 9.792 5.4 18.216 13.735 23.719' +
+              'c7.047 4.652 16.124 6.927 25.557 6.412' +
+              'c12.458-.683 22.231-5.436 29.049-14.127' +
+              'c5.178-6.6 8.453-15.153 9.899-25.93' +
+              'c5.937 3.583 10.337 8.298 12.767 13.966' +
+              'c4.132 9.635 4.373 25.468-8.546 38.376' +
+              'c-11.319 11.308-24.925 16.2-45.488 16.351' +
+              'c-22.809-.169-40.06-7.484-51.275-21.742' +
+              'C88.809 149.438 83 132.938 82.432 112h-16.57' +
+              'c.6 24.74 8.355 44.742 22.637 57.967' +
+              'C101.243 182.022 121.22 190.169 144 190.351l.402-.002' +
+              'c24.203-.172 42.426-6.856 56.189-20.6' +
+              'c18.386-18.366 17.861-41.25 11.755-55.348' +
+              'c-4.325-10.083-12.754-18.279-26.809-23.413z"/>' +
+            '</svg>' +
+          '</div><span>쓰레드</span>' +
+        '</button>' +
+
+        /* 인스타그램 */
+        '<button class="fort-btn" id="__fb_ig">' +
+          '<div class="fort-ico" style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)">' +
+            '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">' +
+              '<rect x="2" y="2" width="20" height="20" rx="5"/>' +
+              '<circle cx="12" cy="12" r="4.5"/>' +
+              '<circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/>' +
+            '</svg>' +
+          '</div><span>인스타그램</span>' +
+        '</button>' +
+
+        /* URL복사 */
+        '<button class="fort-btn" id="__fb_cp">' +
+          '<div class="fort-ico" style="background:#6b7280">' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' +
+              '<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>' +
+              '<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>' +
+            '</svg>' +
+          '</div><span>URL 복사</span>' +
+        '</button>' +
+
+      '</div>' +
+      '<button class="fort-cancel" id="__fb_cancel">취소</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+
+  /* ── 닫기 ── */
+  function _close() {{
+    ov.classList.remove('on');
+    document.body.style.overflow = '';
   }}
-}}
-function sheetBand() {{
-  /* 네이버 밴드 공유 */
-  var url = 'https://band.us/plugin/share?body=' + encodeURIComponent(document.title + '\n' + location.href)
-    + '&route=' + encodeURIComponent(location.href);
-  window.open(url, '_blank', 'width=600,height=600');
-}}
-function sheetThreads() {{
-  /* 쓰레드 공유 — 웹 공유 URL */
-  var url = 'https://www.threads.net/intent/post?text=' + encodeURIComponent(document.title + '\n' + location.href);
-  window.open(url, '_blank', 'width=600,height=600');
-}}
-function sheetInstagram(cardId, fname, sheetId) {{
-  /* 인스타그램은 웹 직접 공유 불가 → 이미지 저장 후 앱에서 업로드 안내 */
-  closeShareSheet(sheetId);
-  saveFortuneCard(cardId, fname);
-  setTimeout(function() {{
-    alert('📸 이미지가 저장되었습니다!\\n인스타그램 앱에서 이미지를 불러와 스토리/피드에 올려주세요 📲');
-  }}, 1500);
-}}
-function sheetCopy(sheetId) {{
-  var url = location.href;
-  if (navigator.clipboard) {{
-    navigator.clipboard.writeText(url).then(function() {{
-      closeShareSheet(sheetId);
-      alert('✅ 링크가 복사되었습니다!');
-    }});
-  }} else {{
-    var ta = document.createElement('textarea');
-    ta.value = url;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    closeShareSheet(sheetId);
-    alert('✅ 링크가 복사되었습니다!');
+  ov.addEventListener('click', function(e){{ if(e.target===ov) _close(); }});
+  document.getElementById('__fb_cancel').addEventListener('click', _close);
+
+  /* ── 공유 액션 ── */
+  function _open(url, w, h) {{
+    window.open(url, '_blank', 'width='+w+',height='+h);
+    _close();
   }}
-}}
+  document.getElementById('__fb_kk').addEventListener('click', function() {{
+    _open('https://story.kakao.com/share?url='+encodeURIComponent(location.href), 600, 500);
+  }});
+  document.getElementById('__fb_bd').addEventListener('click', function() {{
+    _open('https://band.us/plugin/share?body='+encodeURIComponent(document.title+'\n'+location.href)+'&route='+encodeURIComponent(location.href), 600, 600);
+  }});
+  document.getElementById('__fb_th').addEventListener('click', function() {{
+    _open('https://www.threads.net/intent/post?text='+encodeURIComponent(document.title+'\n'+location.href), 600, 600);
+  }});
+  document.getElementById('__fb_ig').addEventListener('click', function() {{
+    var cid=window.__fort_cid, fn=window.__fort_fn;
+    _close();
+    if(typeof saveFortuneCard==='function') saveFortuneCard(cid, fn);
+    setTimeout(function(){{ alert('📸 이미지 저장됨!\n인스타그램 앱에서 올려주세요 📲'); }}, 1500);
+  }});
+  document.getElementById('__fb_cp').addEventListener('click', function() {{
+    var url=location.href;
+    function done(){{ _close(); alert('✅ 링크가 복사되었습니다!'); }}
+    if(navigator.clipboard) {{ navigator.clipboard.writeText(url).then(done).catch(function(){{ fb(url); done(); }}); }}
+    else {{ fb(url); done(); }}
+    function fb(t) {{
+      var x=document.createElement('textarea'); x.value=t;
+      x.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+      document.body.appendChild(x); x.focus(); x.select();
+      document.execCommand('copy'); document.body.removeChild(x);
+    }}
+  }});
+
+  /* ── 열기 전역 함수 ── */
+  window.fortOpenSheet = function(cardId, fname) {{
+    window.__fort_cid = cardId;
+    window.__fort_fn  = fname;
+    ov.classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }};
+  window.fortCloseSheet = _close;
+}})();
 </script>"""
-
-
 def site_link():
     return """
 <div class="game-link">
