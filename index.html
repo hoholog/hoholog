@@ -107,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260406011603_0175c0dd">
+  <meta name="build-version" content="20260406080137_8d3b4416">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -866,7 +866,6 @@
                     </div>
                     <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;margin-bottom:10px">${bodyHtml}</div>
                     ${wdHtml}
-                    <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${sub}</div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('${cardId}','${saveLabel}')"
@@ -889,7 +888,6 @@
                     </div>
                     <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${preview}</div>
                     ${isWeekly ? '' : renderScoreCard(info.score||null)}
-                    <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${dateSub}</div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
                     <button onclick="saveCard('${cardId}','${saveLabel}')"
@@ -919,7 +917,6 @@
                     <div style="color:#fde68a;font-size:13px;margin-top:4px">${rating}</div>
                 </div>
                 <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.85;margin-bottom:12px">${fortune}</div>
-                <div style="text-align:center;margin-top:10px;font-size:11px;opacity:.5">todayhoroscopelaboratory.blogspot.com · ${todayStr()}</div>
             </div>
             <div style="display:flex;gap:10px;margin-top:12px;justify-content:center">
                 <button onclick="saveCard('${cardId}','${saveLabel}')"
@@ -1112,16 +1109,52 @@
             const svgEl = document.getElementById('svg-' + elId);
             const el    = svgEl || document.getElementById(elId);
             if(!el){ alert('저장할 부적이 없습니다'); return; }
+            const rect = el.getBoundingClientRect();
             html2canvas(el, {
                 scale: 4,
-                backgroundColor: '#f5c518',
+                backgroundColor: null,
                 useCORS: true,
                 logging: false,
-                removeContainer: true
+                removeContainer: true,
+                x: 0,
+                y: 0,
+                scrollX: 0,
+                scrollY: 0,
+                width: rect.width,
+                height: rect.height,
+                windowWidth: rect.width,
+                windowHeight: rect.height
             }).then(canvas=>{
+                // 실제 콘텐츠 영역만 크롭 (여백 제거)
+                const ctx = canvas.getContext('2d');
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                let top = canvas.height, bottom = 0, left = canvas.width, right = 0;
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const alpha = data[(y * canvas.width + x) * 4 + 3];
+                        if (alpha > 10) {
+                            if (y < top) top = y;
+                            if (y > bottom) bottom = y;
+                            if (x < left) left = x;
+                            if (x > right) right = x;
+                        }
+                    }
+                }
+                const pad = 8;
+                top    = Math.max(0, top - pad);
+                bottom = Math.min(canvas.height - 1, bottom + pad);
+                left   = Math.max(0, left - pad);
+                right  = Math.min(canvas.width - 1, right + pad);
+                const cropW = right - left + 1;
+                const cropH = bottom - top + 1;
+                const out = document.createElement('canvas');
+                out.width  = cropW;
+                out.height = cropH;
+                out.getContext('2d').drawImage(canvas, left, top, cropW, cropH, 0, 0, cropW, cropH);
                 const a = document.createElement('a');
                 a.download = label + '.png';
-                a.href = canvas.toDataURL('image/png');
+                a.href = out.toDataURL('image/png');
                 a.click();
             });
         }
@@ -1131,7 +1164,7 @@
             const svgEl = document.getElementById('svg-' + elId);
             const el    = svgEl || document.getElementById(elId);
             if(!el){ alert('저장할 부적이 없습니다'); return; }
-            html2canvas(el, {scale:4, backgroundColor:'#f5c518', useCORS:true, logging:false}).then(srcCanvas=>{
+            const rect2=el.getBoundingClientRect();html2canvas(el,{scale:4,backgroundColor:null,useCORS:true,logging:false,x:0,y:0,scrollX:0,scrollY:0,width:rect2.width,height:rect2.height,windowWidth:rect2.width,windowHeight:rect2.height}).then(rawCanvas=>{const ri=rawCanvas.getContext('2d').getImageData(0,0,rawCanvas.width,rawCanvas.height).data;let rt=rawCanvas.height,rb=0,rl=rawCanvas.width,rr=0;for(let y=0;y<rawCanvas.height;y++)for(let x=0;x<rawCanvas.width;x++){if(ri[(y*rawCanvas.width+x)*4+3]>10){if(y<rt)rt=y;if(y>rb)rb=y;if(x<rl)rl=x;if(x>rr)rr=x;}}const rp=4,rw=Math.max(1,rr-rl+1+rp*2),rh=Math.max(1,rb-rt+1+rp*2);const srcCanvas=document.createElement('canvas');srcCanvas.width=rw;srcCanvas.height=rh;srcCanvas.getContext('2d').drawImage(rawCanvas,Math.max(0,rl-rp),Math.max(0,rt-rp),rw,rh,0,0,rw,rh);
                 const W = 1080, H = 1920;
                 const dst = document.createElement('canvas');
                 dst.width = W; dst.height = H;
@@ -1167,7 +1200,6 @@
                 ctx.restore();
                 ctx.fillStyle = '#92400e';
                 ctx.font = '28px serif';
-                ctx.fillText('todayhoroscopelaboratory.blogspot.com', W/2, H - 80);
                 ctx.fillStyle = '#fde68a';
                 ctx.font = '24px serif';
                 ctx.fillText('행운이 함께하길 기원합니다 ✨', W/2, H - 45);
@@ -1219,7 +1251,6 @@
                 </div>
                 <div style="background:rgba(255,255,255,.15);border-radius:12px;padding:16px;font-size:14px;line-height:1.8;margin-bottom:14px">${fortune}</div>
                 ${scoreCardHtml()}
-                <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${todayStr()}</div>
             </div>`;
         }
 
@@ -1491,7 +1522,6 @@
                         ${timeSection}
                         ${sectionHtml}
 
-                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${todayStr()}</div>
                     </div>
                     <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap">
                         <button onclick="saveCard('today-card','운세_${year}${month}${day}_${tab}')"
@@ -2411,7 +2441,6 @@
             + '<div class="fcard" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:18px;padding:20px">'
                 + '<div style="font-weight:900;font-size:15px;margin-bottom:14px;text-align:center">✨ 종합 사주 풀이</div>'
                 + summary.map(function(s){ return '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;line-height:1.8">' + s + '</div>'; }).join('')
-                + '<div style="text-align:center;margin-top:10px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ' + todayStr() + '</div>'
             + '</div>'
 
             // 11. 토정비결 (접기/펼치기)
@@ -4037,7 +4066,6 @@
                         </div>
                         <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-bottom:14px;font-size:14px;line-height:1.85">${intro}</div>
                         <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px">${dayRows}</div>
-                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${weekRange()}</div>
                     </div>
                     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
                         <button onclick="saveCard('zwcard','별자리주간운세_${kr}')"
@@ -4074,7 +4102,6 @@
                         <div style="opacity:.8;font-size:13px">${monthStr()}</div>
                         <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:14px;margin-top:14px;font-size:14px;line-height:1.8">${rnd(MONTHLY_MSGS)}</div>
                         <div style="margin-top:14px">${periodRows}</div>
-                        <div style="text-align:center;margin-top:12px;font-size:11px;opacity:.6">todayhoroscopelaboratory.blogspot.com · ${monthStr()}</div>
                     </div>
                     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
                         <button onclick="saveCard('cmcard','띠월간운세_${kr}')"
