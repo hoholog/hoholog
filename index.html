@@ -107,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260406111428_066c2c4a">
+  <meta name="build-version" content="20260406112903_83206a11">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -142,6 +142,7 @@
                 <div class="hidden md:flex space-x-10">
                     <button onclick="navigateTo('index')" class="text-slate-600 hover:text-indigo-600 font-bold transition">전체게임</button>
                     <button onclick="navigateTo('about')" class="text-slate-600 hover:text-indigo-600 font-bold transition">소개</button>
+                                    <button onclick="navigateTo('partner')" class="text-slate-600 hover:text-indigo-600 font-bold transition">파트너</button>
                     <button onclick="navigateTo('blog')" class="text-slate-600 hover:text-indigo-600 font-bold transition">커뮤니티</button>
                     <button onclick="navigateTo('fortune')" class="text-purple-600 hover:text-purple-800 font-bold transition">운세</button>
                     <button onclick="navigateTo('guide')" class="text-slate-600 hover:text-indigo-600 font-bold transition">고객지원</button>
@@ -162,6 +163,7 @@
             <div class="px-4 py-4 space-y-1">
                 <button onclick="mobileNav('index')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">전체게임</button>
                 <button onclick="mobileNav('about')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">소개</button>
+                <button onclick="mobileNav('partner')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">파트너</button>
                 <button onclick="mobileNav('blog')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">커뮤니티</button>
                 <button onclick="mobileNav('fortune')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-purple-600 hover:bg-purple-50 transition">운세</button>
                 <button onclick="mobileNav('guide')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">고객지원</button>
@@ -433,8 +435,38 @@
             }
         }
 
-        function navigateTo(page) {
+        async function navigateTo(page) {
             const contentDiv = document.getElementById('content');
+
+            // ── partner: partner.html을 fetch해서 <main> 영역만 삽입 ──
+            if (page === 'partner') {
+                contentDiv.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-32 text-slate-400">
+                        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                        <p class="font-bold text-sm">파트너 페이지 불러오는 중...</p>
+                    </div>`;
+                window.location.hash = page;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                try {
+                    const r = await fetch('partner.html', { cache: 'no-store' });
+                    const html = await r.text();
+                    // partner.html의 <main>...</main> 내용만 추출
+                    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+                    contentDiv.innerHTML = mainMatch
+                        ? `<div class="page-transition">${mainMatch[1]}</div>`
+                        : `<div class="page-transition py-20 text-center text-slate-400">파트너 페이지를 불러올 수 없습니다.</div>`;
+                    // partner.html의 인라인 <script> 실행
+                    contentDiv.querySelectorAll('script').forEach(oldScript => {
+                        const s = document.createElement('script');
+                        s.textContent = oldScript.textContent;
+                        document.body.appendChild(s);
+                    });
+                } catch(e) {
+                    contentDiv.innerHTML = `<div class="page-transition py-20 text-center text-slate-400">파트너 페이지를 불러올 수 없습니다.</div>`;
+                }
+                return;
+            }
+
             if (!pages[page]) return;
             // 매번 DOM 새로 생성 → 메뉴/H마크 재클릭 시 항상 fresh fetch
             contentDiv.innerHTML = pages[page];
@@ -442,7 +474,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (page === 'fortune') showFortune('today');
             if (page === 'blog') bbsInit();
-
         }
 
         function toggleMenu() {
@@ -474,6 +505,7 @@
 
         window.onload = () => {
             const hash = window.location.hash.replace('#', '');
+            if (hash === 'partner') { navigateTo('partner'); return; }
             navigateTo(pages[hash] ? hash : 'index');
         };
 
@@ -761,17 +793,9 @@
 
         // ── 타입 3: 별자리 주간운세 ──
         // 제목: "양자리 2026년 03월 주간운세 03/17 ~ 03/23"
-        // HTML: fortune-card > fc-text div (create_post.py build_zodiac_weekly_post 구조)
+        // HTML: <div class="card"><span class="badge">...</span><p style="line-height:1.9">{본문}</p>...
         function parseFortune_Weekly(raw) {
-            // 1순위: fortune-card 안의 fc-text div (create_post.py 현재 구조)
-            const fcM = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
-            if (fcM) {
-                const text = fcM[1]
-                    .replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')
-                    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-                if (text) return text;
-            }
-            // 2순위: .card 안의 <p> 태그 (구버전 호환)
+            // 첫 번째 .card 안의 모든 <p> 태그 전체 수집 (기존: 첫 p만 가져오던 버그 수정)
             const cardM = raw.match(/<div[^>]*class="card"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|$)/);
             const scope = cardM ? cardM[1] : raw;
             const parts = [...scope.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
@@ -961,22 +985,14 @@
         // ── Blogger 포스트 fetch ──
         // orderBy=updated → 최신 글부터 반환, maxResults=40으로 여유있게 조회
         async function fetchByLabelAndTitle(label, keywords) {
-            // 1단계: 제목만 가져와서 키워드 매칭 (content 잘림 방지)
-            const urlTitles = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
+            const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=50&orderBy=published'
-                + '&fields=items(id,title,url,published)';
+                + '&maxResults=40&orderBy=updated'
+                + '&fields=items(title,url,published,content)';
             try {
-                const r = await fetch(urlTitles, {cache: 'no-store'});
+                const r = await fetch(url, {cache: 'no-store'});
                 const d = await r.json();
-                const matched = (d.items||[]).find(p => keywords.every(k => p.title.includes(k)));
-                if (!matched) return null;
-                // 2단계: 매칭된 포스트의 content만 별도 fetch (잘림 없이 전체 수신)
-                const urlPost = BASE_URL + '/blogs/' + BLOG_ID + '/posts/' + matched.id
-                    + '?key=' + API_KEY + '&fields=title,url,published,content';
-                const r2 = await fetch(urlPost, {cache: 'no-store'});
-                const d2 = await r2.json();
-                return d2 || null;
+                return (d.items||[]).find(p => keywords.every(k => p.title.includes(k))) || null;
             } catch(e) { return null; }
         }
 
