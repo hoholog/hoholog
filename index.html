@@ -147,7 +147,7 @@
                     <button onclick="navigateTo('guide')" class="text-slate-600 hover:text-indigo-600 font-bold transition">고객지원</button>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="navigateTo('contact')" class="hidden md:block bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">문의</button>
+
                     <!-- 햄버거 버튼 (모바일) -->
                     <button id="menu-btn" onclick="toggleMenu()" class="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 rounded-xl hover:bg-slate-100 transition">
                         <span id="bar1" class="block w-6 h-0.5 bg-slate-700 transition-all duration-300"></span>
@@ -166,7 +166,7 @@
                 <button onclick="mobileNav('blog')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">커뮤니티</button>
                 <button onclick="mobileNav('fortune')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-purple-600 hover:bg-purple-50 transition">운세</button>
                 <button onclick="mobileNav('guide')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">고객지원</button>
-                <button onclick="mobileNav('contact')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">문의</button>
+
                 <div class="border-t my-2"></div>
                 <button onclick="mobileNav('privacy')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition text-sm">개인정보처리방침</button>
                 <button onclick="mobileNav('guide')" class="w-full text-left px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition text-sm">이용 가이드</button>
@@ -439,16 +439,30 @@
 
             // ── partner: partner.html을 fetch해서 <main> 영역만 삽입 ──
             if (page === 'partner') {
+                contentDiv.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-32 text-slate-400">
+                        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                        <p class="font-bold text-sm">파트너 페이지 불러오는 중...</p>
+                    </div>`;
                 window.location.hash = page;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                contentDiv.innerHTML = `<div class="page-transition" style="margin: -2rem -1rem 0;">
-                    <iframe
-                        src="partner.html"
-                        style="width:100%; border:none; display:block; min-height:100vh;"
-                        onload="this.style.height = this.contentDocument.body.scrollHeight + 'px';"
-                        title="파트너 페이지"
-                    ></iframe>
-                </div>`;
+                try {
+                    const r = await fetch('partner.html', { cache: 'no-store' });
+                    const html = await r.text();
+                    // partner.html의 <main>...</main> 내용만 추출
+                    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+                    contentDiv.innerHTML = mainMatch
+                        ? `<div class="page-transition">${mainMatch[1]}</div>`
+                        : `<div class="page-transition py-20 text-center text-slate-400">파트너 페이지를 불러올 수 없습니다.</div>`;
+                    // partner.html의 인라인 <script> 실행
+                    contentDiv.querySelectorAll('script').forEach(oldScript => {
+                        const s = document.createElement('script');
+                        s.textContent = oldScript.textContent;
+                        document.body.appendChild(s);
+                    });
+                } catch(e) {
+                    contentDiv.innerHTML = `<div class="page-transition py-20 text-center text-slate-400">파트너 페이지를 불러올 수 없습니다.</div>`;
+                }
                 return;
             }
 
