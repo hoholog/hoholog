@@ -107,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260408124133_2fa8645a">
+  <meta name="build-version" content="20260408124735_48fe2b55">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -448,7 +448,7 @@
                 window.location.hash = page;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 try {
-                   const r = await fetch('/partner.html', { cache: 'no-store' });
+                   const r = await fetch('./partner.html', { cache: 'no-store' });
                     const html = await r.text();
                     // partner.html의 <main>...</main> 내용만 추출
                     const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
