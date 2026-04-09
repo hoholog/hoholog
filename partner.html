@@ -276,9 +276,10 @@ function pSubmit() {
 
 /* 페이드인 */
 (function(){
+    // index.html에서 삽입된 경우 이미 visible 처리됨; 독립 실행 시 대비
     var ob = new IntersectionObserver(function(en){
         en.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('visible'); });
-    },{threshold:0.08});
+    },{threshold:0, rootMargin:'0px 0px -10px 0px'});
     document.querySelectorAll('.p-fade').forEach(function(el){ ob.observe(el); });
 })();
 </script>

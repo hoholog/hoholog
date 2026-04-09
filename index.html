@@ -107,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260409123558_7161621d">
+  <meta name="build-version" content="20260409124215_03bab8bb">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -460,6 +460,13 @@
                         const s = document.createElement('script');
                         s.textContent = oldScript.textContent;
                         document.body.appendChild(s);
+                    });
+                    // .p-fade 요소들: IntersectionObserver 대신 즉시 visible 적용
+                    // (innerHTML 삽입 직후엔 뷰포트 감지가 불안정하므로 강제 처리)
+                    requestAnimationFrame(() => {
+                        contentDiv.querySelectorAll('.p-fade').forEach(el => {
+                            el.classList.add('visible');
+                        });
                     });
                 } catch(e) {
                     contentDiv.innerHTML = `<div class="page-transition py-20 text-center text-slate-400">파트너 페이지를 불러올 수 없습니다.</div>`;
