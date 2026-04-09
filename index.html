@@ -71,7 +71,7 @@
             if (!force && now - _lastChecked < 10000) return;
             _lastChecked = now;
 
-            fetch('/version.json?_=' + now, {
+            fetch('./version.json?_=' + now, {
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
             })
