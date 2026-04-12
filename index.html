@@ -184,12 +184,7 @@
     <script>
         fetch('./footer.html')
             .then(r => r.text())
-            .then(html => {
-                document.getElementById('footer-placeholder').outerHTML = html;
-                var s = document.createElement('script');
-                s.textContent = 'function footerNav(page){if(typeof navigateTo==="function"){navigateTo(page);window.scrollTo({top:0,behavior:"smooth"});}else{window.location.href="index.html#"+page;}}';
-                document.body.appendChild(s);
-            });
+            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
     </script>
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -453,6 +448,16 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (page === 'fortune') showFortune('today');
             if (page === 'blog') bbsInit();
+        }
+
+        // 푸터 사이트맵 링크 — index에서는 SPA 이동, 외부 파일에서는 href 이동
+        function footerNav(page) {
+            if (typeof navigateTo === 'function') {
+                navigateTo(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                window.location.href = 'index.html#' + page;
+            }
         }
 
         function toggleMenu() {
