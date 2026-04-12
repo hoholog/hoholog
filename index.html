@@ -184,7 +184,12 @@
     <script>
         fetch('./footer.html')
             .then(r => r.text())
-            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
+            .then(html => {
+                document.getElementById('footer-placeholder').outerHTML = html;
+                var s = document.createElement('script');
+                s.textContent = 'function footerNav(page){if(typeof navigateTo==="function"){navigateTo(page);window.scrollTo({top:0,behavior:"smooth"});}else{window.location.href="index.html#"+page;}}';
+                document.body.appendChild(s);
+            });
     </script>
 
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -449,14 +454,6 @@
             if (page === 'fortune') showFortune('today');
             if (page === 'blog') bbsInit();
         }
-
-        // 외부 파일(game1, game2, partner 등)에서 index.html#섹션 으로 넘어올 때 자동 이동
-        window.addEventListener('load', function() {
-            const hash = window.location.hash.replace('#', '');
-            if (hash && typeof navigateTo === 'function') {
-                navigateTo(hash);
-            }
-        });
 
         function toggleMenu() {
             const menu = document.getElementById('mobile-menu');
