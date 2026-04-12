@@ -463,15 +463,6 @@
 </script>
 
 
-    <div id="footer-placeholder"></div>
-    <script>
-        fetch('./footer.html')
-            .then(r => r.text())
-            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
-    </script>
-
-</body>
-</html>
                     <!-- ↑↑↑ 게임 소스 삽입 끝 ↑↑↑ -->
 </div><!-- /game-wrapper-outer -->
                 </div>
@@ -560,3 +551,12 @@
         </div>
     </main>
 
+    <div id="footer-placeholder"></div>
+    <script>
+        fetch('./footer.html')
+            .then(r => r.text())
+            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
+    </script>
+
+</body>
+</html>
