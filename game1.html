@@ -3649,7 +3649,12 @@
     <script>
         fetch('./footer.html')
             .then(r => r.text())
-            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
+            .then(html => {
+                document.getElementById('footer-placeholder').outerHTML = html;
+                var s = document.createElement('script');
+                s.textContent = 'function footerNav(page){if(typeof navigateTo==="function"){navigateTo(page);window.scrollTo({top:0,behavior:"smooth"});}else{window.location.href="index.html#"+page;}}';
+                document.body.appendChild(s);
+            });
     </script>
 
 </body>
