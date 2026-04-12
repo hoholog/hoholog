@@ -462,6 +462,14 @@
     });
 </script>
 
+
+    <div id="footer-placeholder"></div>
+    <script>
+        fetch('./footer.html')
+            .then(r => r.text())
+            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
+    </script>
+
 </body>
 </html>
                     <!-- ↑↑↑ 게임 소스 삽입 끝 ↑↑↑ -->
@@ -552,19 +560,3 @@
         </div>
     </main>
 
-    <footer class="bg-slate-900 text-slate-400 py-16">
-        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left">
-            <div class="col-span-1 md:col-span-2">
-                <h4 class="text-white font-black text-2xl mb-6 uppercase tracking-wider">hohologgame</h4>
-                <p class="text-lg leading-relaxed mb-6">로그인 없이 즐기는 무한한 즐거움, hohologgame은 웹 표준 기술을 이용한 고성능 브라우저 게임 플랫폼입니다.</p>
-            </div>
-            <div>
-                <h4 class="text-white font-bold mb-6">사이트 맵</h4>
-                <ul class="space-y-3 font-medium">
-                    <li><a href="index.html" class="hover:text-white transition">홈으로</a></li>
-                    <li><a href="index.html#about" class="hover:text-white transition">플랫폼 소개</a></li>
-                    <li><a href="index.html#privacy" class="hover:text-white transition">개인정보처리방침</a></li>
-                </ul>
-            </div>
-
-  
