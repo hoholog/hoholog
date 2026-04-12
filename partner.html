@@ -306,5 +306,13 @@ function pSubmit() {
     document.querySelectorAll('.p-fade').forEach(function(el){ ob.observe(el); });
 })();
 </script>
+
+    <div id="footer-placeholder"></div>
+    <script>
+        fetch('./footer.html')
+            .then(r => r.text())
+            .then(html => { document.getElementById('footer-placeholder').outerHTML = html; });
+    </script>
+
 </body>
 </html>
