@@ -3657,5 +3657,14 @@
             });
     </script>
 
+    <script>
+    // 게임 영역(game-wrapper)에서만 우클릭 차단 - AdSense 정책 준수
+    (function() {
+        var gameEl = document.getElementById('game-wrapper') || document.getElementById('game-view');
+        if (gameEl) {
+            gameEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        }
+    })();
+    </script>
 </body>
 </html>

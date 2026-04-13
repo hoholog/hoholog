@@ -9,13 +9,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ═══════════════════════════════════════════════════════════
-         Google AdSense 활성화 순서
-         1. ca-pub-XXXXXXXXXXXXXXXXX → 실제 Publisher ID 교체
-         2. ADS_CLIENT 상수(JS 하단)도 동일한 Publisher ID로 교체
-         3. 각 getAdSlotHTML() 호출의 SLOT-XXX-XX → 실제 슬롯 ID 교체
-         4. 아래 주석 해제
-         ══════════════════════════════════════════════════════════ -->
+    <!-- ═══ Google AdSense (Publisher ID 입력 후 활성화) ═══ -->
     <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
     <style>
         /* ── 로딩 중 광고 슬롯 ── */
@@ -59,29 +53,6 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
-        /* ── AdSense 광고 슬롯 공통 스타일 ── */
-        .ad-slot-wrap {
-            width: 100%;
-            max-width: 728px;
-            margin: 0 auto;
-            text-align: center;
-            padding: 8px 0;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .ad-slot-label {
-            font-size: 10px;
-            color: #94a3b8;
-            letter-spacing: .08em;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-        /* 모바일: 슬롯 높이 최소 확보 */
-        @media (max-width: 640px) {
-            .ad-slot-wrap { max-width: 100%; border-radius: 8px; }
-        }
         /* ── 버튼 로딩 스피너 ── */
         @keyframes btnSpin { to { transform: rotate(360deg); } }
         .btn-loading { position:relative; pointer-events:none; opacity:.75; }
@@ -136,7 +107,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260413011901_d8bad824">
+  <meta name="build-version" content="20260413012509_df9e566e">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -271,7 +242,6 @@
                 + '<p class="text-xl text-slate-500">별도의 설치 없이 브라우저에서 즉시 실행되는 프리미엄 게임</p>'
                 + '</div>'
                 + '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">' + cards + '</div>'
-                + '<div class="mt-10">' + getAdSlotHTML('SLOT-INDEX-01') + '</div>'
                 + '</div>';
         }
 
@@ -400,8 +370,6 @@
             `,
                         fortune: `
                 <div class="page-transition">
-                    <div class="mb-6" id="ad-fortune-top"></div>
-                    <script>if(typeof getAdSlotHTML==='function') document.getElementById('ad-fortune-top').innerHTML = getAdSlotHTML('SLOT-FORTUNE-TOP');<\/script>
                     <div class="mb-8" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px">
                         <button onclick="showFortune('today')"       id="tab-today"       class="ftab active-ftab px-4 py-2 rounded-2xl font-bold transition text-sm whitespace-nowrap">오늘운세</button>
                         <button onclick="showFortune('saju')"        id="tab-saju"        class="ftab px-4 py-2 rounded-2xl font-bold transition text-sm whitespace-nowrap">사주</button>
@@ -433,8 +401,6 @@
                             <p class="text-slate-600 text-lg">전문적인 피드백이나 비즈니스 문의는 '파트너' 메뉴를 이용해 주세요.</p>
                         </div>
                     </div>
-                    <div class="mt-10" id="ad-guide"></div>
-                    <script>document.getElementById('ad-guide').innerHTML = getAdSlotHTML('SLOT-GUIDE-01');<\/script>
                 </div>
             `,
             contact: `
@@ -732,33 +698,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             if (page === 'fortune') showFortune('today');
             if (page === 'blog') bbsInit();
-
-            // ── SPA 광고 재초기화 ──
-            // 페이지 전환 후 삽입된 ins 태그에 push 호출 (100ms 지연으로 DOM 렌더 확보)
-            setTimeout(pushAds, 100);
-
-            // ── 운세 페이지: 결과 영역 아래 광고 슬롯 동적 삽입 헬퍼 ──
-            if (page === 'fortune') {
-                // fortune-content에 결과가 채워진 후 슬롯 추가 (MutationObserver 활용)
-                const _fc = document.getElementById('fortune-content');
-                if (_fc) {
-                    const _obs = new MutationObserver(function() {
-                        if (_fc.innerHTML.length > 100) {
-                            _obs.disconnect();
-                            let _adWrap = document.getElementById('ad-fortune-result');
-                            if (!_adWrap) {
-                                _adWrap = document.createElement('div');
-                                _adWrap.id = 'ad-fortune-result';
-                                _adWrap.className = 'mt-8';
-                                _adWrap.innerHTML = getAdSlotHTML('SLOT-FORTUNE-RESULT');
-                                _fc.parentNode.insertBefore(_adWrap, _fc.nextSibling);
-                                setTimeout(pushAds, 100);
-                            }
-                        }
-                    });
-                    _obs.observe(_fc, { childList: true, subtree: true });
-                }
-            }
         }
 
         // 푸터 사이트맵 링크 — index에서는 SPA 이동, 외부 파일에서는 href 이동
@@ -5724,39 +5663,20 @@
     <script>
     /* ── 버튼 로딩 유틸 ── */
 
-    /* ══════════════════════════════════════════
-       광고 슬롯 유틸리티
-       ── SLOT_ID는 페이지별로 다르게 발급받아 사용 ──
-       ══════════════════════════════════════════ */
-    const ADS_CLIENT = 'ca-pub-XXXXXXXXXXXXXXXXX'; // Publisher ID 입력
-
-    /* 광고 슬롯 HTML 생성 (slotId: 슬롯별 data-ad-slot 값) */
-    function getAdSlotHTML(slotId, format) {
-        format = format || 'auto';
-        return `<div class="ad-slot-wrap">
-            <div class="ad-slot-label">광고</div>
-            <ins class="adsbygoogle"
-                 style="display:block"
-                 data-ad-client="${ADS_CLIENT}"
-                 data-ad-slot="${slotId}"
-                 data-ad-format="${format}"
-                 data-full-width-responsive="true"></ins>
-        </div>`;
-    }
-
-    /* SPA 전용: DOM에 삽입된 ins 태그를 모두 push — navigateTo() 후 호출 */
-    function pushAds() {
-        try {
-            document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status])').forEach(function() {
-                (adsbygoogle = window.adsbygoogle || []).push({});
-            });
-        } catch(e) { /* AdSense 스크립트 미로드 시 무시 */ }
-    }
-
-    /* 로딩 대기 중 보여줄 자리 표시자 (실 광고 아님) */
+    /* ── 로딩 중 광고 슬롯 생성 ── */
     function getLoadingAdHTML() {
         return `<div class="loading-ad-slot">
             <div class="ad-label">AD</div>
+            <!-- 애드센스 활성화 시 아래 ins 태그의 주석 해제 후 Publisher ID·Slot ID 입력 -->
+            <!--
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXXX"
+                 data-ad-slot="XXXXXXXXXX"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});<\/script>
+            -->
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             <span style="color:#cbd5e1;font-size:11px">광고 영역</span>
             <span style="color:#e2e8f0;font-size:10px">애드센스 승인 후 자동 표시됩니다</span>
@@ -5780,8 +5700,16 @@
     }
     </script>
     <script>
-    // ── 보안 ──
-    document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
-    document.addEventListener('keydown', function(e){
-        if(e.key==='F12'){e.preventDefault();return false;}
-        if(e.ctrlKey &&
+    // ── 보안: 게임 캔버스 영역에서만 우클릭/개발자도구 차단 ──
+    // (전체 페이지 차단은 AdSense 정책 위반 소지 + UX 저하)
+
+    // 게임 페이지(game1.html, game2.html)는 별도 파일이므로 여기선 처리 불필요.
+    // index.html SPA 내에서는 게임이 iframe/별도 창으로 열리므로
+    // 아래 코드는 현재 아무 영향도 주지 않도록 제거합니다.
+
+    // ── 대신: 게임 iframe 내 캔버스에서만 우클릭 차단이 필요하다면
+    //    game1.html / game2.html 내부의 <canvas> 요소에 직접 아래를 추가하세요:
+    //    canvas.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+</body>
+</html>
