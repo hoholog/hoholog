@@ -641,53 +641,222 @@ def build_zodiac_post(z, today_str):
     return title, content, ["별자리운세", z['kr'], "운세"]
 
 
+# ─────────────────────────────────────────
+# 띠운세 SEO 개선 헬퍼
+# ─────────────────────────────────────────
+
+# 제목용 신호 키워드 (운세 지수 기반으로 선택)
+_SIGNAL_UP   = ["재물운 상승 신호", "금전운 상승 중", "운세 상승 흐름", "좋은 기운 상승", "행운 상승 감지"]
+_SIGNAL_WARN = ["오늘 주의 필요", "조심해야 할 타이밍", "신중함이 필요한 날", "주의 신호 감지", "오늘 한 발 물러서기"]
+_SIGNAL_REV  = ["반전의 하루", "예상 밖 반전 운세", "충격적 변화 예고", "오늘 반전 주목", "흐름이 바뀌는 날"]
+_SIGNAL_MID  = ["안정적인 하루", "균형 잡힌 운세", "차분한 에너지의 날", "평온한 기운 감지"]
+
+# 현실 디테일 문장 풀 (카테고리별)
+_DETAIL_MONEY_UP = [
+    "오늘 예상치 못한 소액 수입이 들어올 수 있습니다. 작은 금액이라도 놓치지 마세요.",
+    "오후 늦게 금전적 제안이 들어올 가능성이 있습니다. 충분히 검토 후 결정하세요.",
+    "지출보다 수입이 앞서는 하루입니다. 절약 습관을 유지하면 더 큰 효과가 납니다.",
+    "미뤘던 청구서나 환급금 확인이 오늘 도움이 됩니다.",
+]
+_DETAIL_MONEY_WARN = [
+    "오늘은 갑작스러운 지출이 생길 수 있습니다. 특히 오후 3시 이후 충동 구매를 주의하세요.",
+    "지인의 금전 요청에는 신중하게 대응하세요. 오늘은 빌려주는 것보다 아끼는 것이 현명합니다.",
+    "카드 결제나 자동이체 내역을 오늘 한 번 점검해 보는 것이 좋습니다.",
+    "투자나 재테크 관련 결정은 오늘보다 내일 이후로 미루는 것이 안전합니다.",
+]
+_DETAIL_HEALTH_UP = [
+    "오늘은 가벼운 스트레칭이나 산책이 에너지를 끌어올려 줍니다.",
+    "수분 섭취를 늘리면 오후 피로감이 크게 줄어들 것입니다.",
+    "잠자리에 들기 전 30분 일찍 누우면 내일 컨디션이 훨씬 좋아집니다.",
+]
+_DETAIL_HEALTH_WARN = [
+    "피로가 누적되기 쉬운 날입니다. 점심 식사 후 짧은 휴식을 꼭 챙기세요.",
+    "오늘은 과식이나 자극적인 음식을 피하면 소화 불편을 예방할 수 있습니다.",
+    "눈의 피로가 쌓일 수 있습니다. 스마트폰·모니터 사용을 1시간마다 잠시 멈춰 주세요.",
+]
+_DETAIL_LOVE_UP = [
+    "오늘 주변 사람에게 먼저 따뜻한 말 한마디를 건네면 관계가 깊어집니다.",
+    "소개나 만남 자리가 생긴다면 적극적으로 참여해 보세요. 좋은 인연이 될 수 있습니다.",
+]
+_DETAIL_LOVE_WARN = [
+    "오늘은 감정적으로 예민해질 수 있습니다. 중요한 대화는 감정이 가라앉은 저녁 이후로 미루세요.",
+    "가까운 사람과의 오해가 생길 수 있습니다. 말보다 먼저 상대 입장을 들어보세요.",
+]
+_DETAIL_CAUTION = [
+    "오늘은 서류, 계약, 보증 관련 사항은 꼼꼼히 재확인 후 진행하세요.",
+    "교통이나 이동 중 방심하지 말고, 특히 야간 귀가 시 안전에 주의하세요.",
+    "중요한 결정은 오늘보다 하루 이틀 여유를 두고 내리는 것이 유리합니다.",
+    "새로운 사람보다 기존의 신뢰할 수 있는 사람과 협력하는 것이 오늘은 더 안전합니다.",
+]
+
+def _pick(pool): return random.choice(pool)
+
+def _chinese_seo_title(c_kr, today_dot, total, money, health, love):
+    """운세 지수에 따라 신호 키워드가 포함된 SEO 제목 생성"""
+    avg = (total + money) / 2
+    # 어떤 신호를 쓸지 결정
+    if avg >= 80:
+        signal = _pick(_SIGNAL_UP)
+    elif avg <= 55:
+        signal = _pick(_SIGNAL_WARN)
+    elif abs(total - money) >= 30:          # 총운과 금전운 격차 크면 반전
+        signal = _pick(_SIGNAL_REV)
+    else:
+        signal = _pick(_SIGNAL_MID)
+
+    # 제목 패턴 풀
+    patterns = [
+        f"{c_kr} 오늘운세 ({today_dot}) – {signal} 확인",
+        f"{c_kr} {today_dot} 오늘 운세 | {signal}",
+        f"[{today_dot}] {c_kr} 오늘의 띠운세 — {signal}",
+        f"{c_kr} 운세 ({today_dot}) · {signal}",
+    ]
+    return random.choice(patterns), signal
+
+def _detail_sentences(total, money, health, love):
+    """운세 지수 기반 현실 디테일 문장 2~3개 선택"""
+    lines = []
+    if money >= 75:
+        lines.append(_pick(_DETAIL_MONEY_UP))
+    else:
+        lines.append(_pick(_DETAIL_MONEY_WARN))
+    if health >= 75:
+        lines.append(_pick(_DETAIL_HEALTH_UP))
+    else:
+        lines.append(_pick(_DETAIL_HEALTH_WARN))
+    if love >= 75:
+        lines.append(_pick(_DETAIL_LOVE_UP))
+    else:
+        lines.append(_pick(_DETAIL_LOVE_WARN))
+    lines.append(_pick(_DETAIL_CAUTION))
+    return lines
+
+def _caution_from_fortune(fortune_text):
+    """운세 본문에서 주의 문장 추출 (없으면 빈 문자열)"""
+    caution_keywords = ["주의", "조심", "피하", "삼가", "무리하지", "충동", "서두르지"]
+    sentences = fortune_text.replace('<br><br>', '\n').replace('<br>', '\n').split('\n')
+    found = [s.strip() for s in sentences if any(k in s for k in caution_keywords) and len(s.strip()) > 10]
+    return found[0] if found else ""
+
+
 def build_chinese_post(c, today_str):
     fortune = chinese_fortune(c['en'])
-    rating = stars()
-    title = f"{c['kr']} {today_str} 오늘의 띠운세"
+    rating  = stars()
+
+    # 날짜 포맷: YYYY.MM.DD
+    kst_now   = now_kst()
+    today_dot = kst_now.strftime("%Y.%m.%d")
+
+    # 운세 지수
+    total, money, health, love = pick_score(c['kr'])
+
+    # SEO 제목 + 신호 키워드
+    title, signal_kw = _chinese_seo_title(c['kr'], today_dot, total, money, health, love)
+
     card_id = f"fc-{c['en']}"
 
-    # 출생연도별 각각 다른 운세 (현재 연도 이하만 표시)
-    current_year = now_kst().year
+    # 현실 디테일 문장
+    detail_lines = _detail_sentences(total, money, health, love)
+
+    # 운세 본문에서 주의점 추출
+    caution_sentence = _caution_from_fortune(fortune)
+
+    # 출생연도 목록
+    current_year = kst_now.year
     years = [y for y in c['year'].split(',') if int(y) <= current_year]
 
-    # ── 이미지 저장 카드 안 출생연도 행 (흰 배경 위에 표시) ──
+    # ── 출생연도별 행 (이미지 카드 내부) ──
     year_rows_in_card = ""
     for y in years:
         yr_fortune = chinese_fortune(c['en'])
+        # 핵심 1문장만 추출 (60자 이내)
+        plain = str(yr_fortune).replace('<br>', ' ').replace('\n', ' ').strip()
+        short = plain[:80] + ('…' if len(plain) > 80 else '')
         year_rows_in_card += f'''
 <div style="display:flex;align-items:flex-start;gap:10px;
-            padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.2)">
-  <div style="min-width:64px;background:rgba(255,255,255,0.25);color:#fff;
-              border-radius:8px;padding:5px 8px;text-align:center;
-              font-size:12px;font-weight:700;flex-shrink:0">{y}년생</div>
-  <div style="font-size:13px;color:rgba(255,255,255,0.92);line-height:1.7;flex:1">{yr_fortune}</div>
+            padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.18)">
+  <div style="min-width:62px;background:rgba(255,255,255,0.22);color:#fff;
+              border-radius:8px;padding:4px 7px;text-align:center;
+              font-size:11px;font-weight:700;flex-shrink:0;line-height:1.4">{y}년생</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.9);line-height:1.65;flex:1">{short}</div>
 </div>'''
 
-    years_tags = [f"{y}년생 운세" for y in years[:4]]
+    # ── 현실 디테일 HTML ──
+    detail_html = "".join(
+        f'<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f3f0ff;font-size:13px;color:#444;line-height:1.7">'
+        f'<span style="flex-shrink:0">▸</span><span>{line}</span></div>'
+        for line in detail_lines
+    )
+
+    # ── 주의점 박스 HTML ──
+    caution_html = ""
+    if caution_sentence:
+        caution_html = f'''
+<div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:10px;
+            padding:14px 16px;margin-bottom:16px">
+  <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">⚠️ 오늘의 주의점</div>
+  <div style="font-size:14px;color:#555;line-height:1.75">{caution_sentence}</div>
+</div>'''
+
+    # ── 운세 지수 시각화 (점수 기반 색상) ──
+    def score_color(v):
+        if v >= 80: return "#16a34a"
+        if v >= 65: return "#d97706"
+        return "#dc2626"
+
+    def mini_bar(label, emoji, pct):
+        filled = round(pct / 10)
+        bar = '█' * filled + '░' * (10 - filled)
+        color = score_color(pct)
+        level = "상승 ↑" if pct >= 80 else ("주의 ⚠" if pct < 60 else "보통")
+        return (f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">'
+                f'<span style="min-width:65px;font-size:12px">{emoji} {label}</span>'
+                f'<span style="font-family:monospace;color:{color};font-size:13px">{bar}</span>'
+                f'<span style="font-size:12px;font-weight:700;color:{color};min-width:28px">{pct}%</span>'
+                f'<span style="font-size:11px;color:{color}">{level}</span>'
+                f'</div>')
+
+    score_html = f'''<div class="card" style="background:#f8f0ff">
+  <span class="badge">📊 오늘의 운세 지수</span>
+  <div style="margin-top:12px">
+    {mini_bar("종합운","🌟",total)}
+    {mini_bar("금전운","💰",money)}
+    {mini_bar("건강운","💪",health)}
+    {mini_bar("애정운","❤️",love)}
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:#888;text-align:right">신호: <strong style="color:#6c3483">{signal_kw}</strong></div>
+</div>'''
+
+    # ── SEO 키워드 태그 ──
+    years_tags = [f"{y}년생 {c['kr']}" for y in years[:4]]
     kw_list = [
-        c['kr'], f"{c['kr']} 오늘운세", f"{c['kr']} 운세",
-        f"{c['kr']} 오늘의운세", f"{c['kr']} 2026",
-        f"{c['kr']} 띠운세", f"띠운세 {c['kr']}",
-        f"{c['kr']} {today_str}", "오늘의운세", "띠운세", "운세"
+        c['kr'], f"{c['kr']} 오늘운세", f"{c['kr']} 오늘의운세",
+        f"{c['kr']} 띠운세", f"{c['kr']} {today_dot}",
+        f"{c['kr']} 재물운", f"{c['kr']} 건강운", f"{c['kr']} 애정운",
+        "띠운세 오늘", "오늘의운세", "무료운세", f"운세 {today_dot[:4]}",
+        "재물운 상승", "오늘 주의", "띠별운세",
     ] + years_tags
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
 
     content = f"""{style()}
 <div class="wrap">
-  <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
+  <!-- 히어로 -->
+  <div class="hero" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+    <h1>{c['emoji']} {c['kr']} 오늘의 운세</h1>
+    <p>{today_str} · <strong style="background:rgba(0,0,0,0.18);padding:2px 8px;border-radius:20px;font-size:13px">{signal_kw}</strong></p>
+  </div>
 
-  <!-- ✅ 이미지 저장 영역: 메인 운세 + 출생연도별 운세 통합 -->
-  <div id="{card_id}" class="fortune-card">
+  <!-- ✅ 이미지 저장 카드 (메인 운세 + 출생연도별 통합) -->
+  <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']}</div>
     <div class="fc-sub">{today_str}</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
 
-    <!-- 출생연도별 운세 (카드 안에 포함) -->
+    <!-- 출생연도별 운세 -->
     <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.3);padding-top:12px">
-      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);
                   margin-bottom:8px;letter-spacing:0.5px">📅 출생연도별 오늘 운세</div>
       {year_rows_in_card}
     </div>
@@ -695,15 +864,27 @@ def build_chinese_post(c, today_str):
     <div class="fc-watermark" style="margin-top:14px">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
 
-  {share_buttons(card_id, f"{c['kr']}_운세_{today_str}")}
+  <!-- 공유/저장 버튼 -->
+  {share_buttons(card_id, f"{c['kr']}_운세_{today_dot}")}
 
-  {score_card(c['kr'])}
+  <!-- 운세 지수 -->
+  {score_html}
 
+  <!-- 주의점 (본문 추출) -->
+  {caution_html}
+
+  <!-- 현실 디테일 조언 -->
+  <div class="card">
+    <span class="badge">💡 오늘 실전 체크포인트</span>
+    <div style="margin-top:8px">{detail_html}</div>
+  </div>
+
+  <!-- SEO 키워드 -->
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
 </div>"""
-    return title, content, ["띠운세", c['kr'], "운세"]
+    return title, content, ["띠운세", c['kr'], "운세", "오늘운세"]
 
 
 def zodiac_weekly_fortune(kr_name):
