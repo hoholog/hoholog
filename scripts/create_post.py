@@ -999,7 +999,6 @@ def chinese_monthly_fortune(en_name):
 def build_zodiac_weekly_post(today_str):
     """별자리별 주간운세 12개 개별 발행 — 매주 월요일"""
     week_range = get_week_range()
-    # 월말 경계 버그 방지: month_str은 항상 이번 주 월요일 기준
     today_date = now_kst().date()
     mon_date   = date.fromordinal(today_date.toordinal() - today_date.weekday())
     month_str  = mon_date.strftime("%Y년 %m월")
@@ -1008,16 +1007,41 @@ def build_zodiac_weekly_post(today_str):
         fortune = zodiac_weekly_fortune(z['kr'])
         rating  = stars()
         card_id = f"zwfc-{z['en']}"
-        title = f"{z['kr']} {month_str} 주간운세 {week_range}"
+        total, money, health, love = pick_score(z['kr'])
+
+        # 제목 신호 키워드 (간단히)
+        scores = {"총운": total, "금전운": money, "건강운": health, "애정운": love}
+        top = max(scores, key=scores.get)
+        if scores[top] >= 80:
+            signal = f"이번 주 {top} 주목"
+        elif min(scores.values()) <= 55:
+            signal = "이번 주 주의 필요"
+        else:
+            signal = "이번 주 흐름 확인"
+        title = f"{z['kr']} 주간운세 {week_range} | {signal}"
+
         kw_list = [
             z['kr'], f"{z['kr']} 주간운세", f"{z['kr']} 이번주운세",
             "별자리 주간운세", f"{z['kr']} {month_str}", "주간운세", "별자리운세"
         ]
         tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+        score_html = f'''<div class="card" style="background:#f8f0ff">
+  <span class="badge">📊 이번 주 운세 지수</span>
+  <div style="margin-top:10px">
+    {_zodiac_score_bar("종합운","🌟",total)}
+    {_zodiac_score_bar("금전운","💰",money)}
+    {_zodiac_score_bar("건강운","💪",health)}
+    {_zodiac_score_bar("애정운","❤️",love)}
+  </div>
+</div>'''
+
         content_html = f"""{style()}
 <div class="wrap">
-  <div class="hero"><h1>📅 {z['emoji']} {z['kr']} 주간운세</h1><p>{week_range} · {z['date']}</p></div>
-
+  <div class="hero">
+    <h1>📅 {z['emoji']} {z['kr']} 주간운세</h1>
+    <p>{week_range} · {z['date']}</p>
+    <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
+  </div>
   <div id="{card_id}" class="fortune-card">
     <div class="fc-emoji">{z['emoji']}</div>
     <div class="fc-title">{z['kr']} 주간운세</div>
@@ -1026,9 +1050,8 @@ def build_zodiac_weekly_post(today_str):
     <div class="fc-text">{fortune}</div>
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {week_range}</div>
   </div>
-
   {share_buttons(card_id, f"{z['kr']}_주간운세")}
-
+  {score_html}
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매주 업데이트</div>
@@ -1043,35 +1066,64 @@ def build_chinese_monthly_post(today_str):
     results = []
     for c in CHINESE:
         fortune = chinese_monthly_fortune(c['en'])
-        f1, _   = monthly_fortune_general()
         rating  = stars()
         card_id = f"cmfc-{c['en']}"
-        periods = [("상순 (1~10일)", sentence()), ("중순 (11~20일)", sentence()), ("하순 (21~말일)", sentence())]
+        total, money, health, love = pick_score(c['kr'])
+
+        # 제목 신호 키워드
+        scores = {"총운": total, "금전운": money, "건강운": health, "애정운": love}
+        top = max(scores, key=scores.get)
+        if scores[top] >= 80:
+            signal = f"이번 달 {top} 상승"
+        elif min(scores.values()) <= 55:
+            signal = "이번 달 주의 필요"
+        else:
+            signal = "이번 달 흐름 확인"
+        title = f"{c['kr']} {month_str} 월간운세 | {signal}"
+
+        # 기간별: sentence() 제거 → chinese_monthly_fortune 재사용
+        periods = [
+            ("상순 (1~10일)", chinese_monthly_fortune(c['en'])),
+            ("중순 (11~20일)", chinese_monthly_fortune(c['en'])),
+            ("하순 (21~말일)", chinese_monthly_fortune(c['en'])),
+        ]
         period_html = "".join(
-            f'<div class="week-day"><strong>{p}</strong><br>{s}</div>'
+            f'<div class="week-day"><strong>{p}</strong><br><span style="font-size:13px;color:#555">{s[:80]}{"…" if len(str(s))>80 else ""}</span></div>'
             for p, s in periods
         )
-        title = f"{c['kr']} {month_str} 월간운세"
+
         kw_list = [
             c['kr'], f"{c['kr']} 월간운세", f"{c['kr']} 이달운세",
             "띠별 월간운세", f"{c['kr']} {month_str}", "월간운세", "띠운세"
         ]
         tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
+        score_html = f'''<div class="card" style="background:#fffbeb">
+  <span class="badge" style="background:#fef3c7;color:#92400e">📊 이번 달 운세 지수</span>
+  <div style="margin-top:10px">
+    {_zodiac_score_bar("종합운","🌟",total)}
+    {_zodiac_score_bar("금전운","💰",money)}
+    {_zodiac_score_bar("건강운","💪",health)}
+    {_zodiac_score_bar("애정운","❤️",love)}
+  </div>
+</div>'''
+
         content_html = f"""{style()}
 <div class="wrap">
-  <div class="hero"><h1>🌙 {c['emoji']} {c['kr']} 월간운세</h1><p>{month_str}</p></div>
-
-  <div id="{card_id}" class="fortune-card">
+  <div class="hero" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+    <h1>🌙 {c['emoji']} {c['kr']} 월간운세</h1>
+    <p>{month_str}</p>
+    <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
+  </div>
+  <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']} 월간운세</div>
     <div class="fc-sub">{month_str}</div>
     <div class="fc-stars">{rating}</div>
-    <div class="fc-text">{fortune}<br><br>{f1}</div>
+    <div class="fc-text">{fortune}</div>
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {month_str}</div>
   </div>
-
   {share_buttons(card_id, f"{c['kr']}_월간운세")}
-
+  {score_html}
   <div class="card">
     <span class="badge">📅 {month_str} 기간별 운세</span>
     <div style="margin-top:8px">{period_html}</div>
