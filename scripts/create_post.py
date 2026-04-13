@@ -650,15 +650,19 @@ def build_chinese_post(c, today_str):
     # 출생연도별 각각 다른 운세 (현재 연도 이하만 표시)
     current_year = now_kst().year
     years = [y for y in c['year'].split(',') if int(y) <= current_year]
-    year_rows = ""
+
+    # ── 이미지 저장 카드 안 출생연도 행 (흰 배경 위에 표시) ──
+    year_rows_in_card = ""
     for y in years:
         yr_fortune = chinese_fortune(c['en'])
-        year_rows += f'''<div style="border-bottom:1px solid #ede9fe;padding:12px 0;display:flex;align-items:flex-start;gap:12px">
-            <div style="min-width:72px;background:#7c3aed;color:#fff;border-radius:8px;padding:6px 10px;text-align:center;font-size:13px;font-weight:700">{y}년생</div>
-            <div style="flex:1">
-                <div style="font-size:13px;color:#444;line-height:1.7">{yr_fortune}</div>
-            </div>
-        </div>'''
+        year_rows_in_card += f'''
+<div style="display:flex;align-items:flex-start;gap:10px;
+            padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.2)">
+  <div style="min-width:64px;background:rgba(255,255,255,0.25);color:#fff;
+              border-radius:8px;padding:5px 8px;text-align:center;
+              font-size:12px;font-weight:700;flex-shrink:0">{y}년생</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.92);line-height:1.7;flex:1">{yr_fortune}</div>
+</div>'''
 
     years_tags = [f"{y}년생 운세" for y in years[:4]]
     kw_list = [
@@ -673,18 +677,22 @@ def build_chinese_post(c, today_str):
 <div class="wrap">
   <div class="hero"><h1>{c['emoji']} {c['kr']} 오늘의 운세</h1><p>{today_str}</p></div>
 
-  <div class="card">
-    <span class="badge">{c['emoji']} {c['kr']} 출생연도별 오늘 운세</span>
-    <div style="margin-top:8px">{year_rows}</div>
-  </div>
-
+  <!-- ✅ 이미지 저장 영역: 메인 운세 + 출생연도별 운세 통합 -->
   <div id="{card_id}" class="fortune-card">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']}</div>
     <div class="fc-sub">{today_str}</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
-    <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
+
+    <!-- 출생연도별 운세 (카드 안에 포함) -->
+    <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.3);padding-top:12px">
+      <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);
+                  margin-bottom:8px;letter-spacing:0.5px">📅 출생연도별 오늘 운세</div>
+      {year_rows_in_card}
+    </div>
+
+    <div class="fc-watermark" style="margin-top:14px">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
   </div>
 
   {share_buttons(card_id, f"{c['kr']}_운세_{today_str}")}
