@@ -726,12 +726,18 @@ def build_zodiac_post(z, today_str):
     # 날짜 포맷
     kst_now   = now_kst()
     today_dot = kst_now.strftime("%Y년 %-m월 %-d일")   # 예: 2026년 4월 13일
+    # index.html 매칭용 날짜: "YYYY년 MM월 DD일" (zero-padded)
+    today_padded = kst_now.strftime("%Y년 %m월 %d일")
 
     # 운세 지수
     total, money, health, love = pick_score(z['kr'])
 
-    # SEO 제목 + 신호 키워드
-    title, signal_kw = _zodiac_seo_title(z['kr'], today_dot, total, money, health, love)
+    # SEO 신호 키워드
+    _, signal_kw = _zodiac_seo_title(z['kr'], today_dot, total, money, health, love)
+
+    # 제목: index.html fetchFortunePost() 매칭 키워드 필수 포함
+    # 필수: [별자리명, YYYY년, MM월, DD일, "오늘의 운세"]
+    title = f"{z['kr']} {today_padded} 오늘의 운세 | {signal_kw}"
 
     # 행운 아이템·색상·숫자
     lucky_item   = pick_lucky_item(z['kr'])
@@ -912,9 +918,11 @@ def build_chinese_post(c, today_str):
 
     kst_now   = now_kst()
     today_dot = kst_now.strftime("%Y년 %-m월 %-d일")
+    # index.html 매칭용 날짜: "YYYY년 MM월 DD일" (zero-padded)
+    today_padded = kst_now.strftime("%Y년 %m월 %d일")
     total, money, health, love = pick_score(c['kr'])
 
-    # ── 제목: 신호 키워드 자동 선택 ──
+    # ── 신호 키워드 자동 선택 ──
     _SIG_UP   = ["재물운 상승 신호", "금전운 상승 중", "운세 상승 흐름", "행운 상승 감지"]
     _SIG_WARN = ["오늘 주의 필요", "신중함이 필요한 날", "주의 신호 감지", "한 발 물러서기"]
     _SIG_REV  = ["반전의 하루", "예상 밖 반전 운세", "충격적 변화 예고", "흐름이 바뀌는 날"]
@@ -925,13 +933,9 @@ def build_chinese_post(c, today_str):
     elif abs(total-money) >= 30: signal = random.choice(_SIG_REV)
     else:                   signal = random.choice(_SIG_MID)
 
-    _TITLE_PATS = [
-        f"{c['kr']} 오늘운세 ({today_dot}) – {signal} 확인",
-        f"{c['kr']} {today_dot} 오늘 운세 | {signal}",
-        f"[{today_dot}] {c['kr']} 오늘의 띠운세 — {signal}",
-        f"{c['kr']} 운세 ({today_dot}) · {signal}",
-    ]
-    title = random.choice(_TITLE_PATS)
+    # 제목: index.html fetchChinesePost() 매칭 키워드 필수 포함
+    # 필수: [띠명, YYYY년, MM월, DD일, "띠운세"]
+    title = f"{c['kr']} {today_padded} 오늘의 띠운세 | {signal}"
 
     # ── 현실 디테일 문장 (지수 기반) ──
     _DET_MONEY_UP   = ["오늘 예상치 못한 소액 수입이 들어올 수 있습니다. 작은 금액이라도 놓치지 마세요.",
@@ -1114,7 +1118,9 @@ def build_zodiac_weekly_post(today_str):
             signal = "이번 주 주의 필요"
         else:
             signal = "이번 주 흐름 확인"
-        title = f"{z['kr']} 주간운세 {week_range} | {signal}"
+        # 제목: index.html fetchWeeklyPost() 매칭 키워드 필수 포함
+        # 필수: [별자리명, YYYY년, MM월, "주간운세"]
+        title = f"{z['kr']} {month_str} 주간운세 {week_range} | {signal}"
 
         kw_list = [
             z['kr'], f"{z['kr']} 주간운세", f"{z['kr']} 이번주운세",
