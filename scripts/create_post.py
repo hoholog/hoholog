@@ -724,20 +724,19 @@ def build_zodiac_post(z, today_str):
     card_id     = f"fc-{z['en']}"
 
     # 날짜 포맷
-    kst_now   = now_kst()
-    today_dot = kst_now.strftime("%Y년 %-m월 %-d일")   # 예: 2026년 4월 13일
-    # index.html 매칭용 날짜: "YYYY년 MM월 DD일" (zero-padded)
-    today_padded = kst_now.strftime("%Y년 %m월 %d일")
+    kst_now    = now_kst()
+    today_dot  = kst_now.strftime("%Y년 %-m월 %-d일")   # 예: 2026년 4월 13일 (본문 표시용)
+    today_sync = kst_now.strftime("%Y년 %m월 %d일")     # 예: 2026년 04월 13일 (index.html 매칭용 zero-pad)
 
     # 운세 지수
     total, money, health, love = pick_score(z['kr'])
 
-    # SEO 신호 키워드
+    # SEO 신호 키워드 (제목 표시용)
     _, signal_kw = _zodiac_seo_title(z['kr'], today_dot, total, money, health, love)
 
-    # 제목: index.html fetchFortunePost() 매칭 키워드 필수 포함
-    # 필수: [별자리명, YYYY년, MM월, DD일, "오늘의 운세"]
-    title = f"{z['kr']} {today_padded} 오늘의 운세 | {signal_kw}"
+    # 제목: index.html fetchFortunePost() 필수 키워드 고정 포함
+    # 검색조건: [별자리명, "YYYY년", "MM월", "DD일", "오늘의 운세"] ALL 포함 필수
+    title = f"{z['kr']} {today_sync} 오늘의 운세 | {signal_kw}"
 
     # 행운 아이템·색상·숫자
     lucky_item   = pick_lucky_item(z['kr'])
@@ -916,26 +915,25 @@ def build_chinese_post(c, today_str):
     rating  = stars()
     card_id = f"fc-{c['en']}"
 
-    kst_now   = now_kst()
-    today_dot = kst_now.strftime("%Y년 %-m월 %-d일")
-    # index.html 매칭용 날짜: "YYYY년 MM월 DD일" (zero-padded)
-    today_padded = kst_now.strftime("%Y년 %m월 %d일")
+    kst_now    = now_kst()
+    today_dot  = kst_now.strftime("%Y년 %-m월 %-d일")  # 본문 표시용
+    today_sync = kst_now.strftime("%Y년 %m월 %d일")    # index.html 매칭용 zero-pad
     total, money, health, love = pick_score(c['kr'])
 
-    # ── 신호 키워드 자동 선택 ──
+    # ── 제목: 신호 키워드 자동 선택 ──
     _SIG_UP   = ["재물운 상승 신호", "금전운 상승 중", "운세 상승 흐름", "행운 상승 감지"]
     _SIG_WARN = ["오늘 주의 필요", "신중함이 필요한 날", "주의 신호 감지", "한 발 물러서기"]
     _SIG_REV  = ["반전의 하루", "예상 밖 반전 운세", "충격적 변화 예고", "흐름이 바뀌는 날"]
     _SIG_MID  = ["안정적인 하루", "균형 잡힌 운세", "차분한 에너지의 날"]
     avg = (total + money) / 2
-    if avg >= 80:           signal = random.choice(_SIG_UP)
-    elif avg <= 55:         signal = random.choice(_SIG_WARN)
+    if avg >= 80:                signal = random.choice(_SIG_UP)
+    elif avg <= 55:              signal = random.choice(_SIG_WARN)
     elif abs(total-money) >= 30: signal = random.choice(_SIG_REV)
-    else:                   signal = random.choice(_SIG_MID)
+    else:                        signal = random.choice(_SIG_MID)
 
-    # 제목: index.html fetchChinesePost() 매칭 키워드 필수 포함
-    # 필수: [띠명, YYYY년, MM월, DD일, "띠운세"]
-    title = f"{c['kr']} {today_padded} 오늘의 띠운세 | {signal}"
+    # 제목: index.html fetchChinesePost() 필수 키워드 고정 포함
+    # 검색조건: [띠명, "YYYY년", "MM월", "DD일", "띠운세"] ALL 포함 필수
+    title = f"{c['kr']} {today_sync} 오늘의 띠운세 | {signal}"
 
     # ── 현실 디테일 문장 (지수 기반) ──
     _DET_MONEY_UP   = ["오늘 예상치 못한 소액 수입이 들어올 수 있습니다. 작은 금액이라도 놓치지 마세요.",
@@ -1118,8 +1116,8 @@ def build_zodiac_weekly_post(today_str):
             signal = "이번 주 주의 필요"
         else:
             signal = "이번 주 흐름 확인"
-        # 제목: index.html fetchWeeklyPost() 매칭 키워드 필수 포함
-        # 필수: [별자리명, YYYY년, MM월, "주간운세"]
+        # 제목: index.html fetchWeeklyPost() 필수 키워드 고정 포함
+        # 검색조건: [별자리명, "YYYY년", "MM월", "주간운세"] ALL 포함 필수
         title = f"{z['kr']} {month_str} 주간운세 {week_range} | {signal}"
 
         kw_list = [
