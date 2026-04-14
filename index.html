@@ -41,6 +41,9 @@
             display: block;
             width: 100%;
         }
+        /* ── 띠운세 카드 내부 텍스트 가시성 보장 ── */
+        #ccard-full * { color: inherit !important; }
+        #ccard-full { color: #fff; }
     </style>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
@@ -1153,7 +1156,9 @@
                     <div style="font-size:20px;font-weight:900;margin:6px 0;color:#7c3aed">${name} 출생연도별 오늘 운세</div>
                     <div style="font-size:13px;color:#888">${sub}</div>
                 </div>
-                <div id="${cardId}">${info.yearRowsHTML}</div>
+                <div id="${cardId}" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:20px;padding:20px;color:#fff">
+                    ${info.yearRowsHTML}
+                </div>
                 ${renderScoreCard(info.score||null)}
 `;
             }
