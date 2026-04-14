@@ -951,36 +951,41 @@
         // 제목: "양자리 2026년 03월 19일 오늘의 운세"
         // HTML: <div class="fc-text">{운세본문}</div>  ← fc-lucky 박스 제외
         // ── 운세 지수 파서 (별자리·띠 공통) ──
-        // 구 구조: score_bar() — 색상 고정 (#6c3483, #d4ac0d, #1e8449, #e74c3c)
-        // 신 구조: _zodiac_score_bar() — 레이블 순서: 종합운, 금전운, 건강운, 애정운, % 추출
+        // HTML: <div class="card" style="background:#f8f0ff">
+        //         <span class="badge">📊 오늘의 운세 지수</span>
+        //         <div style="margin-top:10px">
+        //           <div style="display:flex;..."><span>🌟 종합운</span><span>██...░░</span><span>63%</span></div>
+        //           ...4행...
+        //         </div>
+        //       </div>
         function parseFortune_Score(raw) {
             if (raw.indexOf('오늘의 운세 지수') === -1) return null;
 
-            // ── 신 구조: 레이블 기반 파싱 ──
+            // ── 방법 1: 레이블 기반 파싱 (신 구조: _zodiac_score_bar 동적 색상) ──
+            // 패턴: "🌟 종합운</span>...▓░░ </span><span ...>75%"
             function pickByLabel(label) {
-                const re = new RegExp(label + '[\\s\\S]{0,200}?([0-9]{2,3})%');
+                const re = new RegExp(label + '[\\s\\S]{0,300}?>(\\d{2,3})%<');
                 const m = raw.match(re);
                 return m ? parseInt(m[1]) : null;
             }
-            const newTotal  = pickByLabel('종합운');
-            const newMoney  = pickByLabel('금전운');
-            const newHealth = pickByLabel('건강운');
-            const newLove   = pickByLabel('애정운');
-            if (newTotal !== null && newMoney !== null && newHealth !== null && newLove !== null) {
-                return { total: newTotal, money: newMoney, health: newHealth, love: newLove };
-            }
+            const t1 = pickByLabel('종합운'), m1 = pickByLabel('금전운'),
+                  h1 = pickByLabel('건강운'), l1 = pickByLabel('애정운');
+            if (t1 !== null && m1 !== null && h1 !== null && l1 !== null)
+                return { total: t1, money: m1, health: h1, love: l1 };
 
-            // ── 구 구조: 고정 색상 기반 파싱 ──
-            function pick(color) {
+            // ── 방법 2: 고정 색상 파싱 (구 구조: score_card()) ──
+            function pickByColor(color) {
                 const m = raw.match(new RegExp('color:' + color + '">([0-9]+)%'));
                 return m ? parseInt(m[1]) : null;
             }
-            const total  = pick('#6c3483');
-            const money  = pick('#d4ac0d');
-            const health = pick('#1e8449');
-            const love   = pick('#e74c3c');
-            if (total === null || money === null || health === null || love === null) return null;
-            return { total, money, health, love };
+            const total  = pickByColor('#6c3483');
+            const money  = pickByColor('#d4ac0d');
+            const health = pickByColor('#1e8449');
+            const love   = pickByColor('#e74c3c');
+            if (total !== null && money !== null && health !== null && love !== null)
+                return { total, money, health, love };
+
+            return null;
         }
 
         // score bar HTML 생성 (Blogger 스타일과 동일)
@@ -1015,59 +1020,54 @@
         }
 
         // ── 타입 2: 띠 오늘운세 ──
-        // 새 구조: fortune-card 안의 fc-text + 출생연도별 year rows
-        // 구 구조: .card badge "출생연도별" 아래 margin-top:8px div
+        // 신 구조: fortune-card 안 "출생연도별 오늘 운세" 뒤의 year rows
+        // 구 구조: .card > badge "출생연도별" > margin-top:8px div
         function parseFortune_Chinese(raw) {
-            // ── 신 구조: .fortune-card 안 "출생연도별 오늘 운세" 이후 year rows 추출 ──
-            const newMarker = '출생연도별 오늘 운세';
-            const newPos = raw.indexOf(newMarker);
-            if (newPos !== -1) {
-                // newMarker 뒤부터 </div> 체인이 fortune-card 닫힐 때까지 year rows 수집
-                const START_TAG = '<div style="display:flex;align-items:flex-start';
-                let yearRowsHTML = '';
-                let searchFrom = newPos + newMarker.length;
-                let match;
-                const rowRe = /<div style="display:flex;align-items:flex-start[\s\S]*?<\/div>\s*<\/div>/g;
-                rowRe.lastIndex = newPos;
-                while ((match = rowRe.exec(raw)) !== null) {
-                    // fortune-card 닫히면 중단
-                    if (match.index > raw.indexOf('fc-watermark', newPos)) break;
-                    yearRowsHTML += match[0];
+            // ── 신 구조 우선 시도 ──
+            const marker = '출생연도별 오늘 운세';
+            const mPos = raw.indexOf(marker);
+            if (mPos !== -1) {
+                // marker 이후 첫 <div...> ~ fc-watermark 전까지 수집
+                const watermarkPos = raw.indexOf('fc-watermark', mPos);
+                const searchEnd = watermarkPos !== -1 ? watermarkPos : mPos + 8000;
+                const chunk = raw.slice(mPos, searchEnd);
+                // 출생연도 행: display:flex 포함 div들 추출
+                const rowMatches = [...chunk.matchAll(/<div style="display:flex[\s\S]*?<\/div>\s*<\/div>/g)];
+                if (rowMatches.length > 0) {
+                    // 연도 레이블(Nxx년생) 포함 행만
+                    const yearRows = rowMatches
+                        .map(m => m[0])
+                        .filter(h => /\d{4}년생/.test(h))
+                        .join('');
+                    if (yearRows) return yearRows;
                 }
-                if (yearRowsHTML) return yearRowsHTML;
             }
-            // ── 구 구조: badge "출생연도별" 이후 margin-top:8px div ──
+
+            // ── 구 구조 폴백 ──
             const OPEN_TAG = '<div style="margin-top:8px">';
             const badgePos = raw.indexOf('출생연도별');
             if (badgePos === -1) return null;
             const wrapPos = raw.indexOf(OPEN_TAG, badgePos);
             if (wrapPos === -1) return null;
-
             const contentStart = wrapPos + OPEN_TAG.length;
             let depth = 1, i = contentStart, contentEnd = -1;
             while (i < raw.length && depth > 0) {
                 const o = raw.indexOf('<div', i);
                 const c = raw.indexOf('</div>', i);
-                if (o !== -1 && (c === -1 || o < c)) {
-                    depth++;
-                    i = o + 4;
-                } else if (c !== -1) {
-                    depth--;
-                    if (depth === 0) { contentEnd = c; break; }
-                    i = c + 6;
-                } else { break; }
+                if (o !== -1 && (c === -1 || o < c)) { depth++; i = o + 4; }
+                else if (c !== -1) { depth--; if (depth === 0) { contentEnd = c; break; } i = c + 6; }
+                else break;
             }
             if (contentEnd === -1) return null;
-
             return raw.slice(contentStart, contentEnd)
                 .replace(/<div[^>]*font-size:11px;color:#888[^>]*>[\s\S]*?<\/div>/g, '');
         }
 
         // ── 타입 3: 별자리 주간운세 ──
-        // 새 구조: .fortune-card 안의 .fc-text
-        // 구 구조: .card 안의 <p> 태그들
+        // 신 구조: .fortune-card > .fc-text
+        // 구 구조: .card > <p> 태그들
         function parseFortune_Weekly(raw) {
-            // 신 구조: fc-text 우선 시도
+            // 신 구조: fc-text 클래스 div 우선 시도
             const fcM = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
             if (fcM) {
                 const text = fcM[1]
@@ -1076,7 +1076,7 @@
                     .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
                 if (text) return text;
             }
-            // 구 구조: 첫 번째 .card 안의 모든 <p> 태그
+            // 구 구조: 첫 번째 .card 안의 <p> 태그 수집
             const cardM = raw.match(/<div[^>]*class="card"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|$)/);
             const scope = cardM ? cardM[1] : raw;
             const parts = [...scope.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
@@ -1119,7 +1119,7 @@
                 const score = parseFortune_Score(raw);
                 return { ...meta, type: 'zodiac', text, score };
             }
-            if (t.includes('띠운세') && (t.includes('월') && t.includes('일'))) {
+            if (t.includes('띠운세') && t.includes('월') && t.includes('일')) {
                 const html = parseFortune_Chinese(raw);
                 if (!html) return null;
                 const score = parseFortune_Score(raw);
@@ -1264,21 +1264,16 @@
         }
 
         // ── Blogger 포스트 fetch ──
-        // orderBy=published → 최신 발행 글부터 반환, maxResults=50으로 여유있게 조회
+        // orderBy=updated → 최신 글부터 반환, maxResults=40으로 여유있게 조회
         async function fetchByLabelAndTitle(label, keywords) {
             const url = BASE_URL + '/blogs/' + BLOG_ID + '/posts?key=' + API_KEY
                 + '&labels=' + encodeURIComponent(label)
-                + '&maxResults=50&orderBy=published'
+                + '&maxResults=40&orderBy=updated'
                 + '&fields=items(title,url,published,content)';
             try {
                 const r = await fetch(url, {cache: 'no-store'});
                 const d = await r.json();
-                const items = d.items || [];
-                // 모든 키워드 포함(AND) 우선, 없으면 날짜·이름만으로 부분 매칭
-                const exact = items.find(p => keywords.every(k => p.title.includes(k)));
-                if (exact) return exact;
-                // 폴백: 첫 두 키워드(이름 + 연도)만 포함되면 허용
-                return items.find(p => keywords.slice(0,2).every(k => p.title.includes(k))) || null;
+                return (d.items||[]).find(p => keywords.every(k => p.title.includes(k))) || null;
             } catch(e) { return null; }
         }
 
