@@ -27,6 +27,35 @@ DATA = os.path.join(BASE, '..', 'data')
 if os.environ.get('DATA_DIR'):
     DATA = os.environ['DATA_DIR']
 
+# ─────────────────────────────────────────
+# 포스트 타입별 대표 이미지 URL
+# GitHub raw URL 형식:
+#   https://raw.githubusercontent.com/{유저명}/{저장소명}/main/data/파일명.png
+# ※ 아래 _GITHUB_RAW 의 {유저명}/{저장소명} 을 실제 값으로 교체하세요
+# ─────────────────────────────────────────
+_GITHUB_RAW = "https://raw.githubusercontent.com/{유저명}/{저장소명}/main/data"
+
+IMG = {
+    "zodiac":  f"{_GITHUB_RAW}/todayhoroscopelaboratory03.png",  # 별자리 오늘 운세
+    "chinese": f"{_GITHUB_RAW}/todayhoroscopelaboratory04.png",  # 띠 오늘 운세
+    "weekly":  f"{_GITHUB_RAW}/todayhoroscopelaboratory05.png",  # 주간운세 (띠+별자리)
+    "monthly": f"{_GITHUB_RAW}/todayhoroscopelaboratory06.png",  # 띠별 월간운세
+}
+
+def post_img(key):
+    """포스트 상단 히어로 아래 삽입용 이미지 HTML"""
+    url = IMG.get(key, "")
+    if not url:
+        return ""
+    return (
+        '<div style="text-align:center;margin-bottom:20px">'
+        f'<img src="{url}" alt="오늘의운세로그" '
+        'style="width:100%;max-width:680px;border-radius:16px;'
+        'box-shadow:0 4px 20px rgba(0,0,0,0.12)" '
+        "onerror=\"this.style.display='none'\">"
+        '</div>'
+    )
+
 def csv(name):
     try:
         return pd.read_csv(os.path.join(DATA, name))
@@ -875,6 +904,9 @@ def build_zodiac_post(z, today_str):
     </div>
   </div>
 
+  <!-- 대표 이미지 -->
+  {post_img("zodiac")}
+
   <!-- 1. 총운 -->
   {summary_html}
 
@@ -1032,6 +1064,9 @@ def build_chinese_post(c, today_str):
                 padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700">{signal}</div>
   </div>
 
+  <!-- 대표 이미지 -->
+  {post_img("chinese")}
+
   <!-- 이미지 저장 카드: 메인 운세 + 출생연도별 통합 -->
   <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
@@ -1142,6 +1177,10 @@ def build_zodiac_weekly_post(today_str):
     <p>{week_range} · {z['date']}</p>
     <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
   </div>
+
+  <!-- 대표 이미지 -->
+  {post_img("weekly")}
+
   <div id="{card_id}" class="fortune-card">
     <div class="fc-emoji">{z['emoji']}</div>
     <div class="fc-title">{z['kr']} 주간운세</div>
@@ -1214,6 +1253,10 @@ def build_chinese_monthly_post(today_str):
     <p>{month_str}</p>
     <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
   </div>
+
+  <!-- 대표 이미지 -->
+  {post_img("monthly")}
+
   <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']} 월간운세</div>
