@@ -33,7 +33,7 @@ if os.environ.get('DATA_DIR'):
 #   https://raw.githubusercontent.com/{유저명}/{저장소명}/main/data/파일명.png
 # ※ 아래 _GITHUB_RAW 의 {유저명}/{저장소명} 을 실제 값으로 교체하세요
 # ─────────────────────────────────────────
-_GITHUB_RAW = "https://raw.githubusercontent.com/{유저명}/{저장소명}/main/data"
+_GITHUB_RAW = "https://raw.githubusercontent.com/hoholog/hoholog/main/data"
 
 IMG = {
     "zodiac":  f"{_GITHUB_RAW}/todayhoroscopelaboratory03.png",  # 별자리 오늘 운세
