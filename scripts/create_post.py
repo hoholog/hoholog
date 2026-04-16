@@ -860,21 +860,54 @@ def build_zodiac_post(z, today_str):
   </div>
 </div>'''
 
-    # ── 이미지 저장 카드 ──
+    # ── 이미지 저장 카드 (총운·연애운·금전운·직장운·피해야할행동 포함) ──
+    avoid_short = "".join(
+        f'<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.85);padding:4px 0">'
+        f'<span style="color:#fca5a5;font-weight:700">✕</span>{item}</div>'
+        for item in avoid_list
+    )
     image_card_html = f'''
 <div id="{card_id}" class="fortune-card">
   <div class="fc-emoji">{z['emoji']}</div>
   <div class="fc-title">{z['kr']}</div>
   <div class="fc-sub">{today_str} · {z['date']}</div>
   <div class="fc-stars">{rating}</div>
-  <div class="fc-text">{_para(0)}<br><br>{_para(1)}</div>
+
+  <!-- 총운 -->
+  <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:6px">🌟 오늘 총운 · {total}%</div>
+    <div style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.95)">{_para(0)}</div>
+  </div>
+
+  <!-- 연애운 -->
+  <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:6px">❤️ 연애운 · {love}%</div>
+    <div style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.95)">{_para(2)}</div>
+  </div>
+
+  <!-- 금전운 -->
+  <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:6px">💰 금전운 · {money}%</div>
+    <div style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.95)">{_para(3)}</div>
+  </div>
+
+  <!-- 직장·사업운 -->
+  <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:6px">💼 직장·사업운 · {work_score}%</div>
+    <div style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.95)">{_para(4)}</div>
+  </div>
+
+  <!-- 오늘 피해야 할 행동 -->
+  <div style="background:rgba(220,38,38,0.2);border-radius:10px;padding:12px;margin-bottom:12px">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:6px">⚠️ 오늘 피해야 할 행동</div>
+    {avoid_short}
+  </div>
+
+  <!-- 행운 아이템 -->
   <div class="fc-lucky">
     <div class="fc-lucky-box"><div class="fc-lucky-lbl">행운 아이템</div><div class="fc-lucky-val" style="font-size:13px">{lucky_item}</div></div>
     <div class="fc-lucky-box"><div class="fc-lucky-lbl">행운 색상</div><div class="fc-lucky-val" style="font-size:13px">{lucky_color}</div></div>
     <div class="fc-lucky-box"><div class="fc-lucky-lbl">행운 숫자</div><div class="fc-lucky-val">{lucky_number}</div></div>
-  </div>
-  <div style="margin-top:12px;font-size:11px;color:rgba(255,255,255,0.6);text-align:center">
-    신호: {signal_kw}
   </div>
   <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
 </div>'''
@@ -902,10 +935,13 @@ def build_zodiac_post(z, today_str):
     </div>
   </div>
 
+  <!-- 1. 총운 -->
+  {summary_html}
+
   <!-- 대표 이미지 -->
   {post_img("zodiac")}
 
-  <!-- 1. 총운 -->
+  <!-- 2. 연애운 -->
   {summary_html}
 
   <!-- 2. 연애운 -->
@@ -1062,9 +1098,6 @@ def build_chinese_post(c, today_str):
                 padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700">{signal}</div>
   </div>
 
-  <!-- 대표 이미지 -->
-  {post_img("chinese")}
-
   <!-- 이미지 저장 카드: 메인 운세 + 출생연도별 통합 -->
   <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
@@ -1080,6 +1113,10 @@ def build_chinese_post(c, today_str):
   </div>
 
   {share_buttons(card_id, f"{c['kr']}_운세_{today_dot}")}
+
+  <!-- 대표 이미지 -->
+  {post_img("chinese")}
+
   {score_html}
   {caution_html}
   <div class="card">
@@ -1175,10 +1212,6 @@ def build_zodiac_weekly_post(today_str):
     <p>{week_range} · {z['date']}</p>
     <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
   </div>
-
-  <!-- 대표 이미지 -->
-  {post_img("weekly")}
-
   <div id="{card_id}" class="fortune-card">
     <div class="fc-emoji">{z['emoji']}</div>
     <div class="fc-title">{z['kr']} 주간운세</div>
@@ -1188,6 +1221,10 @@ def build_zodiac_weekly_post(today_str):
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {week_range}</div>
   </div>
   {share_buttons(card_id, f"{z['kr']}_주간운세")}
+
+  <!-- 대표 이미지 -->
+  {post_img("weekly")}
+
   {score_html}
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   {site_link()}
@@ -1251,10 +1288,6 @@ def build_chinese_monthly_post(today_str):
     <p>{month_str}</p>
     <div style="margin-top:8px;display:inline-block;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;font-size:12px">{signal}</div>
   </div>
-
-  <!-- 대표 이미지 -->
-  {post_img("monthly")}
-
   <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']} 월간운세</div>
@@ -1264,6 +1297,10 @@ def build_chinese_monthly_post(today_str):
     <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {month_str}</div>
   </div>
   {share_buttons(card_id, f"{c['kr']}_월간운세")}
+
+  <!-- 대표 이미지 -->
+  {post_img("monthly")}
+
   {score_html}
   <div class="card">
     <span class="badge">📅 {month_str} 기간별 운세</span>
