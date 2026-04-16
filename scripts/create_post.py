@@ -395,10 +395,9 @@ function fallbackDownload(canvas, filename) {
 
 def share_buttons(card_id, filename):
     """공유하기 버튼 → 바텀시트
-    핵심 수정:
-    - __fortuneShareInited 가드 제거 → fortOpenSheet를 항상 window에 즉시 정의
-    - 바텀시트 DOM/CSS는 최초 1회만 생성 (id 체크 방식으로 안전하게)
-    - 버튼 onclick에서 직접 window.fortOpenSheet 호출 → ReferenceError 방지
+    구성: X(트위터) · 페이스북 · 라인 · URL복사(메모) · 문자(SMS)
+    - 카카오(서비스 종료) / 네이버밴드 / 쓰레드 / 인스타그램 제거
+    - 모두 API 키 불필요한 URL 파라미터 방식
     """
     return f"""
 <button class="share-btn-main" onclick="if(window.fortOpenSheet){{window.fortOpenSheet('{card_id}','{filename}')}}else{{alert('잠시 후 다시 시도해주세요');}}" ontouchstart="" style="cursor:pointer;touch-action:manipulation">
@@ -445,73 +444,58 @@ def share_buttons(card_id, filename):
       '<div class="fort-sh" id="__fort_sh">' +
         '<div class="fort-ttl">공유하기</div>' +
         '<div class="fort-grid">' +
-          /* 카카오톡 */
-          '<button class="fort-btn" id="__fb_kk">' +
-            '<div class="fort-ico" style="background:#FEE500">' +
-              '<svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E">' +
-                '<path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.61 1.548 4.91 3.89 6.27' +
-                'l-.99 3.63 4.22-2.79c.95.19 1.89.29 2.88.29 5.523 0 10-3.477 10-7.41' +
-                'C22 6.477 17.523 3 12 3z"/>' +
-              '</svg>' +
-            '</div><span>카카오톡</span>' +
-          '</button>' +
-          /* 네이버밴드 */
-          '<button class="fort-btn" id="__fb_bd">' +
-            '<div class="fort-ico" style="background:#03C75A">' +
-              '<svg width="26" height="26" viewBox="0 0 40 40" fill="#fff">' +
-                '<rect x="4" y="4" width="32" height="32" rx="8"/>' +
-                '<rect x="11" y="12" width="6" height="16" fill="#03C75A"/>' +
-                '<rect x="23" y="12" width="6" height="16" fill="#03C75A"/>' +
-              '</svg>' +
-            '</div><span>네이버밴드</span>' +
-          '</button>' +
-          /* 쓰레드 */
-          '<button class="fort-btn" id="__fb_th">' +
+          /* X (트위터) */
+          '<button class="fort-btn" id="__fb_x">' +
             '<div class="fort-ico" style="background:#000">' +
-              '<svg width="22" height="22" viewBox="0 0 192 192" fill="#fff">' +
-                '<path d="M141.537 88.988a66.667 66.667 0 00-2.518-1.143' +
-                'c-1.482-27.307-16.403-42.94-41.457-43.1h-.34' +
-                'c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452' +
-                'c5.73-8.695 14.724-10.548 21.348-10.548h.229' +
-                'c8.249.053 14.474 2.452 18.503 7.129' +
-                'c2.932 3.405 4.893 8.111 5.864 14.05' +
-                'c-7.314-1.243-15.224-1.626-23.68-1.14' +
-                'c-23.82 1.371-39.134 15.264-38.105 34.568' +
-                'c.522 9.792 5.4 18.216 13.735 23.719' +
-                'c7.047 4.652 16.124 6.927 25.557 6.412' +
-                'c12.458-.683 22.231-5.436 29.049-14.127' +
-                'c5.178-6.6 8.453-15.153 9.899-25.93' +
-                'c5.937 3.583 10.337 8.298 12.767 13.966' +
-                'c4.132 9.635 4.373 25.468-8.546 38.376' +
-                'c-11.319 11.308-24.925 16.2-45.488 16.351' +
-                'c-22.809-.169-40.06-7.484-51.275-21.742' +
-                'C88.809 149.438 83 132.938 82.432 112h-16.57' +
-                'c.6 24.74 8.355 44.742 22.637 57.967' +
-                'C101.243 182.022 121.22 190.169 144 190.351l.402-.002' +
-                'c24.203-.172 42.426-6.856 56.189-20.6' +
-                'c18.386-18.366 17.861-41.25 11.755-55.348' +
-                'c-4.325-10.083-12.754-18.279-26.809-23.413z"/>' +
-            '</svg>' +
-            '</div><span>쓰레드</span>' +
-          '</button>' +
-          /* 인스타그램 */
-          '<button class="fort-btn" id="__fb_ig">' +
-            '<div class="fort-ico" style="background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)">' +
-              '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">' +
-                '<rect x="2" y="2" width="20" height="20" rx="5"/>' +
-                '<circle cx="12" cy="12" r="4.5"/>' +
-                '<circle cx="17.5" cy="6.5" r="1.2" fill="#fff" stroke="none"/>' +
+              '<svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">' +
+                '<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231' +
+                '-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231z"/>' +
               '</svg>' +
-            '</div><span>인스타그램</span>' +
+            '</div><span>X 공유</span>' +
           '</button>' +
-          /* URL복사 */
+          /* 페이스북 */
+          '<button class="fort-btn" id="__fb_fb">' +
+            '<div class="fort-ico" style="background:#1877F2">' +
+              '<svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">' +
+                '<path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073' +
+                'c0 6.027 4.388 11.024 10.125 11.927V15.563H7.078v-3.49h3.047V9.41' +
+                'c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97' +
+                'h-1.513c-1.491 0-1.956.93-1.956 1.887v2.267h3.328l-.532 3.49' +
+                'h-2.796v8.437C19.612 23.097 24 18.1 24 12.073z"/>' +
+              '</svg>' +
+            '</div><span>페이스북</span>' +
+          '</button>' +
+          /* 라인 */
+          '<button class="fort-btn" id="__fb_ln">' +
+            '<div class="fort-ico" style="background:#06C755">' +
+              '<svg width="28" height="28" viewBox="0 0 48 48" fill="#fff">' +
+                '<path d="M24 4C12.95 4 4 11.86 4 21.5c0 8.3 6.56 15.25 15.5 17.06' +
+                '.6.13 1.42.4 1.63.92.19.47.12 1.2.06 1.67l-.26 1.57' +
+                'c-.08.47-.37 1.84 1.6.99 1.97-.84 10.63-6.26 14.5-10.72' +
+                'C39.9 29.97 44 26.02 44 21.5 44 11.86 35.05 4 24 4z"/>' +
+                '<path d="M36 25h-5v-8a1 1 0 00-2 0v9a1 1 0 001 1h6a1 1 0 000-2z" fill="#06C755"/>' +
+                '<path d="M19 17a1 1 0 00-1 1v9a1 1 0 002 0v-9a1 1 0 00-1-1z" fill="#06C755"/>' +
+                '<path d="M29 17h-4a1 1 0 00-1 1v9a1 1 0 001 1h4a1 1 0 000-2h-3v-2h3a1 1 0 000-2h-3v-2h3a1 1 0 000-2z" fill="#06C755"/>' +
+                '<path d="M15 17a1 1 0 00-1 1v9a1 1 0 002 0v-5.29l4.29 5.72A1 1 0 0021 28v-9a1 1 0 00-2 0v5.29l-4.29-5.72A1 1 0 0015 17z" fill="#06C755"/>' +
+              '</svg>' +
+            '</div><span>라인</span>' +
+          '</button>' +
+          /* URL 복사 (메모) */
           '<button class="fort-btn" id="__fb_cp">' +
             '<div class="fort-ico" style="background:#6b7280">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' +
-                '<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>' +
-                '<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>' +
+              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' +
+                '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+                '<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>' +
               '</svg>' +
             '</div><span>URL 복사</span>' +
+          '</button>' +
+          /* 문자 (SMS) */
+          '<button class="fort-btn" id="__fb_sms">' +
+            '<div class="fort-ico" style="background:#34C759">' +
+              '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">' +
+                '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>' +
+              '</svg>' +
+            '</div><span>문자</span>' +
           '</button>' +
         '</div>' +
         '<button class="fort-cancel" id="__fb_cancel">취소</button>' +
@@ -531,47 +515,59 @@ def share_buttons(card_id, filename):
       window.open(url, '_blank', 'width='+w+',height='+h);
       _close();
     }}
-    document.getElementById('__fb_kk').addEventListener('click', function() {{
-      var url = location.href;
-      var isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-      _close();
-      if (isMobile) {{
-        var timer = setTimeout(function() {{
-          if (navigator.clipboard) {{
-            navigator.clipboard.writeText(url).then(function() {{
-              alert('📋 링크가 복사되었습니다!\\n카카오톡을 열어 붙여넣어 공유하세요.');
-            }}).catch(function() {{ alert('카카오톡 앱을 열어 링크를 공유해 주세요:\\n' + url); }});
-          }} else {{
-            alert('카카오톡 앱에서 아래 링크를 공유해 주세요:\\n' + url);
-          }}
-        }}, 1500);
-        window.location.href = 'kakaolink://send?msg=' + encodeURIComponent(document.title + '\\n' + url);
-      }} else {{
-        _open('https://story.kakao.com/share?url='+encodeURIComponent(url), 600, 500);
-      }}
+
+    /* X (트위터) */
+    document.getElementById('__fb_x').addEventListener('click', function() {{
+      var url = encodeURIComponent(location.href);
+      var txt = encodeURIComponent(document.title);
+      _open('https://twitter.com/intent/tweet?url='+url+'&text='+txt, 600, 450);
     }});
-    document.getElementById('__fb_bd').addEventListener('click', function() {{
-      _open('https://band.us/plugin/share?body='+encodeURIComponent(document.title+'\\n'+location.href)+'&route='+encodeURIComponent(location.href), 600, 600);
+
+    /* 페이스북 */
+    document.getElementById('__fb_fb').addEventListener('click', function() {{
+      var url = encodeURIComponent(location.href);
+      _open('https://www.facebook.com/sharer/sharer.php?u='+url, 600, 500);
     }});
-    document.getElementById('__fb_th').addEventListener('click', function() {{
-      _open('https://www.threads.net/intent/post?text='+encodeURIComponent(document.title+'\\n'+location.href), 600, 600);
+
+    /* 라인 */
+    document.getElementById('__fb_ln').addEventListener('click', function() {{
+      var url = encodeURIComponent(location.href);
+      _open('https://social-plugins.line.me/lineit/share?url='+url, 600, 500);
     }});
-    document.getElementById('__fb_ig').addEventListener('click', function() {{
-      var cid=window.__fort_cid, fn=window.__fort_fn;
-      _close();
-      if(typeof saveFortuneCard==='function') saveFortuneCard(cid, fn);
-      setTimeout(function(){{ alert('📸 이미지 저장됨!\\n인스타그램 앱에서 올려주세요 📲'); }}, 1500);
-    }});
+
+    /* URL 복사 (메모) */
     document.getElementById('__fb_cp').addEventListener('click', function() {{
-      var url=location.href;
-      function done(){{ _close(); alert('✅ 링크가 복사되었습니다!'); }}
-      if(navigator.clipboard) {{ navigator.clipboard.writeText(url).then(done).catch(function(){{ fb(url); done(); }}); }}
-      else {{ fb(url); done(); }}
+      var url = location.href;
+      function done() {{ _close(); alert('✅ URL이 복사되었습니다!\\n메모장이나 원하는 곳에 붙여넣기 하세요.'); }}
+      if (navigator.clipboard) {{
+        navigator.clipboard.writeText(url).then(done).catch(function() {{ fb(url); done(); }});
+      }} else {{ fb(url); done(); }}
       function fb(t) {{
-        var x=document.createElement('textarea'); x.value=t;
-        x.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';
+        var x = document.createElement('textarea'); x.value = t;
+        x.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
         document.body.appendChild(x); x.focus(); x.select();
         document.execCommand('copy'); document.body.removeChild(x);
+      }}
+    }});
+
+    /* 문자 (SMS) */
+    document.getElementById('__fb_sms').addEventListener('click', function() {{
+      var txt = encodeURIComponent(document.title + '\\n' + location.href);
+      _close();
+      /* iOS: sms:&body= / Android: sms:?body= 모두 지원 */
+      var isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isMobile) {{
+        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        window.location.href = isIOS ? 'sms:&body='+txt : 'sms:?body='+txt;
+      }} else {{
+        /* PC: URL 복사로 대체 */
+        if (navigator.clipboard) {{
+          navigator.clipboard.writeText(document.title + '\\n' + location.href).then(function() {{
+            alert('📋 PC에서는 링크가 복사되었습니다!\\n문자 앱에 붙여넣어 공유하세요.');
+          }});
+        }} else {{
+          alert('공유할 링크:\\n' + location.href);
+        }}
       }}
     }});
 
