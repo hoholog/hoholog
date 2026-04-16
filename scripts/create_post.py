@@ -33,13 +33,11 @@ if os.environ.get('DATA_DIR'):
 #   https://raw.githubusercontent.com/{유저명}/{저장소명}/main/data/파일명.png
 # ※ 아래 _GITHUB_RAW 의 {유저명}/{저장소명} 을 실제 값으로 교체하세요
 # ─────────────────────────────────────────
-_GITHUB_RAW = "https://raw.githubusercontent.com/hoholog/hoholog/main/data"
-
 IMG = {
-    "zodiac":  f"{_GITHUB_RAW}/todayhoroscopelaboratory03.png",  # 별자리 오늘 운세
-    "chinese": f"{_GITHUB_RAW}/todayhoroscopelaboratory04.png",  # 띠 오늘 운세
-    "weekly":  f"{_GITHUB_RAW}/todayhoroscopelaboratory05.png",  # 주간운세 (띠+별자리)
-    "monthly": f"{_GITHUB_RAW}/todayhoroscopelaboratory06.png",  # 띠별 월간운세
+    "zodiac":  "https://i.ibb.co/hFTQc66p/todayhoroscopelaboratory03.png",  # 별자리 오늘 운세
+    "chinese": "https://i.ibb.co/ccxKySzq/todayhoroscopelaboratory04.png",  # 띠 오늘 운세
+    "weekly":  "https://i.ibb.co/PZyr5FvY/todayhoroscopelaboratory05.png",  # 주간운세 (띠+별자리)
+    "monthly": "https://i.ibb.co/Dfqdzbd2/todayhoroscopelaboratory06.png",  # 띠별 월간운세
 }
 
 def post_img(key):
