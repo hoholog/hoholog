@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260416114916_7662e54f">
+  <meta name="build-version" content="20260417122448_5e3c03fe">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -208,7 +208,8 @@
         const gameData = [
             { id: 'g1', name: '호야타자rpg', genre: '타이핑 액션', version: 'v1.0.0', file: 'game1.html' },
             { id: 'g2', name: '호야속담', genre: '타이핑', version: 'v1.0.0', file: 'game2.html' },
-            { id: 'g3', name: '준비중', genre: '-', version: '준비중', file: null },
+            { id: 'g3', name: '호야하늘비타자', genre: '타이핑', version: 'v1.0.0', file: 'game3.html' },
+            { id: 'g4-old', name: '준비중', genre: '-', version: '준비중', file: null },
             { id: 'g4', name: '준비중', genre: '-', version: '준비중', file: null },
             { id: 'g5', name: '준비중', genre: '-', version: '준비중', file: null },
             { id: 'g6', name: '준비중', genre: '-', version: '준비중', file: null },
@@ -229,8 +230,10 @@
                     badge = '<span id="pc-badge-g1" class="' + cls + '">PC</span>';
                 } else if (game.id === 'g2') {
                     badge = '<span class="absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-500">ALL</span>';
+                } else if (game.id === 'g3') {
+                    badge = '<span class="absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-500">ALL</span>';
                 }
-                var icon = (game.id === 'g1' || game.id === 'g2') ? '🎮' : '⏳';
+                var icon = (game.id === 'g1' || game.id === 'g2' || game.id === 'g3') ? '🎮' : '⏳';
                 var onclick = 'handleGameClick(\'' + game.id + '\')';
                 return '<button onclick="' + onclick + '" class="game-card group bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-indigo-600 transition-all flex flex-col items-center text-center relative">'
                     + badge
