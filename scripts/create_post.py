@@ -938,9 +938,6 @@ def build_zodiac_post(z, today_str):
   {post_img("zodiac")}
 
   <!-- 2. 연애운 -->
-  {summary_html}
-
-  <!-- 2. 연애운 -->
   {love_html}
 
   <!-- 3. 금전운 -->
