@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260417122448_5e3c03fe">
+  <meta name="build-version" content="20260418113044_3accc75c">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -1018,6 +1018,16 @@
         }
 
                 function parseFortune_Zodiac(raw) {
+            // ── 신 구조: badge "🌟 오늘 총운" 포함 card 에서 <p> 태그 수집 ──
+            const badgeIdx = raw.indexOf('🌟 오늘 총운');
+            if (badgeIdx !== -1) {
+                const chunk = raw.slice(Math.max(0, badgeIdx - 200), badgeIdx + 2000);
+                const parts = [...chunk.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
+                    .map(m => m[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim())
+                    .filter(Boolean);
+                if (parts.length > 0) return parts.join('\n\n');
+            }
+            // ── 구 구조: fc-text 클래스 div ──
             const m = raw.match(/<div[^>]*class="fc-text"[^>]*>([\s\S]*?)<\/div>/);
             if (!m) return null;
             return m[1]
