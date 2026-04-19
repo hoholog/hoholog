@@ -5034,50 +5034,97 @@
         if(!ctx) return;
         var btn = document.querySelector('#mbti-tarot-ai-wrap button');
         var resDiv = document.getElementById('mbti-tarot-ai-result');
-        // ── 합성 해석 로딩 ──
         showBtnLoading(btn, 'MBTI×타로 해석 중...');
         resDiv.innerHTML = '<div style="text-align:center;padding:16px;color:#9b8fb0"><span style="display:inline-block;width:20px;height:20px;border:2px solid rgba(201,168,76,.25);border-top-color:#c9a84c;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>합성 해석을 생성하고 있어요...</div>' + getLoadingAdHTML();
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 1500));
 
-        // CSV 기반 타로+MBTI 합성 해석
-        var mbtiKey = 'mbti_' + ctx.mbti.toLowerCase();
+        // CSV 두 개 동시 로드
+        await Promise.all([loadTarotReadings(), loadMbtiSynthesis()]);
+
         var cards = ctx.cards;
         var mbtiD = ctx.mbtiD;
+        var mbti  = ctx.mbti;
+        var q     = ctx.q;
 
-        // 카드별 MBTI 맞춤 해석 조합
-        var cardLines = cards.map(function(item, i) {
-            var pos = ['과거','현재','미래'][i];
+        // ── 카드별 단락 해석 (CSV) ──
+        var positions = ['과거','현재','미래'];
+        var posIcons  = ['🌱','🔥','🌟'];
+        var cardBlocks = cards.map(function(item, i) {
             var c = item.card;
-            var nameKo = c.card_name_ko || c.name_ko || c.card_name || '카드';
-            var meaning = item.reversed
-                ? (c.reversed_meaning || c.upright_meaning || '')
-                : (c.upright_meaning || c.meaning || '');
-            return pos + ' 자리의 <b>' + nameKo + '</b>는 "' + meaning.split(' ').slice(0,4).join(' ') + '"의 에너지를 전합니다.';
-        }).join('<br>');
+            var nameKo  = c.card_name_ko || c.card_name || '카드';
+            var nameEn  = c.card_name || '';
+            var dir     = item.reversed ? '역방향' : '정방향';
+            var dirBadge = item.reversed
+                ? '<span style="font-size:10px;background:rgba(100,80,180,.25);color:#a090dd;padding:2px 7px;border-radius:10px">🔄 역방향</span>'
+                : '<span style="font-size:10px;background:rgba(201,168,76,.15);color:#c9a84c;padding:2px 7px;border-radius:10px">✨ 정방향</span>';
+            var emoji = c.emoji || '🃏';
+            var readingText = getTarotReading(nameKo, q, item.reversed);
+            var readingBlock = readingText
+                ? '<div style="font-size:13px;color:#e0d5c4;line-height:1.9;margin-top:8px">' + readingText + '</div>'
+                : '<div style="font-size:13px;color:#9b8fb0;line-height:1.8;margin-top:6px">' + nameKo + '의 에너지가 이 자리에서 ' + (item.reversed ? '내면을 향해' : '외부로') + ' 흐르고 있습니다.</div>';
+            return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-left:3px solid rgba(201,168,76,.4);border-radius:0 12px 12px 0;padding:14px;margin-bottom:10px">'
+                + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'
+                + '<span style="font-size:11px;color:#9b8fb0;letter-spacing:.1em">' + posIcons[i] + ' ' + positions[i].toUpperCase() + ' 자리</span>'
+                + '</div>'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+                + '<span style="font-size:1.5rem">' + emoji + '</span>'
+                + '<div><div style="font-size:14px;color:#e8c96a;font-weight:700">' + nameKo + ' <em style="font-size:11px;color:#9b8fb0;font-style:normal">' + nameEn + '</em></div>'
+                + dirBadge + '</div></div>'
+                + readingBlock
+                + '</div>';
+        }).join('');
 
-        // MBTI short_desc + tarot_affinity 기반 종합 조언
-        var affinity = mbtiD.tarot_affinity || '';
-        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+        // ── MBTI 합성 단락 (CSV) ──
+        var synthCat = getMbtiSynthCat(q);
+        var synthData = MBTI_SYNTH_MAP[mbti+'|'+synthCat] || MBTI_SYNTH_MAP[mbti+'|일반'];
         var coreTrait = mbtiD.core_trait || mbtiD.core || '';
-        var strength  = mbtiD.strength || '';
+        var affinity  = mbtiD.tarot_affinity || '';
 
-        var synthesis = ctx.mbti + '인 당신(' + coreTrait + ')은 ' + strength + '이 강점입니다. '
-            + '이번 리딩에서 "' + ctx.q + '"에 대한 답을 찾고 있군요. '
-            + cardLines.replace(/<b>/g,'').replace(/<\/b>/g,'') + ' '
-            + shortDesc;
+        var synthBlock = '';
+        if(synthData) {
+            var pastCard    = cards[0].card.card_name_ko || '카드';
+            var presentCard = cards[1].card.card_name_ko || '카드';
+            var futureCard  = cards[2].card.card_name_ko || '카드';
+            synthBlock =
+                '<div style="background:linear-gradient(135deg,rgba(74,40,128,.4),rgba(30,18,53,.6));border-radius:12px;padding:16px;margin-bottom:10px">'
+                + '<div style="font-size:11px;color:#c9a84c;margin-bottom:10px;letter-spacing:.05em">🧠 ' + mbti + '(' + coreTrait + ') × 타로 합성 해석</div>'
+                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:8px">'
+                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.past_prefix + '</span> '
+                + '<strong style="color:#e8c96a">' + pastCard + '</strong>의 에너지가 그 배경이 되었습니다.'
+                + '</p>'
+                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:8px">'
+                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.present_prefix + '</span> '
+                + '<strong style="color:#e8c96a">' + presentCard + '</strong>이(가) 현재를 말해주고 있습니다.'
+                + '</p>'
+                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:12px">'
+                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.future_prefix + ' </span>'
+                + '<strong style="color:#e8c96a">' + futureCard + '</strong>의 방향으로 나아갑니다.'
+                + '</p>'
+                + '<div style="border-top:1px solid rgba(201,168,76,.2);padding-top:12px;font-size:13px;color:#e8e0f0;line-height:1.95">'
+                + synthData.synthesis_text
+                + '</div>'
+                + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:10px">🃏 ' + mbti + '와 친화력 높은 카드: ' + affinity + '</p>' : '')
+                + '</div>';
+        } else {
+            var shortDesc = mbtiD.short_desc || mbtiD.short || '';
+            synthBlock = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9">'
+                + '<div style="font-size:11px;color:#c9a84c;margin-bottom:8px">✨ MBTI × 타로 합성 해석</div>'
+                + '<p style="color:#c9a84c;font-weight:600">' + mbti + '(' + coreTrait + ')인 당신에게 — ' + shortDesc + '</p>'
+                + '</div>';
+        }
 
-        resDiv.innerHTML = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);'
-            + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9;margin-top:8px">'
-            + '<div style="font-size:10px;color:#c9a84c;margin-bottom:8px">✨ MBTI × 타로 합성 해석</div>'
-            + '<p style="margin-bottom:8px">' + cardLines + '</p>'
-            + '<p style="color:#c9a84c;font-weight:600">' + ctx.mbti + '(' + coreTrait + ')인 당신에게 — ' + shortDesc + '</p>'
-            + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:6px">🃏 친화 카드: ' + affinity + '</p>' : '')
+        resDiv.innerHTML = '<div style="margin-top:8px">'
+            + '<div style="font-size:12px;color:#c9a84c;font-weight:700;margin-bottom:12px;letter-spacing:.05em">✦ 카드별 해석</div>'
+            + cardBlocks
+            + '<div style="font-size:12px;color:#c9a84c;font-weight:700;margin:14px 0 10px;letter-spacing:.05em">✦ MBTI × 타로 종합</div>'
+            + synthBlock
             + '</div>';
 
         hideBtnLoading(btn);
     }
     // 전역 노출
     window.mbtiTarotAiInterpret   = mbtiTarotAiInterpret;
+
 
     // ─── MBTI+꿈해몽 로직 ───
     var _mbtiDreamMbti = null, _mbtiDreamKeyword = null;
@@ -5288,6 +5335,77 @@
     // 타로 상태
     let tDeck = [];          // CSV에서 로드된 78장
     let tDeckLoaded = false;
+
+    // ── 타로 카드 단락 해석 CSV ──
+    let TAROT_READINGS_MAP = {};
+    let tReadingsLoaded = false;
+    async function loadTarotReadings() {
+      if(tReadingsLoaded) return;
+      try {
+        const res = await fetch('data/tarot_card_readings.csv');
+        if(!res.ok) throw new Error('readings CSV 없음');
+        const rawText = await res.text();
+        const lines = rawText.trim().split('\n');
+        lines.slice(1).forEach(line => {
+          const cols = []; let cur='', inQ=false;
+          for(let i=0;i<line.length;i++){
+            if(line[i]==='"'){inQ=!inQ;}
+            else if(line[i]===',' && !inQ){cols.push(cur);cur='';}
+            else{cur+=line[i];}
+          }
+          cols.push(cur);
+          const [nameKo, cat, dir, txt] = cols.map(c=>c.trim());
+          if(nameKo&&cat&&dir&&txt) TAROT_READINGS_MAP[nameKo+'|'+cat+'|'+dir] = txt;
+        });
+        tReadingsLoaded = true;
+      } catch(e){ console.warn('타로해석 CSV 로드 실패:', e); }
+    }
+    function getTarotReading(nameKo, question, isReversed) {
+      const dir = isReversed ? '역방향' : '정방향';
+      const catMap = {
+        '연애와 관계':'연애','직업과 진로':'직장','금전과 재물':'직장',
+        '건강과 웰빙':'일반','인간관계':'연애','자기 성장':'일반'
+      };
+      let cat = catMap[question];
+      if(!cat){
+        if(/연애|관계|사랑|연인/.test(question)) cat='연애';
+        else if(/직|일|돈|금|커리어|취업/.test(question)) cat='직장';
+        else cat='일반';
+      }
+      return TAROT_READINGS_MAP[nameKo+'|'+cat+'|'+dir]
+          || TAROT_READINGS_MAP[nameKo+'|일반|'+dir]
+          || '';
+    }
+
+    // ── MBTI×타로 합성 해석 CSV ──
+    let MBTI_SYNTH_MAP = {};
+    let mbtiSynthLoaded = false;
+    async function loadMbtiSynthesis() {
+      if(mbtiSynthLoaded) return;
+      try {
+        const res = await fetch('data/mbti_tarot_synthesis.csv');
+        if(!res.ok) throw new Error('mbti synth CSV 없음');
+        const rawText = await res.text();
+        const lines = rawText.trim().split('\n');
+        lines.slice(1).forEach(line => {
+          const cols = []; let cur='', inQ=false;
+          for(let i=0;i<line.length;i++){
+            if(line[i]==='"'){inQ=!inQ;}
+            else if(line[i]===',' && !inQ){cols.push(cur);cur='';}
+            else{cur+=line[i];}
+          }
+          cols.push(cur);
+          const [mbti, cat, past, present, future, synth] = cols.map(c=>c.trim());
+          if(mbti&&cat) MBTI_SYNTH_MAP[mbti+'|'+cat] = {past_prefix:past, present_prefix:present, future_prefix:future, synthesis_text:synth};
+        });
+        mbtiSynthLoaded = true;
+      } catch(e){ console.warn('MBTI합성 CSV 로드 실패:', e); }
+    }
+    function getMbtiSynthCat(question) {
+      if(/연애|관계|사랑|연인/.test(question)) return '연애';
+      if(/직|일|돈|금|커리어|취업/.test(question)) return '직장';
+      return '일반';
+    }
     let tQuestion = '';
     let tDrawnCards = [];
     let tRevealedCount = 0;
@@ -5510,16 +5628,24 @@
       '세계':'하나의 여정이 완성되는 성취와 통합의 카드예요.',
     };
 
-    function tShowInterpretation() {
+    async function tShowInterpretation() {
       const area = document.getElementById('tarot-result-area');
       if(!area) return;
       area.style.display = 'block';
+      area.innerHTML = '<div style="text-align:center;padding:24px;color:#9b8fb0"><span style="display:inline-block;width:20px;height:20px;border:2px solid rgba(201,168,76,.25);border-top-color:#c9a84c;border-radius:50%;animation:tspin 1s linear infinite;vertical-align:middle;margin-right:8px"></span>카드 해석을 불러오는 중...</div>';
 
-      // 카드 해석 3장 — 카드 소개만 표시 (메시지/조언/가르침/직감 제거)
+      // CSV 단락 해석 사전 로드
+      await loadTarotReadings();
+
+      // 카드 해석 3장 — 카드 소개 + CSV 단락 해석
       const cardHTML = tDrawnCards.map((card,i) => {
         const pos = T_POS[i];
         const meaning = card.isReversed ? card.reversed_meaning : card.upright_meaning;
         const intro = T_CARD_INTRO[card.card_name_ko] || `${card.card_name_ko}은(는) ${(meaning||'').split(' ')[0]}의 에너지를 담은 카드예요.`;
+        const readingText = getTarotReading(card.card_name_ko, tQuestion, card.isReversed);
+        const readingBlock = readingText
+          ? `<div style="background:rgba(201,168,76,.06);border-left:2px solid rgba(201,168,76,.35);border-radius:0 10px 10px 0;padding:.75rem 1rem;margin-top:.6rem;font-size:.83rem;color:#e0d5c4;line-height:1.85">${readingText}</div>`
+          : '';
         return `
           <div class="tarot-interp-box">
             <div class="tcib-pos-row">
@@ -5533,6 +5659,7 @@
               <span class="tcib-dir-badge ${card.isReversed?'rev':'up'}">${card.isReversed?'🔄 역방향':'✨ 정방향'}</span>
             </div>
             <div class="tcib-intro">${intro}</div>
+            ${readingBlock}
           </div>`;
       }).join('');
 
