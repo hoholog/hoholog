@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260419150251_d72a124a">
+  <meta name="build-version" content="20260420020414_dc84a253">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -5001,70 +5001,127 @@
         });
         cardsHtml += '</div>';
 
-        // ── 카드별 단락 해석 ──
+        // ── 카드 키워드/에너지 추출 헬퍼 ──
+        function getCardKeyword(card, isReversed) {
+            var meaning = isReversed
+                ? (card.reversed_meaning || card.meaning_rev || card.upright_meaning || '')
+                : (card.upright_meaning || card.meaning || '');
+            return (meaning || '').split(/[,\s]/)[0] || '';
+        }
+
+        // 위치별 맞춤 해석 생성 (같은 카드라도 과거/현재/미래 자리에 따라 다른 앵글로)
+        var posAngle = [
+            { prefix: '과거 자리에서 본 ', timeCtx: '그때 당신에게', flowHint: '그 에너지가 지금까지 이어져' },
+            { prefix: '현재 자리에서 본 ', timeCtx: '지금 당신에게', flowHint: '바로 이 순간' },
+            { prefix: '미래 자리에서 본 ', timeCtx: '앞으로 당신에게', flowHint: '앞으로 펼쳐질' }
+        ];
+
+        // ── 카드별 단락 해석 (위치별 앵글 차별화) ──
+        var cardReadings = []; // 종합에서 재활용
         var cardBlocks = cards.map(function(item, i) {
             var c = item.card;
             var nameKo  = c.card_name_ko || c.card_name || '카드';
             var nameEn  = c.card_name || '';
             var emoji   = c.emoji || '🃏';
-            var dirBadge = item.reversed
+            var isRev   = item.reversed;
+            var dirBadge = isRev
                 ? '<span style="font-size:10px;background:rgba(100,80,180,.25);color:#a090dd;padding:2px 7px;border-radius:10px">🔄 역방향</span>'
                 : '<span style="font-size:10px;background:rgba(201,168,76,.15);color:#c9a84c;padding:2px 7px;border-radius:10px">✨ 정방향</span>';
-            var readingText = getTarotReading(nameKo, q, item.reversed);
-            var readingBlock = readingText
-                ? '<div style="font-size:13px;color:#e0d5c4;line-height:1.9;margin-top:8px">' + readingText + '</div>'
-                : '<div style="font-size:13px;color:#9b8fb0;line-height:1.8;margin-top:6px">' + nameKo + '의 에너지가 이 자리에서 ' + (item.reversed ? '내면을 향해' : '외부로') + ' 흐르고 있습니다.</div>';
+
+            // CSV 해석 텍스트 가져오기
+            var baseReading = getTarotReading(nameKo, q, isRev);
+
+            // 위치별로 다른 앵글 문장 앞에 붙여 차별화
+            var posPrefix = ['🌱 과거 — 지금 이 상황의 뿌리가 된 에너지예요.',
+                             '🔥 현재 — 지금 이 순간 가장 강하게 작용하는 에너지예요.',
+                             '🌟 미래 — 앞으로 흘러갈 방향이 담긴 에너지예요.'][i];
+
+            // 역방향일 때 위치별 추가 멘트
+            var revNote = isRev ? [{
+                past:    '과거에 이 에너지가 충분히 발현되지 못했거나 억눌렸을 수 있어요. 그게 지금의 나를 만든 배경이에요.',
+                present: '지금 이 에너지가 안으로 향하고 있어요. 겉으로 드러나기보다 내면에서 무르익는 중이에요.',
+                future:  '아직 완전히 열리지 않은 가능성이에요. 서두르지 않아도 때가 되면 자연스럽게 펼쳐질 거예요.'
+            }[['past','present','future'][i]]] : [''];
+
+            var readingBlock = '<div style="font-size:13px;color:#e0d5c4;line-height:1.95;margin-top:8px">'
+                + '<p style="margin-bottom:6px;font-size:11px;color:#c9a84c;font-weight:700">' + posPrefix + '</p>'
+                + (baseReading || (nameKo + '의 에너지가 이 자리에서 ' + (isRev ? '내면을 향해 조용히 흐르고 있어요.' : '선명하게 드러나고 있어요.')))
+                + (revNote[0] ? '<p style="margin-top:8px;font-size:12px;color:#a090dd;background:rgba(100,80,180,.08);border-left:2px solid rgba(160,120,220,.4);padding:.5rem .8rem;border-radius:0 8px 8px 0">' + revNote[0] + '</p>' : '')
+                + '</div>';
+
+            // 종합에서 쓸 카드 요약 저장
+            cardReadings.push({ nameKo: nameKo, isRev: isRev, keyword: getCardKeyword(c, isRev), reading: baseReading });
+
             return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-left:3px solid rgba(201,168,76,.4);border-radius:0 12px 12px 0;padding:14px;margin-bottom:10px">'
-                + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'
-                + '<span style="font-size:11px;color:#9b8fb0;letter-spacing:.1em">' + posIcons[i] + ' ' + positions[i].toUpperCase() + ' 자리</span>'
-                + '</div>'
-                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
                 + '<span style="font-size:1.5rem">' + emoji + '</span>'
-                + '<div><div style="font-size:14px;color:#e8c96a;font-weight:700">' + nameKo + ' <em style="font-size:11px;color:#9b8fb0;font-style:normal">' + nameEn + '</em></div>'
-                + dirBadge + '</div></div>'
+                + '<div>'
+                + '<div style="font-size:14px;color:#e8c96a;font-weight:700">' + nameKo + ' <em style="font-size:11px;color:#9b8fb0;font-style:normal">' + nameEn + '</em></div>'
+                + dirBadge
+                + '</div></div>'
                 + readingBlock
                 + '</div>';
         }).join('');
 
-        // ── MBTI × 타로 종합 해석 (CSV 데이터 즉시 사용) ──
+        // ── MBTI × 타로 종합 — 뽑힌 카드 내용 기반 대화체 ──
         var synthCat  = getMbtiSynthCat(q);
         var synthData = MBTI_SYNTH_MAP[mbti+'|'+synthCat] || MBTI_SYNTH_MAP[mbti+'|일반'];
         var coreTrait = mbtiD.core_trait || mbtiD.core || '';
         var affinity  = mbtiD.tarot_affinity || '';
-        var pastCard    = cards[0].card.card_name_ko || cards[0].card.card_name || '카드';
-        var presentCard = cards[1].card.card_name_ko || cards[1].card.card_name || '카드';
-        var futureCard  = cards[2].card.card_name_ko || cards[2].card.card_name || '카드';
 
-        var synthBlock = '';
-        if(synthData) {
-            synthBlock =
-                '<div style="background:linear-gradient(135deg,rgba(74,40,128,.4),rgba(30,18,53,.6));border-radius:12px;padding:16px;margin-bottom:10px">'
-                + '<div style="font-size:11px;color:#c9a84c;margin-bottom:10px;letter-spacing:.05em">🧠 ' + mbti + '(' + coreTrait + ') × 타로 종합 해석</div>'
-                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:8px">'
-                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.past_prefix + '</span> '
-                + '<strong style="color:#e8c96a">' + pastCard + '</strong>의 에너지가 그 배경이 되었습니다.'
-                + '</p>'
-                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:8px">'
-                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.present_prefix + '</span> '
-                + '<strong style="color:#e8c96a">' + presentCard + '</strong>이(가) 현재를 말해주고 있습니다.'
-                + '</p>'
-                + '<p style="font-size:13px;color:#d4c9ec;line-height:1.85;margin-bottom:12px">'
-                + '<span style="color:#9b8fb0;font-size:11px">' + synthData.future_prefix + ' </span>'
-                + '<strong style="color:#e8c96a">' + futureCard + '</strong>의 방향으로 나아갑니다.'
-                + '</p>'
-                + '<div style="border-top:1px solid rgba(201,168,76,.2);padding-top:12px;font-size:13px;color:#e8e0f0;line-height:1.95">'
-                + synthData.synthesis_text
-                + '</div>'
-                + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:10px">🃏 ' + mbti + '와 친화력 높은 카드: ' + affinity + '</p>' : '')
-                + '</div>';
-        } else {
-            var shortDesc = mbtiD.short_desc || mbtiD.short || '';
-            synthBlock = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:1.9">'
-                + '<div style="font-size:11px;color:#c9a84c;margin-bottom:8px">✨ MBTI × 타로 종합 해석</div>'
-                + '<p>' + mbti + '(' + coreTrait + ')인 당신에게 — <strong style="color:#e8c96a">' + presentCard + '</strong>이(가) 지금의 핵심 에너지를 보여주고 있어요.</p>'
-                + (shortDesc ? '<p style="margin-top:8px;color:#c9a84c;font-weight:600">' + shortDesc + '</p>' : '')
-                + '</div>';
+        var pCard = cardReadings[0], cCard = cardReadings[1], fCard = cardReadings[2];
+
+        // 역방향 있을 때 흐름 멘트
+        var revCards = cards.filter(function(c){ return c.reversed; });
+        var revNote = revCards.length > 0
+            ? '💜 역방향 카드가 ' + revCards.length + '장 나왔어요. 나쁜 신호가 아니에요 — 그 에너지가 아직 안에서 무르익고 있다는 뜻이에요. 억지로 밀어붙이기보다 자연스러운 흐름을 기다려보세요.'
+            : '';
+
+        // 카드 이름 기반 동적 종합 멘트 생성
+        function buildConversationalSynth(mbti, coreTrait, pC, cC, fC, synthData, q, revNote) {
+            var pName = pC.nameKo, cName = cC.nameKo, fName = fC.nameKo;
+            var pRev = pC.isRev ? ' (역방향)' : '', cRev = cC.isRev ? ' (역방향)' : '', fRev = fC.isRev ? ' (역방향)' : '';
+
+            // 과거→현재→미래 흐름 연결 문장
+            var flowLine = '<strong style="color:#e8c96a">' + pName + '</strong>' + pRev
+                + '에서 시작해서 <strong style="color:#e8c96a">' + cName + '</strong>' + cRev
+                + '을(를) 지나 <strong style="color:#e8c96a">' + fName + '</strong>' + fRev + '으로 이어지는 이 흐름,';
+
+            // MBTI 성향 기반 해석 각도
+            var mbtiAngle = synthData ? synthData.synthesis_text : (mbti + '인 당신에게 이 세 장은 특별한 의미를 가져요.');
+
+            // 카드별 핵심 에너지를 뽑아 자연스럽게 연결
+            var pastLine  = pC.isRev
+                ? pName + '가 역방향으로 과거 자리에 있어요. 그 에너지가 완전히 드러나지 못한 채 쌓여온 거예요. ' + mbti + '인 당신이라면 이미 느끼고 있었겠지만, 그게 지금 이 상황의 뿌리가 됐어요.'
+                : pName + '가 과거 자리에 있어요. 이 카드의 에너지가 지금 당신이 서 있는 자리를 만들어온 거예요. 좋든 싫든, 이 흐름이 지금의 나를 형성했어요.';
+
+            var presentLine = cC.isRev
+                ? '지금 이 순간 ' + cName + '가 역방향으로 나타났어요. 겉으로는 조용해 보여도 내면에서 뭔가 크게 움직이고 있는 거예요. ' + mbti + '의 성향상 이걸 혼자 안고 있을 가능성이 높아요. 조금만 꺼내보세요.'
+                : '지금 ' + cName + '가 현재 자리에 선명하게 나타났어요. 지금 당신에게 가장 강하게 작용하고 있는 에너지예요. ' + mbti + '인 당신이 이 에너지를 어떻게 쓰느냐가 앞으로의 방향을 바꿔요.';
+
+            var futureLine = fC.isRev
+                ? '미래 자리의 ' + fName + '는 역방향이에요. 아직 완전히 열리지 않은 가능성이에요. 억지로 끌어당기려 하지 말고, 자연스럽게 흘러가다 보면 이 에너지가 제때 펼쳐질 거예요.'
+                : '앞으로 ' + fName + '의 에너지가 기다리고 있어요. 지금 당신이 하는 선택들이 이 방향으로 수렴하고 있어요. 나쁘지 않아요 — 오히려 지금이 중요한 시기예요.';
+
+            var revLine = revNote ? '<p style="font-size:12px;color:#a090dd;background:rgba(100,80,180,.08);border-left:2px solid rgba(160,120,220,.4);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin-top:10px">' + revNote + '</p>' : '';
+
+            return '<p style="margin-bottom:10px;color:#c9a84c;font-size:12px;font-weight:700">🔮 리더의 말</p>'
+                + '<p style="margin-bottom:10px;line-height:1.95">' + flowLine + ' 타로 카드가 조용히 당신의 이야기를 하고 있어요.</p>'
+                + '<p style="margin-bottom:10px;line-height:1.95">' + pastLine + '</p>'
+                + '<p style="margin-bottom:10px;line-height:1.95">' + presentLine + '</p>'
+                + '<p style="margin-bottom:10px;line-height:1.95">' + futureLine + '</p>'
+                + '<p style="margin-bottom:0;line-height:1.95;border-top:1px solid rgba(201,168,76,.2);padding-top:10px">' + mbtiAngle + '</p>'
+                + revLine;
         }
+
+        var synthBlock =
+            '<div style="background:linear-gradient(135deg,rgba(74,40,128,.4),rgba(30,18,53,.6));border-radius:12px;padding:16px;margin-bottom:10px">'
+            + '<div style="font-size:11px;color:#c9a84c;margin-bottom:12px;letter-spacing:.05em">🧠 ' + mbti + '(' + coreTrait + ') × 타로 종합 해석</div>'
+            + '<div style="font-size:13px;color:#e8e0f0;line-height:1.95">'
+            + buildConversationalSynth(mbti, coreTrait, pCard, cCard, fCard, synthData, q, revNote)
+            + '</div>'
+            + (affinity ? '<p style="font-size:11px;color:#9b8fb0;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">🃏 ' + mbti + '와 친화력 높은 카드: ' + affinity + '</p>' : '')
+            + '</div>';
 
         var mbtiGuideBlock = '<div class="tarot-guide-box" style="margin-top:1rem">'
             + '<div class="tarot-guide-title">∴ 타로 리딩 안내 ∴</div>'
@@ -5705,15 +5762,32 @@
       // CSV 단락 해석 사전 로드
       await loadTarotReadings();
 
-      // 카드 해석 3장 — 카드 소개 + CSV 단락 해석
+      // 카드 해석 3장 — 위치별 앵글 차별화 + CSV 단락 해석
+      const posAngleTarot = [
+        { label: '🌱 과거 자리', hint: '이 에너지가 지금 당신이 서 있는 자리를 만들어왔어요.' },
+        { label: '🔥 현재 자리', hint: '지금 이 순간 가장 강하게 작용하고 있는 에너지예요.' },
+        { label: '🌟 미래 자리', hint: '앞으로 흘러갈 방향에 이 에너지가 기다리고 있어요.' }
+      ];
       const cardHTML = tDrawnCards.map((card,i) => {
         const pos = T_POS[i];
         const meaning = card.isReversed ? card.reversed_meaning : card.upright_meaning;
         const intro = T_CARD_INTRO[card.card_name_ko] || `${card.card_name_ko}은(는) ${(meaning||'').split(' ')[0]}의 에너지를 담은 카드예요.`;
         const readingText = getTarotReading(card.card_name_ko, tQuestion, card.isReversed);
-        const readingBlock = readingText
-          ? `<div style="background:rgba(201,168,76,.06);border-left:2px solid rgba(201,168,76,.35);border-radius:0 10px 10px 0;padding:.75rem 1rem;margin-top:.6rem;font-size:.83rem;color:#e0d5c4;line-height:1.85">${readingText}</div>`
-          : '';
+        const posHint = posAngleTarot[i];
+        // 역방향 위치별 추가 멘트
+        const revPosNote = card.isReversed ? [
+          '과거에 이 에너지가 억눌리거나 충분히 발현되지 못했을 수 있어요. 그 흔적이 지금까지 이어진 거예요.',
+          '지금 이 에너지가 안으로 향하고 있어요. 겉보다 내면에서 크게 움직이고 있는 시기예요.',
+          '아직 완전히 열리지 않은 가능성이에요. 억지로 끌어당기지 않아도 때가 되면 자연스럽게 펼쳐져요.'
+        ][i] : '';
+        const readingBlock = `
+          <div style="font-size:11px;color:#c9a84c;font-weight:700;margin:.5rem 0 .3rem">${posHint.label} — ${posHint.hint}</div>
+          ${readingText
+            ? `<div style="background:rgba(201,168,76,.06);border-left:2px solid rgba(201,168,76,.35);border-radius:0 10px 10px 0;padding:.75rem 1rem;font-size:.83rem;color:#e0d5c4;line-height:1.9">${readingText}</div>`
+            : ''}
+          ${revPosNote
+            ? `<div style="font-size:.8rem;color:#a090dd;background:rgba(100,80,180,.08);border-left:2px solid rgba(160,120,220,.4);padding:.5rem .8rem;border-radius:0 8px 8px 0;margin-top:.5rem">${revPosNote}</div>`
+            : ''}`;
         return `
           <div class="tarot-interp-box">
             <div class="tcib-pos-row">
