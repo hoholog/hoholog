@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260420022035_93a549f6">
+  <meta name="build-version" content="20260421141306_bf2dc9e2">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -5029,7 +5029,7 @@
                 : '<span style="font-size:10px;background:rgba(201,168,76,.15);color:#c9a84c;padding:2px 7px;border-radius:10px">✨ 정방향</span>';
 
             // CSV 해석 텍스트 가져오기
-            var baseReading = getTarotReading(nameKo, q, isRev);
+            var baseReading = getTarotReading(nameKo, q, isRev, i);
 
             // 위치별로 다른 앵글 문장 앞에 붙여 차별화
             var posPrefix = ['🌱 과거 — 지금 이 상황의 뿌리가 된 에너지예요.',
@@ -5172,7 +5172,7 @@
                 ? '<span style="font-size:10px;background:rgba(100,80,180,.25);color:#a090dd;padding:2px 7px;border-radius:10px">🔄 역방향</span>'
                 : '<span style="font-size:10px;background:rgba(201,168,76,.15);color:#c9a84c;padding:2px 7px;border-radius:10px">✨ 정방향</span>';
             var emoji = c.emoji || '🃏';
-            var readingText = getTarotReading(nameKo, q, item.reversed);
+            var readingText = getTarotReading(nameKo, q, item.reversed, i);
             var readingBlock = readingText
                 ? '<div style="font-size:13px;color:#e0d5c4;line-height:1.9;margin-top:8px">' + readingText + '</div>'
                 : '<div style="font-size:13px;color:#9b8fb0;line-height:1.8;margin-top:6px">' + nameKo + '의 에너지가 이 자리에서 ' + (item.reversed ? '내면을 향해' : '외부로') + ' 흐르고 있습니다.</div>';
@@ -5474,21 +5474,59 @@
         tReadingsLoaded = true;
       } catch(e){ console.warn('타로해석 CSV 로드 실패:', e); }
     }
-    function getTarotReading(nameKo, question, isReversed) {
-      const dir = isReversed ? '역방향' : '정방향';
-      const catMap = {
-        '연애와 관계':'연애','직업과 진로':'직장','금전과 재물':'직장',
-        '건강과 웰빙':'일반','인간관계':'연애','자기 성장':'일반'
-      };
-      let cat = catMap[question];
-      if(!cat){
-        if(/연애|관계|사랑|연인/.test(question)) cat='연애';
-        else if(/직|일|돈|금|커리어|취업/.test(question)) cat='직장';
-        else cat='일반';
-      }
-      return TAROT_READINGS_MAP[nameKo+'|'+cat+'|'+dir]
-          || TAROT_READINGS_MAP[nameKo+'|일반|'+dir]
-          || '';
+    // 카드 고유 의미 기반 해석 생성 (CSV 템플릿 대신 카드덱 데이터 활용)
+    function getTarotReading(nameKo, question, isReversed, positionIndex) {
+      // positionIndex: 0=과거, 1=현재, 2=미래 (없으면 위치 무관)
+
+      // 카드덱에서 해당 카드 찾기
+      const card = tDeck.find(c => (c.card_name_ko || c.name_ko) === nameKo);
+      if (!card) return '';
+
+      const meaning = isReversed
+        ? (card.reversed_meaning || card.meaning_rev || '')
+        : (card.upright_meaning || card.meaning || '');
+
+      // 카테고리 감지
+      let cat = '일반';
+      const catMap = {'연애와 관계':'연애','직업과 진로':'직장','금전과 재물':'직장','건강과 웰빙':'일반','인간관계':'연애','자기 성장':'일반'};
+      if (catMap[question]) cat = catMap[question];
+      else if (/연애|관계|사랑|연인/.test(question)) cat = '연애';
+      else if (/직|일|돈|금|커리어|취업/.test(question)) cat = '직장';
+
+      // 핵심 키워드 추출 (앞 2~3개)
+      const keywords = meaning.split(/[\s,]+/).filter(k => k.length > 1).slice(0, 3);
+      const kwStr = keywords.join(', ');
+
+      // 역방향 여부에 따른 에너지 설명
+      const revDesc = isReversed
+        ? '이 에너지가 아직 충분히 발현되지 못하거나 내면으로 향하고 있는 상태예요.'
+        : '이 에너지가 지금 분명하게 작동하고 있어요.';
+
+      // 위치별 문장 패턴
+      const posPatterns = [
+        // 과거 (0)
+        {
+          연애: `${kwStr}의 에너지가 지금 관계의 배경을 만들어왔어요. ${isReversed ? '그 감정이 온전히 표현되지 못한 채 쌓여온 부분이 있고, 그게 지금 상황의 뿌리가 됐어요.' : '그 흐름이 지금 당신이 느끼는 감정의 출발점이에요.'}`,
+          직장: `${kwStr}의 에너지가 지금 당신의 커리어 기반을 만들어온 시간이에요. ${isReversed ? '그 능력이 충분히 인정받지 못한 채 쌓여온 아쉬움이 있을 수 있어요.' : '그 경험과 노력이 지금 당신이 서 있는 자리를 만들었어요.'}`,
+          일반: `${kwStr}의 에너지가 지금의 당신을 형성해온 흐름이에요. ${isReversed ? '그 에너지가 억눌리거나 충분히 발현되지 못한 채 이어져온 부분이 있어요.' : '그 흐름이 지금까지 이어지며 당신을 여기에 데려다줬어요.'}`
+        },
+        // 현재 (1)
+        {
+          연애: `지금 ${kwStr}의 에너지가 관계 안에서 강하게 움직이고 있어요. ${isReversed ? '겉으로 드러나기보다 내면에서 크게 작용하고 있는 시기예요. 솔직하게 꺼내는 것이 도움이 돼요.' : '이 에너지를 어떻게 표현하느냐가 지금 관계의 방향을 결정하고 있어요.'}`,
+          직장: `지금 ${kwStr}의 에너지가 업무 전반에 영향을 미치고 있어요. ${isReversed ? '아직 완전히 발휘되지 못한 상태이지만, 그 안에서 무언가 준비되고 있는 시기예요.' : '이 에너지를 지금 적극적으로 활용하면 뚜렷한 결과로 이어질 수 있어요.'}`,
+          일반: `지금 ${kwStr}의 에너지가 당신의 상황 전반에 걸쳐 작용하고 있어요. ${isReversed ? '내면에서 크게 움직이고 있지만 아직 밖으로 드러나지 않은 시기예요.' : '이 에너지를 알아채고 따라가는 것이 지금 가장 중요한 일이에요.'}`
+        },
+        // 미래 (2)
+        {
+          연애: `앞으로 ${kwStr}의 에너지가 관계에 영향을 줄 거예요. ${isReversed ? '처음엔 잘 보이지 않을 수 있지만, 그 안에서 조용히 변화가 일어나고 있을 거예요.' : '이 흐름을 열린 마음으로 받아들이면 관계가 한 단계 더 깊어질 수 있어요.'}`,
+          직장: `앞으로 ${kwStr}의 에너지가 커리어에 작용하기 시작할 거예요. ${isReversed ? '아직 완전히 열리지 않은 기회가 있어요. 서두르지 않고 준비하면 때가 됐을 때 자연스럽게 열려요.' : '지금 하는 선택들이 이 방향으로 수렴하면서 원하는 결과에 가까워질 거예요.'}`,
+          일반: `앞으로 ${kwStr}의 에너지가 당신의 삶에 찾아올 거예요. ${isReversed ? '아직 완전히 드러나지 않은 가능성이에요. 억지로 끌어당기지 않아도 흐름을 타면 자연스럽게 펼쳐질 거예요.' : '지금의 흐름이 이 방향으로 이어지고 있어요. 그 에너지를 믿고 나아가도 좋아요.'}`
+        }
+      ];
+
+      // 위치 인덱스가 있으면 위치별 패턴, 없으면 현재 기준
+      const idx = (positionIndex !== undefined && positionIndex >= 0 && positionIndex <= 2) ? positionIndex : 1;
+      return posPatterns[idx][cat] || posPatterns[idx]['일반'];
     }
 
     // ── MBTI×타로 합성 해석 (하드코딩 폴백 포함) ──
@@ -5764,7 +5802,7 @@
         const pos = T_POS[i];
         const meaning = card.isReversed ? card.reversed_meaning : card.upright_meaning;
         const intro = T_CARD_INTRO[card.card_name_ko] || `${card.card_name_ko}은(는) ${(meaning||'').split(' ')[0]}의 에너지를 담은 카드예요.`;
-        const readingText = getTarotReading(card.card_name_ko, tQuestion, card.isReversed);
+        const readingText = getTarotReading(card.card_name_ko, tQuestion, card.isReversed, i);
         const posHint = posAngleTarot[i];
         // 역방향 위치별 추가 멘트
         const revPosNote = card.isReversed ? [
