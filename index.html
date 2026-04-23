@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260422234934_eba54f14">
+  <meta name="build-version" content="20260423130016_fa81eb26">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -5509,11 +5509,32 @@
         tReadingsLoaded = true;
       } catch(e){ console.warn('타로해석 CSV 로드 실패:', e); }
     }
-    // 카드 고유 의미 기반 해석 생성 (CSV 템플릿 대신 카드덱 데이터 활용)
+    // 카드 고유 의미 기반 해석 생성 — CSV 우선, CARD_STORIES 폴백
     function getTarotReading(nameKo, question, isReversed, positionIndex) {
       // positionIndex: 0=과거, 1=현재, 2=미래
 
-      // 카드덱에서 해당 카드 찾기
+      // 카테고리 감지 (CSV 조회에도 필요하므로 먼저)
+      let cat = '일반';
+      if (/연애와 관계|연애|관계|사랑|연인|인간관계/.test(question)) cat = '연애';
+      else if (/직업과 진로|직|일|돈|금|커리어|취업/.test(question)) cat = '직장';
+
+      const idx = (positionIndex !== undefined && positionIndex >= 0 && positionIndex <= 2) ? positionIndex : 1;
+      const posLabel = ['과거', '지금', '앞으로'][idx];
+
+      // ── 1순위: tarot_card_readings.csv에서 읽기 ──
+      const dir = isReversed ? '역방향' : '정방향';
+      const csvKey = nameKo + '|' + cat + '|' + dir;
+      const csvText = TAROT_READINGS_MAP[csvKey];
+      if (csvText) {
+        const posPrefix = {
+          0: { 연애: '관계의 배경에서 ', 직장: '커리어 기반에서 ', 일반: '지나온 시간에서 ' },
+          1: { 연애: '지금 관계 안에서 ', 직장: '지금 업무에서 ', 일반: '지금 이 순간 ' },
+          2: { 연애: '앞으로 관계에서 ', 직장: '앞으로 커리어에서 ', 일반: '앞으로 다가올 때 ' },
+        }[idx][cat];
+        return `<span style="color:#b8a8d8;font-size:.82em">${posPrefix}${dir} — </span>${csvText}`;
+      }
+
+      // ── 2순위: CSV에 없으면 카드덱 데이터 접근 ──
       const card = tDeck.find(c => (c.card_name_ko || c.name_ko) === nameKo);
       if (!card) return '';
 
@@ -5521,17 +5542,9 @@
         ? (card.reversed_meaning || card.meaning_rev || '')
         : (card.upright_meaning || card.meaning || '');
 
-      // 카테고리 감지
-      let cat = '일반';
-      if (/연애와 관계|연애|관계|사랑|연인|인간관계/.test(question)) cat = '연애';
-      else if (/직업과 진로|직|일|돈|금|커리어|취업/.test(question)) cat = '직장';
-
       // 핵심 키워드 (앞 2~3개)
       const keywords = meaning.split(/[\s,、]+/).filter(k => k.length > 1).slice(0, 3);
       const kwStr = keywords.join(' · ');
-
-      const idx = (positionIndex !== undefined && positionIndex >= 0 && positionIndex <= 2) ? positionIndex : 1;
-      const posLabel = ['과거', '지금', '앞으로'][idx];
 
       // ── 카드별 5단계 해석 데이터 ──
       // [공감문, 흐름설명, 현실디테일, 결론, 행동조언] × [정방향, 역방향]
@@ -5687,7 +5700,7 @@
     async function initTarot() {
       const inner = document.getElementById('tarot-inner');
       if(!inner) return;
-      await loadTarotDeck();
+      await Promise.all([loadTarotDeck(), loadTarotReadings()]);
       tQuestion = '';
       tDrawnCards = [];
       tRevealedCount = 0;
