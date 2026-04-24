@@ -2862,6 +2862,66 @@
         var TJ_MONTH_ICON = ['🌱','🌸','🌞','🌿','🍀','☀️','🍉','🌾','🍂','🍁','❄️','🎍'];
         var TJ_MONTH_NAME = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
+        // ── 운세 항목별 한줄 요약 태그 & 현실 행동 ──
+        var TJ_ACTION = {
+            총운: [
+                { tag: '🟢 상승세', action: '지금 미뤄온 계획을 한 가지 골라 이번 주 안에 첫 걸음을 밟아보세요.' },
+                { tag: '🟡 안정세', action: '루틴을 꼼꼼히 지키는 것이 핵심입니다. 달력에 할 일을 미리 적어두세요.' },
+                { tag: '🟢 성장세', action: 'SNS·커뮤니티에 나의 성과나 작업물을 하나 공개해보세요. 반응이 옵니다.' },
+                { tag: '🟡 점검세', action: '지금까지 한 일을 메모로 정리하고, 불필요한 일 두 가지를 걷어내세요.' },
+                { tag: '🟢 풍성세', action: '주변에 작은 도움 하나를 먼저 건네보세요. 관계와 기회가 함께 열립니다.' },
+                { tag: '🔴 주의세', action: '하루 일정 중 반드시 30분 이상 아무것도 하지 않는 휴식을 예약하세요.' },
+                { tag: '🟡 재정비세', action: '오늘 하루 해야 할 일 목록에서 딱 하나만 남기고 나머지는 내일로 밀어보세요.' },
+                { tag: '🟢 결실세', action: '완성 단계인 프로젝트나 목표가 있다면 오늘 마무리 일정을 확정하세요.' },
+                { tag: '🟡 변화세', action: '작은 환경 변화(책상 정리, 산책 코스 변경)를 시도해 새 자극을 만드세요.' },
+                { tag: '🟡 마무리세', action: '완수하지 못한 약속을 목록으로 만들고 하나씩 처리하세요.' },
+                { tag: '🟡 준비세', action: '내년 목표 키워드를 세 개만 메모해두고 관련 정보를 모으기 시작하세요.' },
+                { tag: '🟢 감사세', action: '한 해를 함께한 사람에게 짧은 감사 메시지를 한 통 보내보세요.' },
+            ],
+            재물: [
+                { tag: '💚 소폭 증가', action: '이번 달 고정 지출 내역을 가계부 앱에 입력하고 절약 항목 하나를 찾으세요.' },
+                { tag: '🔴 지출 주의', action: '지갑·카드 내역을 지금 바로 확인하고 이번 달 예산 한도를 설정하세요.' },
+                { tag: '🟢 이익 가능', action: '새 수입원 아이디어를 종이에 세 가지 써보고 가장 현실적인 하나를 골라보세요.' },
+                { tag: '🟡 현상 유지', action: '지금 구독 중인 서비스 목록을 점검하고 안 쓰는 것 하나를 해지하세요.' },
+                { tag: '🟡 저축 유리', action: '월급날 자동이체로 소액이라도 저축 계좌로 이동시키는 설정을 해두세요.' },
+                { tag: '🟡 균형세', action: '이달 꼭 필요한 지출 vs 참을 수 있는 지출을 두 칸으로 나눠 메모하세요.' },
+                { tag: '🔴 지출 급증 주의', action: '비상금 통장 잔액을 확인하고 최소 30만원 이상 유지되는지 점검하세요.' },
+                { tag: '🟢 보상 기회', action: '부업·프리랜서 플랫폼에 작은 서비스 하나를 등록해보는 것을 고려하세요.' },
+                { tag: '🟢 금전 상승', action: '묵혀둔 예·적금 만기일을 확인하고 재투자 계획을 세워보세요.' },
+                { tag: '🔴 금전 거래 신중', action: '지인과 돈 거래 전 반드시 문자나 메모로 조건을 남기는 습관을 들이세요.' },
+                { tag: '🟡 절약 달', action: '한 달간 외식 횟수를 현재의 절반으로 줄이는 목표를 세워보세요.' },
+                { tag: '🟡 결산 준비', action: '올해 지출 카테고리를 분류하고 내년 예산 계획 초안을 작성해보세요.' },
+            ],
+            건강: [
+                { tag: '💪 활력 충분', action: '에너지가 넘칠 때 운동 강도를 갑자기 올리면 부상 위험이 있습니다. 준비운동 5분을 꼭 챙기세요.' },
+                { tag: '🔴 피로 누적', action: '오늘 밤 스마트폰을 취침 1시간 전에 내려놓고 일찍 잠자리에 들어보세요.' },
+                { tag: '🟡 환절기 주의', action: '외출 시 얇은 겉옷을 챙기고, 귀가 후 손 씻기를 습관화하세요.' },
+                { tag: '🟢 건강 안정', action: '규칙적인 기상 시간을 정하고 1주일만 지켜보세요. 컨디션이 눈에 띄게 달라집니다.' },
+                { tag: '🟡 소화기 주의', action: '이번 달은 맵고 자극적인 음식을 줄이고 따뜻한 물·차를 자주 마시세요.' },
+                { tag: '🔴 열·피로 주의', action: '낮 시간대 야외 활동을 줄이고 실내에서도 충분히 수분을 보충하세요.' },
+                { tag: '🟡 스트레스 주의', action: '매일 10분 짧은 산책이나 스트레칭을 달력에 일정으로 넣어보세요.' },
+                { tag: '🟡 호흡기 관리', action: '공기청정기 필터를 점검하고 하루 한 번 실내 환기를 습관화하세요.' },
+                { tag: '🟡 관절·근육 관리', action: '아침에 일어나자마자 2분간 가벼운 스트레칭을 시작하세요. 작은 습관이 큰 차이를 만듭니다.' },
+                { tag: '🟢 건강 검진 추천', action: '이번 달 안에 건강 검진을 예약하거나 혈압·혈당 등 기본 수치를 체크해보세요.' },
+                { tag: '🔴 호흡기 질환 주의', action: '외출 시 마스크를 착용하고 귀가 후 양치질과 손씻기를 철저히 하세요.' },
+                { tag: '🔴 과식·과음 주의', action: '모임 전 가볍게 식사해서 폭식을 방지하고 음료는 물부터 한 잔 마시는 습관을 들이세요.' },
+            ],
+            인간관계: [
+                { tag: '🟢 새 인연 가능', action: '오늘 처음 만나는 사람에게 먼저 이름을 물어보세요. 기억하는 것만으로 관계가 시작됩니다.' },
+                { tag: '🟢 구 인연 반가움', action: '오래 연락 못 한 지인에게 근황을 묻는 메시지 하나를 보내보세요.' },
+                { tag: '🟡 갈등 주의', action: '오해가 생겼다면 메시지보다 직접 전화로 목소리를 전하는 것이 오해를 줄여줍니다.' },
+                { tag: '🟢 귀인 등장', action: '주변 사람의 부탁에 작게라도 응답해보세요. 먼저 주는 사람에게 귀인이 찾아옵니다.' },
+                { tag: '🟢 베풀면 배로 돌아옴', action: '누군가에게 오늘 작은 칭찬이나 도움 하나를 베풀어보세요.' },
+                { tag: '🟡 말 조심 달', action: '메시지를 보내기 전 한 번 더 읽어보는 습관을 들이세요. 오해를 크게 줄여줍니다.' },
+                { tag: '🟢 모임 에너지 UP', action: '오랜만에 소모임이나 동호회 활동에 참여해 새 에너지를 충전해보세요.' },
+                { tag: '🟢 진심 전달 달', action: '평소 표현 못한 고마움을 문자 한 줄로라도 전해보세요. 관계가 깊어집니다.' },
+                { tag: '🟡 소수 집중', action: '지금 가장 소중한 사람 세 명을 떠올리고, 그 인연에 더 집중해보세요.' },
+                { tag: '🟢 감사 표현 달', action: '고마운 사람에게 커피 한 잔이나 짧은 손편지로 마음을 전해보세요.' },
+                { tag: '🟢 연말 모임 활성', action: '참석하기 망설여지는 모임이 있다면 일단 가보세요. 예상 밖의 좋은 만남이 기다립니다.' },
+                { tag: '🟢 소중한 인연 돌봄', action: '올 한 해 함께한 사람들에게 한마디씩 감사를 전하는 시간을 만들어보세요.' },
+            ],
+        };
+
         // 토정비결 시드: 생년월일 + 조회연도 고정
         function _tjSeed(birthYear, birthMonth, birthDay, targetYear, suffix) {
             return 'tj|' + birthYear + '-' + birthMonth + '-' + birthDay + '|' + targetYear + '|' + suffix;
@@ -2888,6 +2948,10 @@
                     재물:  TJ_MONTHLY.재물[_seededInt(s('재물'), TJ_MONTHLY.재물.length)],
                     건강:  TJ_MONTHLY.건강[_seededInt(s('건강'), TJ_MONTHLY.건강.length)],
                     인관:  TJ_MONTHLY.인간관계[_seededInt(s('인관'), TJ_MONTHLY.인간관계.length)],
+                    총운_ai: TJ_ACTION.총운[_seededInt(s('총운'), TJ_ACTION.총운.length)],
+                    재물_ai: TJ_ACTION.재물[_seededInt(s('재물'), TJ_ACTION.재물.length)],
+                    건강_ai: TJ_ACTION.건강[_seededInt(s('건강'), TJ_ACTION.건강.length)],
+                    인관_ai: TJ_ACTION.인간관계[_seededInt(s('인관'), TJ_ACTION.인간관계.length)],
                 };
             });
 
@@ -2905,11 +2969,11 @@
                     +   '<button onclick="tjAiAssist(' + i + ',\'' + birthYear + '\',\'' + birthMonth + '\',\'' + birthDay + '\',\'' + ilgan + '\',\'' + (age||0) + '\',\'' + (gender||'남') + '\')"'
                     +     ' style="background:#ede9fe;color:#7c3aed;border:none;padding:5px 11px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">✨ AI 해석</button>'
                     + '</div>'
-                    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-                    +   tjPill('🔮 총운', m.총운)
-                    +   tjPill('💰 재물운', m.재물)
-                    +   tjPill('💪 건강운', m.건강)
-                    +   tjPill('🤝 인간관계', m.인관)
+                    + '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px">'
+                    +   tjPill('🔮 총운', m.총운, m.총운_ai)
+                    +   tjPill('💰 재물운', m.재물, m.재물_ai)
+                    +   tjPill('💪 건강운', m.건강, m.건강_ai)
+                    +   tjPill('🤝 인간관계', m.인관, m.인관_ai)
                     + '</div>'
                     + '<div id="tj-ai-' + i + '" style="display:none"></div>'
                     + '</div>';
@@ -2940,10 +3004,18 @@
             + '</div>';
         }
 
-        function tjPill(label, text) {
+        function tjPill(label, text, actionData) {
+            var actionHTML = '';
+            if (actionData) {
+                actionHTML = '<div style="margin-top:7px;padding-top:7px;border-top:1px solid #e2e8f0">'
+                    + '<span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:#ede9fe;color:#6d28d9;margin-bottom:5px">' + actionData.tag + '</span>'
+                    + '<div style="font-size:11px;color:#64748b;line-height:1.65;background:#f1f5f9;border-radius:7px;padding:6px 8px">💡 ' + actionData.action + '</div>'
+                    + '</div>';
+            }
             return '<div style="background:#f8fafc;border-radius:10px;padding:10px 11px">'
                 + '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">' + label + '</div>'
                 + '<div style="font-size:12px;color:#475569;line-height:1.7">' + text + '</div>'
+                + actionHTML
                 + '</div>';
         }
 
