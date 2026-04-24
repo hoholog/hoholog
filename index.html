@@ -110,7 +110,7 @@
         window.addEventListener('focus', function() { checkVersion(true); });
     })();
     </script>
-  <meta name="build-version" content="20260424160649_20e6c1af">
+  <meta name="build-version" content="20260424235935_cb134b60">
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -2863,63 +2863,63 @@
         var TJ_MONTH_ICON = ['🌱','🌸','🌞','🌿','🍀','☀️','🍉','🌾','🍂','🍁','❄️','🎍'];
         var TJ_MONTH_NAME = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-        // ── 운세 항목별 한줄 요약 태그 & 현실 행동 ──
-        var TJ_ACTION = {
+        // ── 운세 항목별 한줄 요약 태그 & 현실 행동 (TJ_MONTHLY와 인덱스 1:1 대응) ──
+        var TJ_META = {
             총운: [
-                { tag: '🟢 상승세', action: '지금 미뤄온 계획을 한 가지 골라 이번 주 안에 첫 걸음을 밟아보세요.' },
-                { tag: '🟡 안정세', action: '루틴을 꼼꼼히 지키는 것이 핵심입니다. 달력에 할 일을 미리 적어두세요.' },
-                { tag: '🟢 성장세', action: 'SNS·커뮤니티에 나의 성과나 작업물을 하나 공개해보세요. 반응이 옵니다.' },
-                { tag: '🟡 점검세', action: '지금까지 한 일을 메모로 정리하고, 불필요한 일 두 가지를 걷어내세요.' },
-                { tag: '🟢 풍성세', action: '주변에 작은 도움 하나를 먼저 건네보세요. 관계와 기회가 함께 열립니다.' },
-                { tag: '🔴 주의세', action: '하루 일정 중 반드시 30분 이상 아무것도 하지 않는 휴식을 예약하세요.' },
-                { tag: '🟡 재정비세', action: '오늘 하루 해야 할 일 목록에서 딱 하나만 남기고 나머지는 내일로 밀어보세요.' },
-                { tag: '🟢 결실세', action: '완성 단계인 프로젝트나 목표가 있다면 오늘 마무리 일정을 확정하세요.' },
-                { tag: '🟡 변화세', action: '작은 환경 변화(책상 정리, 산책 코스 변경)를 시도해 새 자극을 만드세요.' },
-                { tag: '🟡 마무리세', action: '완수하지 못한 약속을 목록으로 만들고 하나씩 처리하세요.' },
-                { tag: '🟡 준비세', action: '내년 목표 키워드를 세 개만 메모해두고 관련 정보를 모으기 시작하세요.' },
-                { tag: '🟢 감사세', action: '한 해를 함께한 사람에게 짧은 감사 메시지를 한 통 보내보세요.' },
+                { tag:'🟢 활기세', action:'미뤄온 계획 하나를 오늘 달력에 날짜 잡아 적어보세요.' },
+                { tag:'🟡 안정세', action:'루틴을 점검하고 빠진 습관 하나를 다시 채워 넣으세요.' },
+                { tag:'🟢 성장세', action:'본인의 성과나 근황을 주변에 가볍게 알려보세요. 기회가 붙습니다.' },
+                { tag:'🟡 점검세', action:'진행 중인 일 목록을 적어보고 완료 가능한 것부터 마무리하세요.' },
+                { tag:'🟢 풍성세', action:'작은 호의 하나를 먼저 건네세요. 관계와 운이 함께 열립니다.' },
+                { tag:'🔴 과열 주의', action:'하루 30분 이상 아무것도 안 하는 휴식을 의도적으로 예약하세요.' },
+                { tag:'🟡 재정비세', action:'오늘 할 일 목록에서 꼭 필요한 것만 남기고 나머지는 내일로 넘기세요.' },
+                { tag:'🟢 결실세', action:'마무리 단계인 일에 마감일을 확정하고 남은 단계를 역산하세요.' },
+                { tag:'🟡 변화세', action:'책상 정리나 산책 코스 변경처럼 작은 환경 변화로 새 자극을 만드세요.' },
+                { tag:'🟡 마무리세', action:'완수 못 한 약속 목록을 만들고 오늘 하나씩 연락해 처리하세요.' },
+                { tag:'🟡 준비세', action:'내년 목표 키워드를 세 개만 메모해두고 관련 정보를 모으기 시작하세요.' },
+                { tag:'🟢 감사세', action:'함께한 사람에게 짧은 감사 메시지를 한 통 보내보세요.' },
             ],
             재물: [
-                { tag: '💚 소폭 증가', action: '이번 달 고정 지출 내역을 가계부 앱에 입력하고 절약 항목 하나를 찾으세요.' },
-                { tag: '🔴 지출 주의', action: '지갑·카드 내역을 지금 바로 확인하고 이번 달 예산 한도를 설정하세요.' },
-                { tag: '🟢 이익 가능', action: '새 수입원 아이디어를 종이에 세 가지 써보고 가장 현실적인 하나를 골라보세요.' },
-                { tag: '🟡 현상 유지', action: '지금 구독 중인 서비스 목록을 점검하고 안 쓰는 것 하나를 해지하세요.' },
-                { tag: '🟡 저축 유리', action: '월급날 자동이체로 소액이라도 저축 계좌로 이동시키는 설정을 해두세요.' },
-                { tag: '🟡 균형세', action: '이달 꼭 필요한 지출 vs 참을 수 있는 지출을 두 칸으로 나눠 메모하세요.' },
-                { tag: '🔴 지출 급증 주의', action: '비상금 통장 잔액을 확인하고 최소 30만원 이상 유지되는지 점검하세요.' },
-                { tag: '🟢 보상 기회', action: '부업·프리랜서 플랫폼에 작은 서비스 하나를 등록해보는 것을 고려하세요.' },
-                { tag: '🟢 금전 상승', action: '묵혀둔 예·적금 만기일을 확인하고 재투자 계획을 세워보세요.' },
-                { tag: '🔴 금전 거래 신중', action: '지인과 돈 거래 전 반드시 문자나 메모로 조건을 남기는 습관을 들이세요.' },
-                { tag: '🟡 절약 달', action: '한 달간 외식 횟수를 현재의 절반으로 줄이는 목표를 세워보세요.' },
-                { tag: '🟡 결산 준비', action: '올해 지출 카테고리를 분류하고 내년 예산 계획 초안을 작성해보세요.' },
+                { tag:'💚 소폭 증가', action:'이번 달 고정 지출을 가계부 앱에 입력하고 절약 항목 하나를 찾으세요.' },
+                { tag:'🔴 지출 점검', action:'카드 내역을 지금 바로 확인하고 이번 달 예산 한도를 설정하세요.' },
+                { tag:'🟢 이익 가능', action:'새 수입원 아이디어를 세 가지 적고 가장 현실적인 것 하나를 골라보세요.' },
+                { tag:'🟡 현상 유지', action:'구독 중인 서비스 목록을 점검하고 안 쓰는 것 하나를 해지하세요.' },
+                { tag:'🟡 저축 유리', action:'월급날 자동이체로 소액이라도 저축 계좌로 이동하는 설정을 해두세요.' },
+                { tag:'🟡 균형세', action:'필수 지출과 줄일 수 있는 지출 두 칸으로 나눠 오늘 메모해보세요.' },
+                { tag:'🔴 비상금 확인', action:'비상금 통장 잔액을 확인하고 30만 원 이상 유지되는지 점검하세요.' },
+                { tag:'🟢 보상 기회', action:'부업·프리랜서 플랫폼에 작은 서비스 하나 등록하는 것을 검토해보세요.' },
+                { tag:'🟢 금전 상승', action:'묵혀둔 예·적금 만기일을 확인하고 재투자 계획을 세워보세요.' },
+                { tag:'🔴 거래 신중', action:'지인과 금전 거래 전 반드시 문자나 메모로 조건을 기록해두세요.' },
+                { tag:'🟡 절약 달', action:'이번 달 외식 횟수를 절반으로 줄이는 목표를 세워보세요.' },
+                { tag:'🟡 결산 준비', action:'올해 지출 카테고리를 분류하고 내년 예산 초안을 작성해보세요.' },
             ],
             건강: [
-                { tag: '💪 활력 충분', action: '에너지가 넘칠 때 운동 강도를 갑자기 올리면 부상 위험이 있습니다. 준비운동 5분을 꼭 챙기세요.' },
-                { tag: '🔴 피로 누적', action: '오늘 밤 스마트폰을 취침 1시간 전에 내려놓고 일찍 잠자리에 들어보세요.' },
-                { tag: '🟡 환절기 주의', action: '외출 시 얇은 겉옷을 챙기고, 귀가 후 손 씻기를 습관화하세요.' },
-                { tag: '🟢 건강 안정', action: '규칙적인 기상 시간을 정하고 1주일만 지켜보세요. 컨디션이 눈에 띄게 달라집니다.' },
-                { tag: '🟡 소화기 주의', action: '이번 달은 맵고 자극적인 음식을 줄이고 따뜻한 물·차를 자주 마시세요.' },
-                { tag: '🔴 열·피로 주의', action: '낮 시간대 야외 활동을 줄이고 실내에서도 충분히 수분을 보충하세요.' },
-                { tag: '🟡 스트레스 주의', action: '매일 10분 짧은 산책이나 스트레칭을 달력에 일정으로 넣어보세요.' },
-                { tag: '🟡 호흡기 관리', action: '공기청정기 필터를 점검하고 하루 한 번 실내 환기를 습관화하세요.' },
-                { tag: '🟡 관절·근육 관리', action: '아침에 일어나자마자 2분간 가벼운 스트레칭을 시작하세요. 작은 습관이 큰 차이를 만듭니다.' },
-                { tag: '🟢 건강 검진 추천', action: '이번 달 안에 건강 검진을 예약하거나 혈압·혈당 등 기본 수치를 체크해보세요.' },
-                { tag: '🔴 호흡기 질환 주의', action: '외출 시 마스크를 착용하고 귀가 후 양치질과 손씻기를 철저히 하세요.' },
-                { tag: '🔴 과식·과음 주의', action: '모임 전 가볍게 식사해서 폭식을 방지하고 음료는 물부터 한 잔 마시는 습관을 들이세요.' },
+                { tag:'💪 활력 충분', action:'운동 전 준비운동 5분을 꼭 챙기세요. 넘치는 에너지가 부상으로 이어질 수 있습니다.' },
+                { tag:'🔴 피로 누적', action:'취침 1시간 전 스마트폰을 내려놓고 오늘 일찍 잠자리에 들어보세요.' },
+                { tag:'🟡 환절기 주의', action:'외출 시 얇은 겉옷을 챙기고 귀가 후 손 씻기를 습관화하세요.' },
+                { tag:'🟢 건강 안정', action:'기상 시간을 고정하고 1주일만 지켜보세요. 컨디션이 눈에 띄게 달라집니다.' },
+                { tag:'🟡 소화기 주의', action:'맵고 자극적인 음식을 줄이고 따뜻한 물·차를 자주 마시세요.' },
+                { tag:'🔴 열·피로 주의', action:'낮 야외 활동을 줄이고 실내에서도 수분을 충분히 보충하세요.' },
+                { tag:'🟡 스트레스 주의', action:'매일 10분 산책이나 스트레칭을 달력에 일정으로 넣어두세요.' },
+                { tag:'🟡 호흡기 관리', action:'공기청정기 필터를 점검하고 하루 한 번 창문을 열어 환기하세요.' },
+                { tag:'🟡 근육·관절 관리', action:'아침 기상 직후 2분 스트레칭을 오늘부터 시작해보세요.' },
+                { tag:'🟢 검진 추천', action:'이번 달 안에 건강 검진을 예약하거나 혈압·혈당 수치를 체크하세요.' },
+                { tag:'🔴 호흡기 주의', action:'외출 시 마스크를 착용하고 귀가 후 손 씻기와 양치를 철저히 하세요.' },
+                { tag:'🔴 과식·과음 주의', action:'모임 전 가볍게 먹어 폭식을 방지하고 음료는 물부터 한 잔 마시세요.' },
             ],
             인간관계: [
-                { tag: '🟢 새 인연 가능', action: '오늘 처음 만나는 사람에게 먼저 이름을 물어보세요. 기억하는 것만으로 관계가 시작됩니다.' },
-                { tag: '🟢 구 인연 반가움', action: '오래 연락 못 한 지인에게 근황을 묻는 메시지 하나를 보내보세요.' },
-                { tag: '🟡 갈등 주의', action: '오해가 생겼다면 메시지보다 직접 전화로 목소리를 전하는 것이 오해를 줄여줍니다.' },
-                { tag: '🟢 귀인 등장', action: '주변 사람의 부탁에 작게라도 응답해보세요. 먼저 주는 사람에게 귀인이 찾아옵니다.' },
-                { tag: '🟢 베풀면 배로 돌아옴', action: '누군가에게 오늘 작은 칭찬이나 도움 하나를 베풀어보세요.' },
-                { tag: '🟡 말 조심 달', action: '메시지를 보내기 전 한 번 더 읽어보는 습관을 들이세요. 오해를 크게 줄여줍니다.' },
-                { tag: '🟢 모임 에너지 UP', action: '오랜만에 소모임이나 동호회 활동에 참여해 새 에너지를 충전해보세요.' },
-                { tag: '🟢 진심 전달 달', action: '평소 표현 못한 고마움을 문자 한 줄로라도 전해보세요. 관계가 깊어집니다.' },
-                { tag: '🟡 소수 집중', action: '지금 가장 소중한 사람 세 명을 떠올리고, 그 인연에 더 집중해보세요.' },
-                { tag: '🟢 감사 표현 달', action: '고마운 사람에게 커피 한 잔이나 짧은 손편지로 마음을 전해보세요.' },
-                { tag: '🟢 연말 모임 활성', action: '참석하기 망설여지는 모임이 있다면 일단 가보세요. 예상 밖의 좋은 만남이 기다립니다.' },
-                { tag: '🟢 소중한 인연 돌봄', action: '올 한 해 함께한 사람들에게 한마디씩 감사를 전하는 시간을 만들어보세요.' },
+                { tag:'🟢 새 인연 가능', action:'오늘 처음 만나는 사람에게 먼저 이름을 물어보세요. 기억하는 것만으로 관계가 시작됩니다.' },
+                { tag:'🟢 재회 운', action:'오래 연락 못 한 지인에게 근황을 묻는 메시지 하나를 보내보세요.' },
+                { tag:'🟡 갈등 주의', action:'오해가 생겼다면 메시지보다 직접 전화로 목소리를 전하는 게 훨씬 빠릅니다.' },
+                { tag:'🟢 귀인 기운', action:'주변의 작은 부탁에 먼저 응해보세요. 먼저 주는 사람에게 귀인이 찾아옵니다.' },
+                { tag:'🟢 베풀면 배로', action:'오늘 누군가에게 작은 칭찬이나 도움 하나를 먼저 건네보세요.' },
+                { tag:'🟡 말 조심', action:'메시지를 보내기 전 한 번 더 읽어보는 습관이 오해를 크게 줄여줍니다.' },
+                { tag:'🟢 모임 에너지 UP', action:'오랫동안 못 나간 소모임이나 동호회에 이번 달 한 번 참여해보세요.' },
+                { tag:'🟢 진심 통함', action:'평소 표현 못한 고마움을 문자 한 줄로라도 전해보세요. 관계가 깊어집니다.' },
+                { tag:'🟡 소수 집중', action:'지금 가장 소중한 사람 세 명을 떠올리고 그 관계에 더 집중해보세요.' },
+                { tag:'🟢 감사 표현', action:'고마운 사람에게 커피 한 잔이나 짧은 메시지로 마음을 전해보세요.' },
+                { tag:'🟢 모임 활발', action:'가기 망설여지는 모임이 있다면 일단 나가보세요. 예상 밖의 좋은 만남이 있습니다.' },
+                { tag:'🟢 인연 돌봄', action:'올 한 해 함께한 사람들에게 한마디씩 감사를 전하는 시간을 만들어보세요.' },
             ],
         };
 
@@ -2949,10 +2949,10 @@
                     재물:  TJ_MONTHLY.재물[_seededInt(s('재물'), TJ_MONTHLY.재물.length)],
                     건강:  TJ_MONTHLY.건강[_seededInt(s('건강'), TJ_MONTHLY.건강.length)],
                     인관:  TJ_MONTHLY.인간관계[_seededInt(s('인관'), TJ_MONTHLY.인간관계.length)],
-                    총운_ai: TJ_ACTION.총운[_seededInt(s('총운'), TJ_ACTION.총운.length)],
-                    재물_ai: TJ_ACTION.재물[_seededInt(s('재물'), TJ_ACTION.재물.length)],
-                    건강_ai: TJ_ACTION.건강[_seededInt(s('건강'), TJ_ACTION.건강.length)],
-                    인관_ai: TJ_ACTION.인간관계[_seededInt(s('인관'), TJ_ACTION.인간관계.length)],
+                    총운_m:  TJ_META.총운[_seededInt(s('총운'), TJ_META.총운.length)],
+                    재물_m:  TJ_META.재물[_seededInt(s('재물'), TJ_META.재물.length)],
+                    건강_m:  TJ_META.건강[_seededInt(s('건강'), TJ_META.건강.length)],
+                    인관_m:  TJ_META.인간관계[_seededInt(s('인관'), TJ_META.인간관계.length)],
                 };
             });
 
@@ -2971,10 +2971,10 @@
                     +     ' style="background:#ede9fe;color:#7c3aed;border:none;padding:5px 11px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">✨ AI 해석</button>'
                     + '</div>'
                     + '<div style="display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px">'
-                    +   tjPill('🔮 총운', m.총운, m.총운_ai)
-                    +   tjPill('💰 재물운', m.재물, m.재물_ai)
-                    +   tjPill('💪 건강운', m.건강, m.건강_ai)
-                    +   tjPill('🤝 인간관계', m.인관, m.인관_ai)
+                    +   tjPill('🔮 총운', m.총운, m.총운_m)
+                    +   tjPill('💰 재물운', m.재물, m.재물_m)
+                    +   tjPill('💪 건강운', m.건강, m.건강_m)
+                    +   tjPill('🤝 인간관계', m.인관, m.인관_m)
                     + '</div>'
                     + '<div id="tj-ai-' + i + '" style="display:none"></div>'
                     + '</div>';
@@ -3005,20 +3005,11 @@
             + '</div>';
         }
 
-        function tjPill(label, text, actionData) {
-            var actionHTML = '';
-            if (actionData) {
-                actionHTML = '<div style="margin-top:7px;padding-top:7px;border-top:1px solid #e2e8f0">'
-                    + '<span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:#ede9fe;color:#6d28d9;margin-bottom:5px">' + actionData.tag + '</span>'
-                    + '<div style="font-size:11px;color:#64748b;line-height:1.65;background:#f1f5f9;border-radius:7px;padding:6px 8px">💡 ' + actionData.action + '</div>'
-                    + '</div>';
-            }
-            return '<div style="background:#f8fafc;border-radius:10px;padding:10px 11px">'
-                + '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">' + label + '</div>'
-                + '<div style="font-size:12px;color:#475569;line-height:1.7">' + text + '</div>'
-                + actionHTML
-                + '</div>';
-        }
+        function tjPill(label, text, meta) {
+            var metaHTML = '';
+            if (meta) {
+                metaHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0">'                    + '<span style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.02em;'                    +         'padding:2px 8px;border-radius:20px;background:#ede9fe;color:#6d28d9;margin-bottom:5px">'                    + meta.tag + '</span>'                    + '<div style="font-size:11px;color:#64748b;line-height:1.65;background:#f1f5f9;'                    +            'border-radius:7px;padding:6px 8px">'                    + '💡 ' + meta.action                    + '</div>'                    + '</div>';            }
+            return '<div style="background:#f8fafc;border-radius:10px;padding:10px 11px">'                + '<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:4px">' + label + '</div>'                + '<div style="font-size:12px;color:#475569;line-height:1.7">' + text + '</div>'                + metaHTML                + '</div>';        }
 
 
         // ══════════════════════════════════════════════════
@@ -4813,7 +4804,7 @@
     async function loadDreamData() {
         if (DREAM_DATA_LOADED) return;
         try {
-            var res = await fetch('data/dream_interpretations.csv');
+            var res = await fetch('data/dream_interpretations_v2.csv');
             if (!res.ok) throw new Error('load fail');
             var text = await res.text();
             var lines = text.trim().split('\n');
@@ -5390,79 +5381,129 @@
         mbtiDreamInterpret();
     }
 
+    // ── 꿈해몽 텍스트 → 5단계 파싱 ──
+    // CSV 텍스트는 문장 단위로 구성됨:
+    //  1문장=공감  2문장=흐름  3문장=결론  마지막문장=행동조언
+    function parseDreamStages(text) {
+        if (!text) return null;
+        // 문장 분리 (마침표·느낌표·물음표 기준, 단 줄임표 제외)
+        var sents = text.match(/[^.!?]+[.!?]+/g) || [text];
+        sents = sents.map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 2; });
+        if (sents.length < 2) return { empathy: text, flow: '', conclusion: '', action: '' };
+        // 4문장 미만이면 마지막=행동, 나머지를 앞 3단계에 균등 배분
+        var action     = sents[sents.length - 1];
+        var body       = sents.slice(0, sents.length - 1);
+        var empathy    = body[0] || '';
+        var conclusion = body[body.length - 1] || '';
+        var flow       = body.slice(1, body.length - 1).join(' ') || '';
+        return { empathy: empathy, flow: flow, conclusion: conclusion, action: action };
+    }
+
     async function _mbtiDreamInterpretCore() {
         if(!_mbtiDreamMbti || !_mbtiDreamKeyword) return;
         var resultDiv = document.getElementById('mbti-dream-result');
-        // ── 꿈해몽 심층해석 로딩 ──
         var _dreamBtn = document.getElementById('mbti-dream-btn');
         if(_dreamBtn) { _dreamBtn.disabled = true; _dreamBtn.style.opacity = '.4'; }
         showBtnLoading(_dreamBtn, '꿈 해석 중...');
-        resultDiv.innerHTML = '<div style="text-align:center;padding:24px 16px 8px"><span style="display:inline-block;width:22px;height:22px;border:2px solid rgba(167,139,250,.25);border-top-color:#a78bfa;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span><span style="color:#9b8fb0;font-size:14px">꿈을 해석하는 중...</span></div>' + getLoadingAdHTML();
+        resultDiv.innerHTML = ''
+            + '<div style="text-align:center;padding:24px 16px 8px">'
+            + '<span style="display:inline-block;width:22px;height:22px;border:2px solid rgba(167,139,250,.25);'
+            + 'border-top-color:#a78bfa;border-radius:50%;animation:btnSpin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>'
+            + '<span style="color:#9b8fb0;font-size:14px">꿈을 해석하는 중...</span></div>'
+            + getLoadingAdHTML();
         await new Promise(r => setTimeout(r, 2000));
-
         await loadDreamData();
 
-        var mbtiD  = MBTI_DATA[_mbtiDreamMbti];
+        var mbtiD     = MBTI_DATA[_mbtiDreamMbti];
         var shortDesc = mbtiD.short_desc || mbtiD.short || '';
         var coreTrait = mbtiD.core_trait || mbtiD.core || '';
-        var strength  = mbtiD.strength || '';
+        var strength  = mbtiD.strength  || '';
+        var mbtiEmoji = mbtiD.emoji || '🔮';
+        var raw       = DREAM_DATA[_mbtiDreamKeyword];
 
-        // CSV에 있으면 CSV 데이터, 없으면 MBTI 기반 풍부한 폴백 생성
-        var raw = DREAM_DATA[_mbtiDreamKeyword];
-        var base, positive, negative, emoji, mbtiSpec;
+        var base, positive, negative, emoji, mbtiText;
 
         if (raw) {
-            base     = raw.base_meaning || raw.base || _mbtiDreamKeyword + '의 상징';
+            base     = raw.base_meaning || _mbtiDreamKeyword + '의 상징';
             positive = raw.positive || '새로운 가능성';
             negative = raw.negative || '불확실성';
-            emoji    = raw.emoji || '💭';
+            emoji    = raw.emoji    || '💭';
             var mbtiKey = 'mbti_' + _mbtiDreamMbti.toLowerCase();
-            mbtiSpec = raw[mbtiKey] || positive + '의 의미가 강합니다';
+            mbtiText = raw[mbtiKey] || '';
         } else {
-            // 직접 입력 키워드 — MBTI 특성으로 풍부한 해석 생성
-            base     = '"' + _mbtiDreamKeyword + '"에 대한 꿈은 무의식의 메시지를 담고 있습니다';
+            // 직접 입력 키워드 폴백
+            base     = '"' + _mbtiDreamKeyword + '"의 꿈은 무의식의 메시지를 담고 있어요';
             positive = '내면의 성장과 새로운 시작';
-            negative = '불확실한 감정과 변화에 대한 두려움';
+            negative = '불확실한 감정과 변화의 두려움';
             emoji    = '🌙';
-            mbtiSpec = _mbtiDreamMbti + '(' + coreTrait + ')인 당신에게 이 꿈은 ' + strength + '을 더욱 발휘할 신호입니다. ' + shortDesc;
+            mbtiText = _mbtiDreamMbti + '(' + coreTrait + ')인 당신에게 이 꿈은 '
+                + strength + '을 더욱 발휘할 신호예요. '
+                + shortDesc + ' 오늘 직감이 이끄는 방향을 한 번 믿어보세요.';
         }
 
-        var modifier  = MBTI_DREAM_MODIFIER[_mbtiDreamMbti] || '개인적 관점에서';
+        // ── 5단계 파싱 ──
+        var stages = parseDreamStages(mbtiText);
 
-        // 기본 합성 해석 — CSV MBTI 컬럼 우선 활용
-        var synthesis = modifier + ', ' + emoji + ' "' + _mbtiDreamKeyword + '" 꿈은 '
-            + base + '. ' + _mbtiDreamMbti + '인 당신에게는 특히 '
-            + mbtiSpec + '. ' + shortDesc;
-
-        var aiSection = '<div id="mbti-dream-ai-wrap" style="margin-top:12px">'
-            + '<button onclick="mbtiDreamAiInterpret()" '
-            + 'style="width:100%;padding:10px;background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:#fff;'
-            + 'border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🌙 심층 해석 받기</button>'
-            + '<div id="mbti-dream-ai-result"></div>'
-            + '</div>'
-            + '<button onclick="mbtiDreamReset()" '
-            + 'style="width:100%;margin-top:10px;padding:10px;background:rgba(255,255,255,.07);color:#9b8fb0;'
-            + 'border:1px solid rgba(255,255,255,.15);border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">🔄 MBTI+꿈해몽 다시보기</button>';
-
-        resultDiv.innerHTML = '<div style="background:rgba(255,255,255,.03);border-radius:14px;padding:16px">'
-            + '<div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:12px">STEP 3 — 꿈해몽 결과</div>'
-            + '<div style="background:linear-gradient(135deg,#0d0818,#1e1b4b);border:1px solid rgba(201,168,76,.3);'
-            + 'border-radius:14px;padding:18px;text-align:center;margin-bottom:12px">'
-            + '<div style="font-size:3rem;margin-bottom:8px">' + emoji + '</div>'
-            + '<div style="font-size:18px;font-weight:900;color:#c9a84c;margin-bottom:6px">' + _mbtiDreamKeyword + ' 꿈</div>'
-            + '<div style="font-size:13px;color:#9b8fb0;margin-bottom:10px">' + base + '</div>'
+        // ── 헤더 카드 ──
+        var headerCard = ''
+            + '<div style="background:linear-gradient(135deg,#0d0818,#1e1b4b);border:1px solid rgba(201,168,76,.35);'
+            + 'border-radius:16px;padding:20px;text-align:center;margin-bottom:14px">'
+            + '<div style="font-size:2.8rem;margin-bottom:8px">' + emoji + '</div>'
+            + '<div style="font-size:19px;font-weight:900;color:#c9a84c;letter-spacing:.03em;margin-bottom:4px">'
+            + _mbtiDreamKeyword + ' 꿈</div>'
+            + '<div style="font-size:12px;color:#9b8fb0;margin-bottom:12px">' + base + '</div>'
             + '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
-            + '<span style="background:rgba(74,222,128,.15);color:#4ade80;padding:4px 10px;border-radius:20px;font-size:11px">✅ ' + positive + '</span>'
-            + '<span style="background:rgba(248,113,113,.15);color:#f87171;padding:4px 10px;border-radius:20px;font-size:11px">⚠️ ' + negative + '</span>'
-            + '</div></div>'
-            + '<div style="background:linear-gradient(135deg,rgba(30,27,75,.6),rgba(76,29,149,.3));border-radius:12px;padding:14px;margin-bottom:10px">'
-            + '<div style="font-size:11px;color:#9b8fb0;margin-bottom:6px">🧠 MBTI(' + _mbtiDreamMbti + ') × 꿈해몽 합성</div>'
-            + '<div style="font-size:14px;color:#e8e0f0;line-height:1.9;font-weight:600">' + synthesis + '</div>'
+            + '<span style="background:rgba(74,222,128,.15);color:#4ade80;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">✅ ' + positive + '</span>'
+            + '<span style="background:rgba(248,113,113,.15);color:#f87171;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600">⚠️ ' + negative + '</span>'
             + '</div>'
-            + aiSection
+            + '<div style="margin-top:12px;display:inline-block;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);'
+            + 'border-radius:20px;padding:4px 14px;font-size:12px;color:#a78bfa;font-weight:700">'
+            + mbtiEmoji + ' ' + _mbtiDreamMbti + ' · ' + coreTrait + '</div>'
             + '</div>';
 
-        window._mbtiDreamCtx = { mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword, mbtiD: mbtiD, dreamD: raw || {}, base: base, positive: positive, negative: negative };
+        // ── 5단계 카드 렌더 헬퍼 ──
+        function stageCard(icon, label, color, bgColor, borderColor, text) {
+            if (!text) return '';
+            return ''
+                + '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + ';'
+                + 'border-radius:12px;padding:14px 16px;margin-bottom:10px">'
+                + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+                + '<span style="font-size:15px">' + icon + '</span>'
+                + '<span style="font-size:11px;font-weight:700;color:' + color + ';letter-spacing:.05em">' + label + '</span>'
+                + '</div>'
+                + '<div style="font-size:14px;color:#e8e0f0;line-height:1.85">' + text + '</div>'
+                + '</div>';
+        }
+
+        var stagesHTML = '';
+        if (stages) {
+            stagesHTML += stageCard('💬', '공감', '#a78bfa', 'rgba(124,58,237,.1)', 'rgba(124,58,237,.25)', stages.empathy);
+            stagesHTML += stageCard('🌊', '흐름', '#60a5fa', 'rgba(37,99,235,.1)',  'rgba(37,99,235,.25)',  stages.flow);
+            stagesHTML += stageCard('✨', '결론', '#c9a84c', 'rgba(180,130,40,.1)', 'rgba(180,130,40,.3)',  stages.conclusion);
+            stagesHTML += stageCard('🎯', '오늘의 행동', '#4ade80', 'rgba(22,163,74,.1)', 'rgba(22,163,74,.3)', stages.action);
+        } else {
+            stagesHTML = '<div style="font-size:14px;color:#e8e0f0;line-height:1.9;padding:12px">' + mbtiText + '</div>';
+        }
+
+        // ── 최종 렌더 ──
+        resultDiv.innerHTML = ''
+            + '<div style="background:rgba(255,255,255,.02);border-radius:16px;padding:16px">'
+            + '<div style="font-size:12px;font-weight:700;color:#c9a84c;letter-spacing:.08em;margin-bottom:14px">STEP 3 — 꿈해몽 분석 결과</div>'
+            + headerCard
+            + '<div style="font-size:11px;font-weight:700;color:#7c5cbf;letter-spacing:.06em;margin-bottom:10px;padding-left:2px">'
+            + '🧠 ' + _mbtiDreamMbti + ' × ' + _mbtiDreamKeyword + ' 꿈 — 5단계 해석</div>'
+            + stagesHTML
+            + '<button onclick="mbtiDreamReset()" '
+            + 'style="width:100%;margin-top:6px;padding:11px;background:rgba(255,255,255,.06);color:#9b8fb0;'
+            + 'border:1px solid rgba(255,255,255,.13);border-radius:10px;font-weight:700;cursor:pointer;font-size:13px">'
+            + '🔄 MBTI+꿈해몽 다시보기</button>'
+            + '</div>';
+
+        window._mbtiDreamCtx = {
+            mbti: _mbtiDreamMbti, keyword: _mbtiDreamKeyword,
+            mbtiD: mbtiD, dreamD: raw || {},
+            base: base, positive: positive, negative: negative
+        };
     }
 
     // 전역 노출 — 동적 HTML onclick에서 호출 가능
@@ -5509,44 +5550,6 @@
         }
     };
 
-    async function mbtiDreamAiInterpret() {
-        var ctx = window._mbtiDreamCtx;
-        if (!ctx) {
-            var rd = document.getElementById('mbti-dream-ai-result');
-            if (rd) rd.innerHTML = '<div style="color:#f87171;font-size:12px;padding:8px">먼저 꿈해몽을 실행해주세요.</div>';
-            return;
-        }
-        var btn    = document.querySelector('#mbti-dream-ai-wrap button');
-        var resDiv = document.getElementById('mbti-dream-ai-result');
-        if (!resDiv) return;
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ 해석 생성 중...'; }
-        resDiv.innerHTML = '<div style="color:#9b8fb0;font-size:12px;padding:8px;text-align:center">🌙 생성 중...</div>';
-
-        // CSV dream_interpretations.csv의 MBTI별 컬럼 직접 활용
-        var mbtiD    = ctx.mbtiD;
-        var mbtiKey  = 'mbti_' + ctx.mbti.toLowerCase();
-        var mbtiSpec = ctx.dreamD[mbtiKey] || ctx.positive || '';
-        var coreTrait = mbtiD.core_trait || mbtiD.core || '';
-        var shortDesc = mbtiD.short_desc || mbtiD.short || '';
-        var strength  = mbtiD.strength || '';
-
-        var lines = [
-            ctx.mbti + '인 당신이 꾼 <b>"' + ctx.keyword + '"</b> 꿈은 <b>' + ctx.base + '</b>을(를) 상징합니다.',
-            ctx.mbti + '(' + coreTrait + ')의 관점에서 보면, <b>' + mbtiSpec + '</b>',
-            '긍정적으로는 <b>' + ctx.positive + '</b>의 의미가 있으며, 주의할 점은 ' + ctx.negative + '입니다.',
-            shortDesc
-        ];
-
-        resDiv.innerHTML = '<div style="background:rgba(76,29,149,.15);border:1px solid rgba(139,92,246,.3);'
-            + 'border-radius:10px;padding:14px;font-size:13px;color:#e8e0f0;line-height:2;margin-top:8px">'
-            + '<div style="font-size:10px;color:#a78bfa;margin-bottom:8px">🌙 MBTI × 꿈해몽 합성 해석</div>'
-            + lines.map(function(l){ return '<p style="margin-bottom:6px">' + l + '</p>'; }).join('')
-            + '</div>';
-
-        if (btn) { btn.disabled = false; btn.textContent = '🌙 심층 해석 받기'; }
-    }
-    window.mbtiDreamAiInterpret = mbtiDreamAiInterpret;
-
     // ── API Key 관련 잔여 코드 제거 완료 ──
 
     // ══════════════════════════════════════════════════
@@ -5581,32 +5584,11 @@
         tReadingsLoaded = true;
       } catch(e){ console.warn('타로해석 CSV 로드 실패:', e); }
     }
-    // 카드 고유 의미 기반 해석 생성 — CSV 우선, CARD_STORIES 폴백
+    // 카드 고유 의미 기반 해석 생성 (CSV 템플릿 대신 카드덱 데이터 활용)
     function getTarotReading(nameKo, question, isReversed, positionIndex) {
       // positionIndex: 0=과거, 1=현재, 2=미래
 
-      // 카테고리 감지 (CSV 조회에도 필요하므로 먼저)
-      let cat = '일반';
-      if (/연애와 관계|연애|관계|사랑|연인|인간관계/.test(question)) cat = '연애';
-      else if (/직업과 진로|직|일|돈|금|커리어|취업/.test(question)) cat = '직장';
-
-      const idx = (positionIndex !== undefined && positionIndex >= 0 && positionIndex <= 2) ? positionIndex : 1;
-      const posLabel = ['과거', '지금', '앞으로'][idx];
-
-      // ── 1순위: tarot_card_readings.csv에서 읽기 ──
-      const dir = isReversed ? '역방향' : '정방향';
-      const csvKey = nameKo + '|' + cat + '|' + dir;
-      const csvText = TAROT_READINGS_MAP[csvKey];
-      if (csvText) {
-        const posPrefix = {
-          0: { 연애: '관계의 배경에서 ', 직장: '커리어 기반에서 ', 일반: '지나온 시간에서 ' },
-          1: { 연애: '지금 관계 안에서 ', 직장: '지금 업무에서 ', 일반: '지금 이 순간 ' },
-          2: { 연애: '앞으로 관계에서 ', 직장: '앞으로 커리어에서 ', 일반: '앞으로 다가올 때 ' },
-        }[idx][cat];
-        return `<span style="color:#b8a8d8;font-size:.82em">${posPrefix}${dir} — </span>${csvText}`;
-      }
-
-      // ── 2순위: CSV에 없으면 카드덱 데이터 접근 ──
+      // 카드덱에서 해당 카드 찾기
       const card = tDeck.find(c => (c.card_name_ko || c.name_ko) === nameKo);
       if (!card) return '';
 
@@ -5614,9 +5596,17 @@
         ? (card.reversed_meaning || card.meaning_rev || '')
         : (card.upright_meaning || card.meaning || '');
 
+      // 카테고리 감지
+      let cat = '일반';
+      if (/연애와 관계|연애|관계|사랑|연인|인간관계/.test(question)) cat = '연애';
+      else if (/직업과 진로|직|일|돈|금|커리어|취업/.test(question)) cat = '직장';
+
       // 핵심 키워드 (앞 2~3개)
       const keywords = meaning.split(/[\s,、]+/).filter(k => k.length > 1).slice(0, 3);
       const kwStr = keywords.join(' · ');
+
+      const idx = (positionIndex !== undefined && positionIndex >= 0 && positionIndex <= 2) ? positionIndex : 1;
+      const posLabel = ['과거', '지금', '앞으로'][idx];
 
       // ── 카드별 5단계 해석 데이터 ──
       // [공감문, 흐름설명, 현실디테일, 결론, 행동조언] × [정방향, 역방향]
@@ -5772,7 +5762,7 @@
     async function initTarot() {
       const inner = document.getElementById('tarot-inner');
       if(!inner) return;
-      await Promise.all([loadTarotDeck(), loadTarotReadings()]);
+      await loadTarotDeck();
       tQuestion = '';
       tDrawnCards = [];
       tRevealedCount = 0;
