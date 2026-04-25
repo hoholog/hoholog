@@ -4803,7 +4803,7 @@
     async function loadDreamData() {
         if (DREAM_DATA_LOADED) return;
         try {
-            var res = await fetch('data/dream_interpretations_v2.csv');
+            var res = await fetch('data/dream_interpretations_v3.csv');
             if (!res.ok) throw new Error('load fail');
             var text = await res.text();
             var lines = text.trim().split('\n');
@@ -5380,22 +5380,33 @@
         mbtiDreamInterpret();
     }
 
-    // ── 꿈해몽 텍스트 → 5단계 파싱 ──
-    // CSV 텍스트는 문장 단위로 구성됨:
-    //  1문장=공감  2문장=흐름  3문장=결론  마지막문장=행동조언
+    // ── 꿈해몽 텍스트 → 5단계 파싱 (DREAM Frame) ──
+    // CSV v3 포맷: 파이프(|)로 구분된 5단계
+    // D=꿈 공감 | R=심층 해석 | E=MBTI 연결 | A=경고/기회 | M=행동 처방
     function parseDreamStages(text) {
         if (!text) return null;
-        // 문장 분리 (마침표·느낌표·물음표 기준, 단 줄임표 제외)
+        // 파이프 구분자로 5단계 분리 (v3 포맷)
+        if (text.indexOf('|') !== -1) {
+            var parts = text.split('|').map(function(s){ return s.trim(); });
+            return {
+                empathy:    parts[0] || '',
+                deep:       parts[1] || '',
+                mbtiLink:   parts[2] || '',
+                alert:      parts[3] || '',
+                action:     parts[4] || ''
+            };
+        }
+        // 구버전 폴백: 문장 단위 파싱
         var sents = text.match(/[^.!?]+[.!?]+/g) || [text];
         sents = sents.map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 2; });
-        if (sents.length < 2) return { empathy: text, flow: '', conclusion: '', action: '' };
-        // 4문장 미만이면 마지막=행동, 나머지를 앞 3단계에 균등 배분
-        var action     = sents[sents.length - 1];
-        var body       = sents.slice(0, sents.length - 1);
-        var empathy    = body[0] || '';
-        var conclusion = body[body.length - 1] || '';
-        var flow       = body.slice(1, body.length - 1).join(' ') || '';
-        return { empathy: empathy, flow: flow, conclusion: conclusion, action: action };
+        if (sents.length < 2) return { empathy: text, deep: '', mbtiLink: '', alert: '', action: '' };
+        var action   = sents[sents.length - 1];
+        var body     = sents.slice(0, sents.length - 1);
+        var empathy  = body[0] || '';
+        var deep     = body[1] || '';
+        var mbtiLink = body[2] || '';
+        var alert    = body.length > 3 ? body[3] : '';
+        return { empathy: empathy, deep: deep, mbtiLink: mbtiLink, alert: alert, action: action };
     }
 
     async function _mbtiDreamInterpretCore() {
@@ -5476,10 +5487,11 @@
 
         var stagesHTML = '';
         if (stages) {
-            stagesHTML += stageCard('💬', '공감', '#a78bfa', 'rgba(124,58,237,.1)', 'rgba(124,58,237,.25)', stages.empathy);
-            stagesHTML += stageCard('🌊', '흐름', '#60a5fa', 'rgba(37,99,235,.1)',  'rgba(37,99,235,.25)',  stages.flow);
-            stagesHTML += stageCard('✨', '결론', '#c9a84c', 'rgba(180,130,40,.1)', 'rgba(180,130,40,.3)',  stages.conclusion);
-            stagesHTML += stageCard('🎯', '오늘의 행동', '#4ade80', 'rgba(22,163,74,.1)', 'rgba(22,163,74,.3)', stages.action);
+            stagesHTML += stageCard('🌙', '1단계 · 꿈 공감 (Dream)', '#c4b5fd', 'rgba(109,40,217,.12)', 'rgba(124,58,237,.3)', stages.empathy);
+            stagesHTML += stageCard('🔍', '2단계 · 심층 해석 (Real)', '#93c5fd', 'rgba(29,78,216,.1)',  'rgba(37,99,235,.28)',  stages.deep);
+            stagesHTML += stageCard('🪄', '3단계 · MBTI 연결 (Emotion)', '#fcd34d', 'rgba(161,98,7,.1)', 'rgba(180,130,40,.32)',  stages.mbtiLink);
+            stagesHTML += stageCard('⚡', '4단계 · 경고/기회 (Alert)', '#f87171', 'rgba(185,28,28,.1)', 'rgba(220,38,38,.28)', stages.alert);
+            stagesHTML += stageCard('🎯', '5단계 · 행동 처방 (Move)', '#4ade80', 'rgba(22,163,74,.12)', 'rgba(22,163,74,.32)', stages.action);
         } else {
             stagesHTML = '<div style="font-size:14px;color:#e8e0f0;line-height:1.9;padding:12px">' + mbtiText + '</div>';
         }
