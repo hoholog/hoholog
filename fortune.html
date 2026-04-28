@@ -4457,7 +4457,16 @@
             + '<div style="font-size:12px;color:#c9a84c;font-weight:700;margin-bottom:12px;letter-spacing:.05em">✦ 카드별 해석</div>'
             + cardBlocks
             + '<div style="font-size:12px;color:#c9a84c;font-weight:700;margin:14px 0 10px;letter-spacing:.05em">✦ MBTI × 타로 종합</div>'
-            + synthBlock
+            + (function(){
+                var pC = { nameKo: cards[0].card.card_name_ko || '카드', isRev: cards[0].reversed };
+                var cC = { nameKo: cards[1].card.card_name_ko || '카드', isRev: cards[1].reversed };
+                var fC = { nameKo: cards[2].card.card_name_ko || '카드', isRev: cards[2].reversed };
+                var revCards = [pC,cC,fC].filter(function(c){return c.isRev;}).map(function(c){return c.nameKo;});
+                var revNote = revCards.length > 0
+                    ? '💜 ' + revCards.join(', ') + ' 카드가 역방향이에요. 나쁜 신호가 아니에요 — 그 에너지가 아직 내면에서 익고 있다는 뜻이에요.'
+                    : '';
+                return buildConversationalSynth(mbti, coreTrait, pC, cC, fC, synthData, q, revNote);
+            })()
             + '</div>';
 
         hideBtnLoading(btn);
