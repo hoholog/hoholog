@@ -4266,12 +4266,44 @@
                 return txt.split(/(?<=[요죠]\.)\ +/).filter(function(s){ return s.trim().length > 4; });
             }
 
-            // ── 1. 공감 — 현재 카드 CSV 첫 문장 + 감정 문으로 충분히 짚기 ──
+            // ── 헬퍼 ──
             var cCSents = getSentences(cC);
             var pCSents = getSentences(pC);
             var fCSents = getSentences(fC);
             var mbtiD   = MBTI_DATA[mbti] || {};
 
+            function getMbtiSuit(card) {
+                var n = (card.card_name || card.nameKo || '').toLowerCase();
+                if (n.includes('wand'))     return 'wands';
+                if (n.includes('cup'))      return 'cups';
+                if (n.includes('sword'))    return 'swords';
+                if (n.includes('pentacle')) return 'pentacles';
+                return 'major';
+            }
+
+            // ── 1. 패턴 분석 (슈트 분포 + 메이저 비율) ──
+            var cards3m = [pC, cC, fC];
+            var majorCntM = cards3m.filter(function(c){ return getMbtiSuit(c) === 'major'; }).length;
+            var suitCntM = {wands:0,cups:0,swords:0,pentacles:0};
+            cards3m.forEach(function(c){ var s=getMbtiSuit(c); if(suitCntM[s]!==undefined) suitCntM[s]++; });
+            var domSuit = Object.entries(suitCntM).sort(function(a,b){return b[1]-a[1];})[0];
+            var suitMeaningsM = {
+                wands:'행동과 열정이 중심이에요.',
+                cups:'감정과 관계가 핵심이에요.',
+                swords:'생각과 갈등이 중심이에요.',
+                pentacles:'현실과 물질이 핵심이에요.'
+            };
+            var majorLineM = majorCntM >= 2
+                ? '메이저 아르카나가 ' + majorCntM + '장 — 지금 삶의 큰 흐름 자체가 움직이는 시기예요.'
+                : majorCntM === 1
+                ? '메이저 한 장이 큰 흐름을 잡고, 나머지는 현실 상황을 보여줘요.'
+                : '세 장 모두 마이너 — 지금은 일상 속 현실 문제에 집중하는 단계예요.';
+            var suitLineM = domSuit[1] >= 2
+                ? domSuit[0] === 'major' ? '' : (suitMeaningsM[domSuit[0]] || '')
+                : '여러 영역이 동시에 얽혀있는 복잡한 시기예요.';
+            var patternM = [majorLineM, suitLineM].filter(Boolean).join(' ');
+
+            // ── 2. 공감 (현재 카드 = 지금 상태) ──
             var empathyOpener = cC.isRev
                 ? '지금 원하는 것이 있는데 뭔가 막혀있는 느낌이 드시죠? 겉으로는 잠잠해 보여도 내면에선 많은 것이 움직이고 있어요.'
                 : (cat === '연애' ? '관계에서 뭔가 중요한 일이 일어나고 있다는 느낌, 맞아요.'
@@ -4279,19 +4311,12 @@
                  : '지금 당신의 에너지가 분명한 방향을 향해 흘러가고 있어요.');
             var empathy = [empathyOpener, cCSents[0] || ''].filter(Boolean).join(' ');
 
-            // ── 2. 흐름 — 과거 카드 상황 + bridge1 + bridge2 + 미래 전망 + MBTI 성향 연결 ──
-            var pastOpening   = pCSents[0] ? pC.nameKo + ' 자리에서 — ' + pCSents[0]   : '';
-            var futureOutlook = fCSents[0] ? '앞으로의 자리에서 — ' + fCSents[0] : '';
-
+            // ── 3. 흐름 (과거→현재, bridge CSV) ──
+            var pastOpeningM = pCSents[0] ? pC.nameKo + ' 자리에서 — ' + pCSents[0] : '';
             var bridge1 = getBridge(pC.nameKo, cC.nameKo, '과거→현재', pC.isRev, cC.isRev)
                 || (pC.isRev
                     ? pC.nameKo + ' 카드가 역방향으로 놓여, 지나온 시간 안에 충분히 꺼내지 못한 에너지가 쌓여왔어요.'
                     : pC.nameKo + '의 흐름이 여기까지 이어져왔어요.');
-            var bridge2 = getBridge(cC.nameKo, fC.nameKo, '현재→미래', cC.isRev, fC.isRev)
-                || (fC.isRev
-                    ? fC.nameKo + '의 가능성이 아직 완전히 열리지 않았지만, 억지로 끌어당기지 않아도 때가 되면 열려요.'
-                    : '앞으로 ' + fC.nameKo + '의 에너지가 방향을 잡아줄 거예요.');
-
             var styleHint = '';
             if (cat === '연애' && mbtiD.love_style)
                 styleHint = mbti + '는 ' + mbtiD.love_style + ' 스타일이에요. 이 흐름을 그 방식대로 바라보면 더 선명하게 보여요.';
@@ -4299,8 +4324,14 @@
                 styleHint = mbti + '는 ' + mbtiD.work_style + ' 스타일이에요. 지금 이 에너지가 그 강점과 맞닿아있어요.';
             else if (mbtiD.decision_style)
                 styleHint = mbti + '는 ' + mbtiD.decision_style + '. 지금 이 흐름에서도 그 방식이 자연스럽게 작동하고 있어요.';
+            var flowParts = [pastOpeningM, bridge1, styleHint].filter(Boolean);
 
-            var flowParts = [pastOpening, bridge1, bridge2, futureOutlook, styleHint].filter(Boolean);
+            // ── 4. 방향성 (미래 카드 = 가능성, 확률로 표현) ──
+            var bridge2 = getBridge(cC.nameKo, fC.nameKo, '현재→미래', cC.isRev, fC.isRev) || '';
+            var futurePrefix = fC.isRev
+                ? '지금 이 흐름이 계속된다면, ' + fC.nameKo + '의 에너지가 내면에서 막혀있을 가능성이 있어요. 아직 확정된 건 아무것도 없어요 —'
+                : '지금 이 흐름이 유지된다면, ' + fC.nameKo + '의 방향으로 이어질 가능성이 높아요 —';
+            var directionParts = [bridge2, futurePrefix, fCSents[0] || ''].filter(Boolean);
 
             // ── 3. 디테일 — 현재 카드 CSV 두 번째 문장 + MBTI 연결 ──
             var detailBase = cCSents[1] || cCSents[0] || '';
@@ -4331,8 +4362,16 @@
                 ? '<p style="font-size:12px;color:#a090dd;background:rgba(100,80,180,.08);border-left:2px solid rgba(160,120,220,.4);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin-top:10px">' + revNote + '</p>'
                 : '';
 
-            return '<p style="margin-bottom:10px;line-height:1.95;color:#d4c8ee">' + empathy + '</p>'
-                + '<p style="margin-bottom:10px;line-height:2;border-left:2px solid rgba(201,168,76,.3);padding-left:.9rem">' + flowParts.join(' ') + '</p>'
+            return '<div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:.8rem 1rem;margin-bottom:10px">'
+                + '<div style="font-size:11px;color:#c9a84c;font-weight:700;margin-bottom:6px">🃏 패턴 분석</div>'
+                + '<p style="line-height:1.9;font-size:12px;margin:0;color:#e8dfc8">' + patternM + '</p></div>'
+                + '<p style="margin-bottom:10px;line-height:1.95;color:#d4c8ee">' + empathy + '</p>'
+                + '<div style="border-left:2px solid rgba(201,168,76,.3);padding-left:.9rem;margin-bottom:10px">'
+                + '<div style="font-size:10px;color:#9b8fb0;margin-bottom:4px">🌱 과거 → 현재 흐름</div>'
+                + '<p style="line-height:2;font-size:13px;margin:0">' + flowParts.join(' ') + '</p></div>'
+                + '<div style="border-left:2px solid rgba(120,80,200,.4);padding-left:.9rem;margin-bottom:10px">'
+                + '<div style="font-size:10px;color:#9b8fb0;margin-bottom:4px">🌟 현재 → 미래 방향성 (가능성)</div>'
+                + '<p style="line-height:2;font-size:13px;margin:0;color:#c9b8e8">' + directionParts.join(' ') + '</p></div>'
                 + '<p style="margin-bottom:10px;line-height:1.95">' + detail + '</p>'
                 + '<p style="margin-bottom:10px;line-height:1.95;border-top:1px solid rgba(201,168,76,.2);padding-top:10px">' + mbtiConclusion + '</p>'
                 + '<p style="margin-bottom:0;font-size:12px;color:#9b8fb0;background:rgba(255,255,255,.04);border-radius:8px;padding:.6rem 1rem">' + actionAdvice + '</p>'
@@ -5369,86 +5408,137 @@
         return arr[c.isReversed ? 1 : 0];
       }
 
-      // ── CSV reading_text 문장 분리 헬퍼 ──
+      // ══════════════════════════════════════════════
+      // 헬퍼: CSV reading_text 문장 분리
+      // ══════════════════════════════════════════════
       function getCardSentences(card) {
         const key = card.card_name_ko + '|' + cat + '|' + (card.isReversed ? '역방향' : '정방향');
-        const csvText = TAROT_READINGS_MAP[key] || TAROT_READINGS_MAP[card.card_name_ko + '|일반|' + (card.isReversed ? '역방향' : '정방향')] || '';
-        if (!csvText) return [];
-        return csvText.split(/(?<=[요죠.])\s+/).map(s => s.trim()).filter(s => s.length > 4);
-      }
-      function getCardStory(card, partIdx) {
-        const sentences = getCardSentences(card);
-        return sentences[partIdx] || sentences[sentences.length - 1] || null;
+        const txt = TAROT_READINGS_MAP[key] || TAROT_READINGS_MAP[card.card_name_ko + '|일반|' + (card.isReversed ? '역방향' : '정방향')] || '';
+        if (!txt) return [];
+        return txt.split(/(?<=[요죠.])\s+/).map(s => s.trim()).filter(s => s.length > 4);
       }
 
       const pastSents    = getCardSentences(past);
       const presentSents = getCardSentences(present);
       const futureSents  = getCardSentences(future);
 
-      // ══════════════════════════════════════
-      // 파트 1 — 공감
-      // 현재 카드 공감 한 줄 + CSV 첫 문장(상황)으로 지금 이 질문을 들고 온 맥락 충분히 짚기
-      // ══════════════════════════════════════
-      const empathySeed = getEmpathy(present);
-      const csvEmpathy  = presentSents[0] || '';
-      const empathyText = [empathySeed, csvEmpathy].filter(Boolean).join(' ');
+      // ══════════════════════════════════════════════
+      // 파트 1 — 패턴 분석
+      // 슈트 분포 + 메이저 비율로 전체 흐름 먼저 읽기
+      // ══════════════════════════════════════════════
+      function getSuit(card) {
+        const n = (card.card_name || '').toLowerCase();
+        if (n.includes('wand'))    return 'wands';
+        if (n.includes('cup'))     return 'cups';
+        if (n.includes('sword'))   return 'swords';
+        if (n.includes('pentacle'))return 'pentacles';
+        return 'major';
+      }
+      const cards3    = [past, present, future];
+      const majorCnt  = cards3.filter(c => (c.arcana || c.arcana_ko || '') === 'Major' || getSuit(c) === 'major').length;
+      const suitCount = { wands:0, cups:0, swords:0, pentacles:0 };
+      cards3.forEach(c => { const s = getSuit(c); if (suitCount[s] !== undefined) suitCount[s]++; });
+      const dominantSuit = Object.entries(suitCount).sort((a,b)=>b[1]-a[1])[0];
 
-      // ══════════════════════════════════════
-      // 파트 2 — 흐름 (과거→현재→미래를 하나의 이야기로)
-      // 과거 카드 상황 → bridge1 연결 → bridge2 연결 → 미래 카드 전망
-      // ══════════════════════════════════════
-      const pastOpening   = pastSents[0]   ? `${past.card_name_ko} 자리에서 — ${pastSents[0]}`   : '';
-      const futureOutlook = futureSents[0] ? `앞으로의 자리에서 — ${futureSents[0]}` : '';
+      // 메이저 비율 해석
+      const majorLine = majorCnt === 3
+        ? '세 장 모두 메이저 아르카나예요. 지금은 일상적인 문제가 아니라 삶의 큰 흐름 자체가 움직이는 시기입니다.'
+        : majorCnt === 2
+        ? '메이저 아르카나가 두 장 — 지금 상황은 단순한 일상 문제가 아니라 당신 삶에서 중요한 전환점과 맞닿아 있어요.'
+        : majorCnt === 1
+        ? '메이저 한 장이 중심 흐름을 잡고, 나머지는 현실적인 상황들을 보여주고 있어요. 큰 흐름 안에서 현실 문제를 다루는 시기예요.'
+        : '세 장 모두 마이너 아르카나예요. 지금은 거창한 운명보다 일상 속 구체적인 상황에 집중해야 하는 단계예요.';
 
+      // 슈트 분포 해석
+      const suitNames = { wands:'완드', cups:'컵', swords:'소드', pentacles:'펜타클' };
+      const suitMeanings = {
+        wands:    '행동과 열정이 중심에 있어요. 지금 가장 중요한 건 움직이는 것입니다.',
+        cups:     '감정과 관계가 핵심이에요. 지금 마음의 문제가 가장 크게 작동하고 있어요.',
+        swords:   '생각과 갈등이 중심에 있어요. 머릿속 고민이 지금 가장 많은 에너지를 쓰고 있어요.',
+        pentacles:'현실과 물질이 핵심이에요. 지금은 감정보다 실질적인 결과가 중요한 시기예요.',
+      };
+      let suitLine = '';
+      if (dominantSuit[1] >= 2) {
+        suitLine = `${suitNames[dominantSuit[0]]} 카드가 ${dominantSuit[1]}장 — ${suitMeanings[dominantSuit[0]]}`;
+      } else {
+        // 모두 다른 슈트 or 메이저만
+        const hasAll = Object.values(suitCount).filter(v=>v>0).length >= 3;
+        suitLine = hasAll
+          ? '세 장이 서로 다른 영역을 가리키고 있어요. 감정·행동·현실이 동시에 얽혀있는 복잡한 시기예요.'
+          : '카드들이 여러 영역에 걸쳐 있어요. 지금 하나의 문제가 아니라 여러 측면이 함께 움직이고 있어요.';
+      }
+
+      const patternText = majorLine + ' ' + suitLine;
+
+      // ══════════════════════════════════════════════
+      // 파트 2 — 공감 (현재 카드 = 지금 상태)
+      // 현재 카드가 지금 이 사람의 상태를 보여준다는 것을 충분히 짚기
+      // ══════════════════════════════════════════════
+      const empathyOpener = getEmpathy(present);
+      const empathyDetail = presentSents[0] || '';
+      const empathyText   = [empathyOpener, empathyDetail].filter(Boolean).join(' ');
+
+      // ══════════════════════════════════════════════
+      // 파트 3 — 흐름 (과거→현재 연결, bridge CSV)
+      // 과거가 지금을 어떻게 만들었는지
+      // ══════════════════════════════════════════════
+      const pastOpening = pastSents[0] ? `${past.card_name_ko} 자리에서 — ${pastSents[0]}` : '';
       const bridge1 = getBridge(past.card_name_ko, present.card_name_ko, '과거→현재', past.isReversed, present.isReversed)
         || (past.isReversed
           ? `${past.card_name_ko} 카드가 역방향으로 놓여, 지나온 시간 안에 충분히 꺼내지 못한 에너지가 쌓여왔어요.`
-          : `${past.card_name_ko}의 흐름이 여기까지 이어져왔어요.`);
+          : `${past.card_name_ko}의 흐름이 지금 여기까지 이어져왔어요.`);
+      const flowText = [pastOpening, bridge1].filter(Boolean).join(' ');
 
-      const bridge2 = getBridge(present.card_name_ko, future.card_name_ko, '현재→미래', present.isReversed, future.isReversed)
-        || (future.isReversed
-          ? `앞으로 ${future.card_name_ko}의 가능성이 아직 완전히 열리지 않았지만, 억지로 끌어당기지 않아도 때가 되면 열려요.`
-          : `앞으로 ${future.card_name_ko}의 에너지가 방향을 잡아줄 거예요.`);
+      // ══════════════════════════════════════════════
+      // 파트 4 — 방향성 (미래 카드 = 가능성, 확률)
+      // "확정된 미래"가 아니라 "지금 상태가 유지될 때 이어질 가능성"으로 표현
+      // ══════════════════════════════════════════════
+      const bridge2 = getBridge(present.card_name_ko, future.card_name_ko, '현재→미래', present.isReversed, future.isReversed);
+      const futureDetail = futureSents[0] || '';
 
-      const flowText = [pastOpening, bridge1, bridge2, futureOutlook].filter(Boolean).join(' ');
+      // 미래는 반드시 "가능성/방향" 표현으로
+      const futurePrefix = future.isReversed
+        ? `지금 이 흐름이 계속된다면, ${future.card_name_ko}의 에너지가 내면에서 막혀있을 가능성이 있어요. 아직 확정된 건 아무것도 없어요 —`
+        : `지금 이 흐름이 유지된다면, ${future.card_name_ko}의 방향으로 이어질 가능성이 높아요 —`;
 
-      // ══════════════════════════════════════
-      // 파트 3 — 디테일 (현재 카드 CSV 조언 문장)
-      // ══════════════════════════════════════
-      const detailText = (presentSents[2] || presentSents[1] || presentSents[0]) ||
-        (cat === '연애'
-          ? (present.isReversed ? '지금 관계에서 혼자 감당하고 있는 부분이 있어요. 솔직하게 꺼내는 것이 관계를 한 단계 깊게 만들어요.' : '관계 안에서 중요한 에너지가 크게 움직이고 있어요.')
-          : cat === '직장'
-            ? (present.isReversed ? '능력은 있는데 아직 다 드러내지 못하고 있어요. 자신의 의견을 조금 더 내어놓는 연습이 필요해요.' : '지금이 강점을 발휘할 타이밍이에요.')
-            : (present.isReversed ? '원하는 것이 있는데 뭔가 막혀있는 느낌이 들 수 있어요. 내면을 조금 더 들여다보는 시간이 필요해요.' : '지금 의미 있는 변화가 찾아오고 있어요.'));
+      const directionText = [
+        bridge2 || '',
+        futurePrefix,
+        futureDetail,
+      ].filter(Boolean).join(' ');
 
-      // ══════════════════════════════════════
-      // 파트 4 — 결론
-      // ══════════════════════════════════════
-      const conclusionText = getConclusion(present) + ' ' + getConclusion(future);
-
-      // ══════════════════════════════════════
-      // 파트 5 — 행동조언 (CSV 마지막 문장 우선)
-      // ══════════════════════════════════════
-      const actionText = presentSents[presentSents.length - 1] || getAction(present);
+      // ══════════════════════════════════════════════
+      // 파트 5 — 행동조언 (구체적 한 가지)
+      // ══════════════════════════════════════════════
+      const actionBase = presentSents[presentSents.length - 1] || '';
+      const actionText = (actionBase && actionBase !== presentSents[0])
+        ? actionBase
+        : getAction(present);
 
       // ── 역방향 안내 ──
       const reversedCards = tDrawnCards.filter(c => c.isReversed);
-      const reversedNote = reversedCards.length > 0
+      const reversedNote  = reversedCards.length > 0
         ? `<p style="background:rgba(120,80,200,.1);border-left:3px solid rgba(160,120,220,.4);border-radius:0 8px 8px 0;padding:.7rem 1rem;font-size:.83rem;color:#c4b0e0;margin-top:.8rem">💜 ${reversedCards.map(c=>c.card_name_ko).join(', ')} 카드가 역방향이에요. 나쁜 신호가 아니에요 — 그 에너지가 아직 내면에서 익고 있다는 뜻이에요. 억지로 끌어내려 하지 않아도 때가 되면 자연스럽게 드러날 거예요.</p>`
         : '';
 
       return `
-        <p style="line-height:1.95;margin-bottom:.9rem;color:#d4c8ee;font-size:.95rem">${empathyText}</p>
-        <p style="line-height:2;margin-bottom:.9rem;font-size:.92rem;border-left:2px solid rgba(201,168,76,.3);padding-left:.9rem">${flowText}</p>
-        <p style="line-height:1.95;margin-bottom:.9rem;font-size:.92rem">${detailText}</p>
-        <p style="line-height:1.9;margin-bottom:.9rem;color:#c9a84c;font-weight:600;font-size:.92rem">${conclusionText}</p>
+        <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:.8rem 1rem;margin-bottom:.9rem">
+          <div style="font-size:.78rem;color:#c9a84c;font-weight:700;letter-spacing:.06em;margin-bottom:.4rem">🃏 패턴 분석</div>
+          <p style="line-height:1.9;font-size:.88rem;margin:0;color:#e8dfc8">${patternText}</p>
+        </div>
+        <p style="line-height:1.95;margin-bottom:.9rem;color:#d4c8ee;font-size:.93rem">${empathyText}</p>
+        <div style="border-left:2px solid rgba(201,168,76,.3);padding-left:.9rem;margin-bottom:.9rem">
+          <div style="font-size:.78rem;color:#9b8fb0;margin-bottom:.3rem;letter-spacing:.04em">🌱 과거 → 현재 흐름</div>
+          <p style="line-height:2;font-size:.92rem;margin:0">${flowText}</p>
+        </div>
+        <div style="border-left:2px solid rgba(120,80,200,.4);padding-left:.9rem;margin-bottom:.9rem">
+          <div style="font-size:.78rem;color:#9b8fb0;margin-bottom:.3rem;letter-spacing:.04em">🌟 현재 → 미래 방향성 (가능성)</div>
+          <p style="line-height:2;font-size:.92rem;margin:0;color:#c9b8e8">${directionText}</p>
+        </div>
         <p style="line-height:1.8;font-size:.87rem;color:#9b8fb0;background:rgba(255,255,255,.04);border-radius:8px;padding:.7rem 1rem;margin-bottom:0">💡 ${actionText}</p>
         ${reversedNote}
       `;
-    }
-
-    function tReset() {
+        function tReset() {
       tQuestion = '';
       tDrawnCards = [];
       tRevealedCount = 0;
