@@ -142,6 +142,363 @@ CHINESE = [
 
 RATINGS = ["★★★☆☆","★★★★☆","★★★★★","★★☆☆☆","★★★★☆","★★★☆☆"]
 
+# ═══════════════════════════════════════════════════════════════════
+# ① 요일·월 보정값 (수치 계산 근거 제공)
+# ═══════════════════════════════════════════════════════════════════
+# 요일별 각 운세 보정치 (월=0 ~ 일=6)
+# 값의 의미: 기본 CSV 점수에 더하거나 뺄 보정 포인트
+_DOW_ADJUST = {
+    # (총운, 금전, 건강, 연애)
+    0: ( 2, -3,  4,  1),   # 월: 체력 회복 유리, 금전 신중
+    1: ( 4,  5,  2,  2),   # 화: 전반적 상승, 금전 특히 활발
+    2: (-2,  3, -1,  4),   # 수: 연애 활성, 컨디션 주의
+    3: ( 5,  4,  3,  3),   # 목: 주 최고 에너지, 결정에 유리
+    4: ( 3,  6,  1,  5),   # 금: 연애·금전 동반 상승
+    5: (-3, -4,  5,  3),   # 토: 건강 투자 유리, 충동 소비 주의
+    6: (-1, -5,  6, -2),   # 일: 휴식·회복 최적, 금전 보수적
+}
+# 월별 전체 운세 분위기 보정 (1~12월)
+_MON_ADJUST = {
+    1:  3,   # 1월: 새해 상승 에너지
+    2: -2,   # 2월: 전환기, 소폭 하락
+    3:  4,   # 3월: 봄 시작, 활력 상승
+    4:  2,   # 4월: 안정적 흐름
+    5:  5,   # 5월: 연중 최고 활동기
+    6:  1,   # 6월: 소강 상태
+    7: -1,   # 7월: 여름 무기력 구간
+    8:  0,   # 8월: 중립
+    9:  3,   # 9월: 하반기 재도약
+    10: 4,   # 10월: 결실의 계절
+    11: 2,   # 11월: 마무리 에너지 상승
+    12:-3,   # 12월: 연말 소진, 재충전 필요
+}
+# 시간대 추천 문구 (요일·보정값 기반)
+_DOW_GOLDEN_TIME = {
+    0: "오전 10시~12시 (주초 집중력이 살아있는 황금 타임)",
+    1: "오후 2시~4시 (화요일 오후 업무 추진력 최고조)",
+    2: "오전 9시~11시 (수요일 오전 창의력 활성 구간)",
+    3: "오전 10시~오후 1시 (목요일 전체 에너지 피크 타임)",
+    4: "오후 3시~6시 (금요일 대인관계·마무리 최적 시간)",
+    5: "오전 7시~10시 (토요일 이른 아침, 하루 에너지 충전 타임)",
+    6: "오후 4시~7시 (일요일 저녁, 내일을 위한 준비 골든타임)",
+}
+
+def _apply_adjustments(total, money, health, love):
+    """요일·월 보정을 적용해 최종 지수 및 계산 내역을 반환"""
+    kst = now_kst()
+    dow = kst.weekday()   # 0=월 … 6=일
+    mon = kst.month
+    dt, dm, dh, dl = _DOW_ADJUST[dow]
+    ma = _MON_ADJUST[mon]
+    dow_names = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"]
+    mon_names = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"]
+
+    # 보정 적용 (0~100 클램프)
+    adj_total  = max(1, min(100, total  + dt + ma))
+    adj_money  = max(1, min(100, money  + dm + ma))
+    adj_health = max(1, min(100, health + dh + ma))
+    adj_love   = max(1, min(100, love   + dl + ma))
+
+    golden = _DOW_GOLDEN_TIME[dow]
+    dow_sign = "▲" if dt >= 0 else "▼"
+    mon_sign = "▲" if ma >= 0 else "▼"
+
+    # 계산 내역 HTML (포스팅에 삽입할 수치 근거 카드)
+    calc_html = f'''
+<div class="card" style="background:#f8faff;border-left:5px solid #3b82f6">
+  <span class="badge" style="background:#dbeafe;color:#1d4ed8">📐 오늘의 운세 지수 계산 방식</span>
+  <div style="margin-top:12px;font-size:13px;color:#374151;line-height:1.9">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #e5e7eb">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:4px">📅 요일 보정 ({dow_names[dow]})</div>
+        <div style="font-weight:700;color:#1d4ed8">{dow_sign} 총운 {abs(dt):+d} · 금전 {abs(dm):+d} · 건강 {abs(dh):+d} · 연애 {abs(dl):+d}</div>
+      </div>
+      <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #e5e7eb">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:4px">🗓 월별 분위기 ({mon_names[mon-1]})</div>
+        <div style="font-weight:700;color:#7c3aed">{mon_sign} 전체 지수 {ma:+d}점 조정</div>
+      </div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
+      <div style="font-size:12px;color:#1e40af;font-weight:600;margin-bottom:6px">🔢 최종 보정 지수</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+        <span>🌟 종합 <b>{adj_total}점</b> <span style="font-size:11px;color:#6b7280">(기본 {total} {dt+ma:+d})</span></span>
+        <span>💰 금전 <b>{adj_money}점</b> <span style="font-size:11px;color:#6b7280">(기본 {money} {dm+ma:+d})</span></span>
+        <span>💪 건강 <b>{adj_health}점</b> <span style="font-size:11px;color:#6b7280">(기본 {health} {dh+ma:+d})</span></span>
+        <span>❤️ 연애 <b>{adj_love}점</b> <span style="font-size:11px;color:#6b7280">(기본 {love} {dl+ma:+d})</span></span>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#374151">
+      ⏰ <b>오늘의 골든 타임:</b> {golden}
+    </div>
+  </div>
+</div>'''
+    return adj_total, adj_money, adj_health, adj_love, calc_html
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ② 색상별·아이템별 효과 매핑 딕셔너리 (VLOOKUP 대체 로직)
+# ═══════════════════════════════════════════════════════════════════
+# 색상명 → (효과 영역, 운세 타입, 상승 %, 추천 아이템 목록, 착용/활용법)
+COLOR_EFFECT = {
+    "골드":      ("자신감과 풍요로움", "금전·사업운", 18,
+                  "골드 시계·반지·명함케이스·금색 볼펜",
+                  "오늘 중요한 미팅이나 협상 자리에 골드 소품을 하나 챙겨보세요. 시선을 끄는 동시에 자신감 있는 인상을 줍니다."),
+    "라벤더":    ("차분함과 직관력",   "대인관계·연애운", 15,
+                  "라벤더 향수·스카프·쿠션·노트",
+                  "오늘 감정 기복이 있을 수 있습니다. 라벤더 계열 소품을 가까이 두면 마음이 안정되고 상대방에게도 편안한 인상을 줍니다."),
+    "민트그린":  ("회복력과 신선함",   "건강·활력", 14,
+                  "민트 계열 텀블러·수첩·에코백",
+                  "점심 후 무기력감이 올 수 있습니다. 민트 계열 음료나 소품을 활용해 오후 에너지를 끌어올려 보세요."),
+    "스카이블루": ("소통과 신뢰감",    "연애·대인관계운", 16,
+                  "하늘색 셔츠·파우치·손수건·이어폰케이스",
+                  "오늘 말 한마디가 중요한 날입니다. 스카이블루 소품을 착용하면 신뢰감 있는 이미지를 전달하는 데 도움이 됩니다."),
+    "코랄":      ("활력과 긍정 에너지","연애·사교운", 20,
+                  "코랄 립스틱·귀걸이·가방·파일케이스",
+                  "활기찬 분위기를 만들고 싶은 날에 코랄 컬러가 빛을 발합니다. 새로운 만남이 있는 자리에 특히 효과적입니다."),
+    "퍼플":      ("창의력과 직관",     "아이디어·예술운", 13,
+                  "보라색 다이어리·마스킹테이프·파우치",
+                  "오늘 아이디어가 샘솟는 날입니다. 퍼플 계열 소품을 책상에 두면 창의적인 사고를 촉진하는 데 도움이 됩니다."),
+    "로즈핑크":  ("사랑과 감수성",     "연애·감성운", 19,
+                  "로즈핑크 핸드크림·메모지·파우치·양말",
+                  "감수성이 풍부해지는 날입니다. 소중한 사람에게 작은 선물이나 메시지를 전해보세요. 로즈핑크 소품이 따뜻한 분위기를 만들어 줍니다."),
+    "버건디":    ("깊이감과 카리스마", "직장·사업운", 17,
+                  "버건디 넥타이·머플러·다이어리·케이스",
+                  "중요한 프레젠테이션이나 보고가 있는 날 버건디 소품은 신뢰감과 전문성을 높여줍니다."),
+    "웜그레이":  ("집중력과 안정감",   "업무 효율·직장운", 12,
+                  "회색 계열 노트북 파우치·머그컵·마우스패드",
+                  "오늘 집중이 필요한 업무가 있다면 웜그레이 소품으로 데스크를 정리해 보세요. 산만함을 줄이고 집중력을 높여줍니다."),
+    "화이트":    ("청결함과 새 시작",  "정신 건강·리셋", 11,
+                  "흰색 노트·손수건·텀블러·파우치",
+                  "오늘 마음을 리셋하고 싶은 날이라면 화이트 소품으로 주변을 정리해 보세요. 깔끔한 환경이 새로운 에너지를 불러옵니다."),
+    "딥블루":    ("집중과 냉철한 판단","직장·금전 결정운", 15,
+                  "네이비 지갑·볼펜·파일·넥타이",
+                  "중요한 결정을 내려야 하는 날 딥블루 계열이 냉철한 판단력을 도와줍니다. 계약이나 협상 자리에 특히 추천합니다."),
+    "오렌지":    ("열정과 도전",       "활동·창업·도전운", 16,
+                  "오렌지 계열 파우치·케이스·스티커·양말",
+                  "새로운 도전을 시작하기에 좋은 날입니다. 오렌지 소품이 행동력과 추진력을 높여주는 에너지를 더해줍니다."),
+    "그린":      ("성장과 치유",       "건강·금전 성장운", 13,
+                  "초록색 화분·텀블러·노트·에코백",
+                  "자연의 기운이 필요한 날입니다. 작은 화분 하나를 책상에 두거나 그린 계열 소품을 활용해 보세요."),
+}
+
+# 행운 아이템 → 사용법 매핑 (아이템 키워드 기반 매칭)
+ITEM_USAGE = [
+    # (키워드 리스트, 사용법 설명)
+    (["수정","크리스탈","돌","원석"],
+     "오늘 수정은 왼손에 쥐거나 주머니에 넣어 다니세요. 부정적인 에너지를 흡수하고 집중력을 높여주는 효과가 있습니다."),
+    (["동전","코인"],
+     "오늘 동전을 지갑 깊숙이 넣어 두세요. '돈이 들어오는 자리'를 비워두지 않는다는 상징으로 금전운을 활성화합니다."),
+    (["꽃","꽃잎","식물","화분"],
+     "오늘 꽃이나 식물을 곁에 두세요. 생명 에너지가 긍정적인 기운을 불러오고 공간의 분위기를 밝게 바꿔줍니다."),
+    (["반지","팔찌","목걸이","귀걸이","주얼리"],
+     "오늘 이 아이템을 착용할 때 잠깐 눈을 감고 '오늘 하루 좋은 일이 가득하길'이라고 마음속으로 빌어보세요. 의도를 담는 것이 중요합니다."),
+    (["향초","향","아로마"],
+     "아침 루틴에 5분간 이 향을 사용해 보세요. 후각이 뇌를 자극해 하루 전체의 에너지 흐름을 긍정적으로 세팅하는 효과가 있습니다."),
+    (["거울","미러"],
+     "오늘 외출 전 거울을 보며 자신에게 긍정적인 말을 한마디 건네보세요. 자기 확신이 오늘 하루의 운세를 실제로 끌어올립니다."),
+    (["책","노트","수첩","다이어리"],
+     "오늘 떠오르는 아이디어나 감정을 짧게라도 기록해 두세요. 이 아이템이 오늘 당신의 생각을 현실로 연결하는 통로가 됩니다."),
+    (["열쇠","키"],
+     "열쇠는 '문을 여는 힘'의 상징입니다. 오늘 막혀 있던 문제의 해결책이 의외의 곳에서 나타날 수 있습니다. 열린 마음으로 하루를 시작하세요."),
+    (["조약돌","돌","스톤"],
+     "주머니나 가방에 넣고 다니다가 힘들 때 손으로 쥐어보세요. 자연의 안정 에너지가 마음을 차분하게 만들어줍니다."),
+]
+
+def get_color_guide(color_name):
+    """행운 색상 → 활용 가이드 문자열 반환"""
+    info = COLOR_EFFECT.get(color_name)
+    if not info:
+        # 부분 매칭 시도
+        for key, val in COLOR_EFFECT.items():
+            if key in color_name or color_name in key:
+                info = val
+                break
+    if info:
+        effect_area, fortune_type, boost_pct, items, usage = info
+        return (
+            f"오늘의 행운 색상 <b>'{color_name}'</b>은 {effect_area}을 높여주는 컬러입니다. "
+            f"{items}을 착용하거나 곁에 두면 {fortune_type} 지수가 최대 <b>{boost_pct}% 상승</b>하는 효과를 기대할 수 있습니다. "
+            f"{usage}"
+        )
+    return f"오늘의 행운 색상 '{color_name}'을 소품이나 의류에 활용해 보세요. 긍정적인 에너지를 끌어당기는 데 도움이 됩니다."
+
+def get_item_guide(item_name):
+    """행운 아이템 → 활용법 문자열 반환"""
+    item_lower = str(item_name)
+    for keywords, usage in ITEM_USAGE:
+        if any(kw in item_lower for kw in keywords):
+            return usage
+    return f"오늘 '{item_name}'을 가까이 두거나 몸에 지니세요. 긍정적인 기운이 하루 전체에 흐릅니다."
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ③ 별자리 배경 지식 딕셔너리 (포스팅 하단 고정 카드용)
+# ═══════════════════════════════════════════════════════════════════
+ZODIAC_INFO = {
+    "양자리": {
+        "element": "불 (Fire)", "ruling": "화성 (Mars)",
+        "trait": "행동력과 추진력이 넘치는 리더형 별자리입니다. 새로운 도전을 두려워하지 않는 용감함이 최대 강점입니다.",
+        "strength": "결단력, 열정, 리더십, 개척 정신",
+        "weakness": "성급함, 지속력 부족, 충동적 결정",
+        "compatible": "사자자리, 사수자리, 쌍둥이자리",
+        "tip": "오늘 중요한 결정을 내리기 전에 3초만 멈추는 습관을 만들어 보세요. 당신의 직관은 훌륭하지만 한 박자 여유가 더 좋은 결과를 만듭니다.",
+        "color": "빨간색, 오렌지", "stone": "다이아몬드, 루비", "number": "1, 9",
+    },
+    "황소자리": {
+        "element": "흙 (Earth)", "ruling": "금성 (Venus)",
+        "trait": "안정과 신뢰를 중시하는 현실주의자입니다. 한번 시작한 일은 끝까지 해내는 끈기와 성실함이 빛납니다.",
+        "strength": "인내심, 신뢰성, 현실 감각, 심미안",
+        "weakness": "고집스러움, 변화 거부, 소유욕",
+        "compatible": "처녀자리, 염소자리, 게자리",
+        "tip": "오늘 새로운 방식을 한 가지만 시도해 보세요. 변화가 두렵더라도 작은 실험이 더 큰 안정을 만들어 줍니다.",
+        "color": "초록색, 베이지", "stone": "에메랄드, 로즈쿼츠", "number": "2, 6",
+    },
+    "쌍둥이자리": {
+        "element": "공기 (Air)", "ruling": "수성 (Mercury)",
+        "trait": "지적 호기심과 소통 능력이 뛰어난 다재다능한 별자리입니다. 상황에 따라 유연하게 적응하는 능력이 탁월합니다.",
+        "strength": "적응력, 커뮤니케이션 능력, 창의성, 유머",
+        "weakness": "변덕, 집중력 부족, 우유부단함",
+        "compatible": "천칭자리, 물병자리, 양자리",
+        "tip": "오늘 여러 가지에 손대기보다 딱 두 가지에만 집중해 보세요. 당신의 에너지를 모으면 훨씬 강력한 결과를 만들 수 있습니다.",
+        "color": "노란색, 하늘색", "stone": "아게이트, 시트린", "number": "3, 5",
+    },
+    "게자리": {
+        "element": "물 (Water)", "ruling": "달 (Moon)",
+        "trait": "감수성과 공감 능력이 풍부한 보살핌의 별자리입니다. 가족과 소중한 사람을 위해 헌신하는 따뜻한 마음이 특징입니다.",
+        "strength": "공감력, 직관력, 보살핌, 기억력",
+        "weakness": "감정 기복, 소극성, 과도한 집착",
+        "compatible": "전갈자리, 물고기자리, 황소자리",
+        "tip": "오늘 자신을 돌보는 시간을 꼭 만들어 보세요. 남을 챙기는 것만큼 자신을 챙기는 것도 중요합니다.",
+        "color": "은색, 흰색", "stone": "문스톤, 진주", "number": "2, 7",
+    },
+    "사자자리": {
+        "element": "불 (Fire)", "ruling": "태양 (Sun)",
+        "trait": "카리스마와 자신감이 넘치는 무대의 주인공 별자리입니다. 타고난 리더십으로 주변을 밝히고 이끄는 힘이 있습니다.",
+        "strength": "카리스마, 관대함, 창의력, 자신감",
+        "weakness": "자존심, 지나친 인정 욕구, 고집",
+        "compatible": "양자리, 사수자리, 쌍둥이자리",
+        "tip": "오늘 다른 사람의 의견도 주인공처럼 들어주세요. 경청하는 리더가 더 오래, 더 멀리 갑니다.",
+        "color": "금색, 주황색", "stone": "루비, 호박", "number": "1, 4",
+    },
+    "처녀자리": {
+        "element": "흙 (Earth)", "ruling": "수성 (Mercury)",
+        "trait": "분석력과 완벽주의적 성향을 지닌 세심한 별자리입니다. 디테일을 놓치지 않는 꼼꼼함이 큰 강점입니다.",
+        "strength": "분석력, 성실함, 실용성, 정확성",
+        "weakness": "완벽주의, 지나친 비판, 걱정이 많음",
+        "compatible": "황소자리, 염소자리, 게자리",
+        "tip": "오늘 '80%면 충분하다'는 마음을 가져보세요. 완벽함을 추구하다 정작 중요한 것을 놓치지 않도록 균형이 필요합니다.",
+        "color": "네이비, 회색", "stone": "사파이어, 카넬리안", "number": "5, 6",
+    },
+    "천칭자리": {
+        "element": "공기 (Air)", "ruling": "금성 (Venus)",
+        "trait": "균형과 조화를 중시하는 외교적 별자리입니다. 아름다움과 공정함에 대한 감각이 뛰어나며 관계를 소중히 여깁니다.",
+        "strength": "균형 감각, 외교력, 심미안, 협력",
+        "weakness": "우유부단함, 갈등 회피, 의존성",
+        "compatible": "쌍둥이자리, 물병자리, 사수자리",
+        "tip": "오늘 결정을 미루고 싶어지는 순간이 오면, '이것이 내가 원하는 것인가'를 먼저 물어보세요. 당신의 직관은 생각보다 정확합니다.",
+        "color": "파스텔 핑크, 라벤더", "stone": "오팔, 로즈쿼츠", "number": "6, 9",
+    },
+    "전갈자리": {
+        "element": "물 (Water)", "ruling": "명왕성 (Pluto)",
+        "trait": "깊이 있는 통찰력과 강인한 의지를 지닌 신비의 별자리입니다. 한번 목표를 정하면 어떤 어려움도 뚫고 나가는 집중력이 있습니다.",
+        "strength": "통찰력, 집중력, 강인함, 변화 적응력",
+        "weakness": "집착, 의심, 복수심, 비밀주의",
+        "compatible": "게자리, 물고기자리, 염소자리",
+        "tip": "오늘 신뢰하는 사람에게 마음을 조금 열어보세요. 당신의 강인함 뒤에 숨겨진 따뜻함이 관계를 더 깊게 만들어 줍니다.",
+        "color": "검정, 진홍색", "stone": "토파즈, 옵시디언", "number": "8, 11",
+    },
+    "사수자리": {
+        "element": "불 (Fire)", "ruling": "목성 (Jupiter)",
+        "trait": "자유와 모험을 사랑하는 낙관주의 별자리입니다. 넓은 시야로 세상을 바라보며 끊임없이 새로운 지식과 경험을 추구합니다.",
+        "strength": "낙관성, 철학적 사고, 모험심, 솔직함",
+        "weakness": "무책임함, 성급한 약속, 무신경함",
+        "compatible": "양자리, 사자자리, 물병자리",
+        "tip": "오늘 약속은 지킬 수 있는 것만 하세요. 솔직한 거절 한마디가 신뢰를 더 오래 지킵니다.",
+        "color": "보라색, 파란색", "stone": "터키석, 라피스라줄리", "number": "3, 9",
+    },
+    "염소자리": {
+        "element": "흙 (Earth)", "ruling": "토성 (Saturn)",
+        "trait": "책임감과 인내로 목표를 향해 묵묵히 나아가는 별자리입니다. 시간이 걸리더라도 반드시 정상에 오르는 지구력이 특징입니다.",
+        "strength": "책임감, 인내심, 실용성, 야망",
+        "weakness": "고집, 지나친 실용주의, 감정 억제",
+        "compatible": "황소자리, 처녀자리, 전갈자리",
+        "tip": "오늘 일에서 잠시 손을 떼고 쉬어가는 것도 전략입니다. 꾸준히 달리기 위해서는 페이스를 조절하는 지혜가 필요합니다.",
+        "color": "갈색, 카키", "stone": "가넷, 호안석", "number": "8, 10",
+    },
+    "물병자리": {
+        "element": "공기 (Air)", "ruling": "천왕성 (Uranus)",
+        "trait": "독창성과 혁신적 사고를 지닌 미래 지향적 별자리입니다. 기존의 틀을 깨고 새로운 방식으로 세상을 바라보는 능력이 있습니다.",
+        "strength": "독창성, 인도주의, 미래 지향, 개방성",
+        "weakness": "감정 표현 어려움, 고집, 거리감",
+        "compatible": "쌍둥이자리, 천칭자리, 사수자리",
+        "tip": "오늘 아이디어가 너무 앞서간다 싶으면 주변 사람이 이해할 수 있게 설명하는 연습을 해보세요. 탁월한 생각도 전달되어야 빛납니다.",
+        "color": "일렉트릭 블루, 청록색", "stone": "아메시스트, 아쿠아마린", "number": "4, 7",
+    },
+    "물고기자리": {
+        "element": "물 (Water)", "ruling": "해왕성 (Neptune)",
+        "trait": "공감 능력이 탁월하고 예술적 감수성이 풍부한 별자리입니다. 타인의 감정을 직관적으로 읽어내는 능력이 탁월합니다.",
+        "strength": "직관력, 창의성, 공감력, 헌신",
+        "weakness": "우유부단함, 현실 도피, 감정 기복",
+        "compatible": "게자리, 전갈자리, 황소자리",
+        "tip": "오늘 감정에 치우치지 않도록 하루 한 번 '지금 내 감정이 사실인가'를 점검하세요. 직관은 훌륭하지만 현실 확인이 함께할 때 더 빛납니다.",
+        "color": "바다색, 연보라", "stone": "아쿠아마린, 문스톤", "number": "7, 12",
+    },
+}
+
+def zodiac_info_card(z_kr, emoji):
+    """별자리 배경 지식 카드 HTML 생성"""
+    info = ZODIAC_INFO.get(z_kr)
+    if not info:
+        return ""
+    return f'''
+<div class="card" style="background:linear-gradient(135deg,#faf5ff,#eff6ff);border-left:5px solid #7c3aed">
+  <span class="badge" style="background:#ede9fe;color:#5b21b6">
+    {emoji} {z_kr} 기본 정보
+  </span>
+  <div style="margin-top:14px;display:grid;gap:10px">
+
+    <div style="font-size:14px;color:#374151;line-height:1.85">
+      {info["trait"]}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+      <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #ede9fe">
+        <div style="color:#7c3aed;font-weight:700;margin-bottom:4px">🌿 원소 · 지배성</div>
+        <div style="color:#374151">{info["element"]}</div>
+        <div style="color:#374151">{info["ruling"]}</div>
+      </div>
+      <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #dbeafe">
+        <div style="color:#1d4ed8;font-weight:700;margin-bottom:4px">💎 행운 스톤 · 숫자</div>
+        <div style="color:#374151">{info["stone"]}</div>
+        <div style="color:#374151">행운 숫자: {info["number"]}</div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #d1fae5;font-size:13px">
+      <div style="color:#065f46;font-weight:700;margin-bottom:4px">✅ 강점</div>
+      <div style="color:#374151">{info["strength"]}</div>
+    </div>
+
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fee2e2;font-size:13px">
+      <div style="color:#991b1b;font-weight:700;margin-bottom:4px">⚠️ 주의할 점</div>
+      <div style="color:#374151">{info["weakness"]}</div>
+    </div>
+
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fef3c7;font-size:13px">
+      <div style="color:#92400e;font-weight:700;margin-bottom:4px">💑 궁합 좋은 별자리</div>
+      <div style="color:#374151">{info["compatible"]}</div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#7c3aed15,#1d4ed815);border-radius:8px;
+                padding:12px;border:1px solid #c4b5fd;font-size:13px;line-height:1.8">
+      <div style="color:#5b21b6;font-weight:700;margin-bottom:6px">💡 오늘의 {z_kr} 조언</div>
+      <div style="color:#374151">{info["tip"]}</div>
+    </div>
+
+  </div>
+</div>'''
+
+
 # ─────────────────────────────────────────
 # 유틸 함수
 # ─────────────────────────────────────────
@@ -667,37 +1024,191 @@ def _zodiac_seo_title(z_kr, today_dot, total, money, health, love):
     return random.choice(patterns), signal
 
 
-# 섹션별 현실 디테일 문장 풀
+# ─────────────────────────────────────────────────────────────────
+# 5파트 구조 본문 데이터 풀
+# 파트1: 서론(오늘 기운 맥락)  파트2: 지수 해석(수치 근거)
+# 파트3: 현실 조언(구체 행동)  파트4: 시간대별 가이드
+# 파트5: 마무리(따뜻한 응원)
+# ─────────────────────────────────────────────────────────────────
+
+# ── 총운 서론 풀 ──
+_Z_TOTAL_INTRO_UP = [
+    "오늘 하루 별의 기운이 유독 당신 편입니다. 지금 이 순간, 주변에서 작은 행운의 신호들이 조용히 쌓이고 있다는 것을 느끼셨나요?",
+    "오늘은 오랫동안 기다려온 흐름이 비로소 당신 곁으로 돌아오는 날입니다. 그동안 묵묵히 버텨온 시간이 오늘의 좋은 기운을 만들었습니다.",
+    "새벽부터 긍정적인 에너지가 흐르기 시작했습니다. 평소보다 발걸음이 가볍게 느껴진다면, 그것이 오늘 기운의 신호입니다.",
+    "오늘은 당신이 가진 강점이 특히 도드라지는 날입니다. 자신을 믿고 앞으로 나아가기에 이보다 좋은 타이밍이 없습니다.",
+]
+_Z_TOTAL_INTRO_WARN = [
+    "오늘은 서두르기보다 한 박자 쉬어가는 지혜가 필요한 날입니다. 조급함이 오히려 좋은 기회를 놓치게 만들 수 있습니다.",
+    "오늘 하루는 에너지가 다소 분산되어 있습니다. 한 가지에 집중하고, 나머지는 내일로 미루는 전략이 현명합니다.",
+    "오늘은 결과보다 과정에 집중하는 날입니다. 눈에 보이는 성과가 없더라도, 묵묵히 자신의 길을 걷는 것이 가장 현명한 선택입니다.",
+]
+
+# ── 총운 지수 해석 풀 ──
+_Z_TOTAL_SCORE_UP = [
+    "오늘의 종합 운세 지수는 상위권을 기록하고 있습니다. 오전 10시~오후 2시 사이에 중요한 결정을 내리거나 대화를 나누면 가장 긍정적인 결과를 기대할 수 있습니다.",
+    "현재 측정된 오늘의 에너지 지수는 매우 활성화된 상태입니다. 특히 오전 시간대에 창의적인 작업이나 대인 접촉에서 평소보다 30% 이상 좋은 반응을 얻을 수 있는 흐름입니다.",
+    "오늘 당신의 종합 운세는 이번 주 중 가장 높은 흐름을 보이고 있습니다. 주요 활동은 오전 중으로 몰아두고 오후에는 정리와 마무리에 집중하면 효율이 극대화됩니다.",
+]
+_Z_TOTAL_SCORE_WARN = [
+    "오늘의 종합 에너지 지수는 평균 이하 구간에 위치해 있습니다. 이 구간에서 무리한 결정보다는 준비와 계획에 집중하면 2~3일 후 좋은 흐름으로 반전될 가능성이 높습니다.",
+    "지수상으로 오늘은 회복과 재충전에 최적화된 날입니다. 새로운 일을 시작하기보다는 기존에 진행 중인 일을 점검하는 데 에너지를 쓰세요.",
+]
+
+# ── 연애운 서론 풀 ──
+_Z_LOVE_INTRO_UP = [
+    "오늘은 마음의 문이 평소보다 조금 더 넓게 열려 있습니다. 좋아하는 사람에게 쉽게 다가가기 어려웠던 날들이 있었다면, 오늘은 그 장벽이 낮아지는 날입니다.",
+    "연애운이 따뜻하게 흐르는 날입니다. 혼자 삭이던 감정들을 오늘만큼은 솔직하게 표현해 보세요. 상대도 당신의 진심을 받아들일 준비가 되어 있을 가능성이 높습니다.",
+    "오늘은 인연의 실이 조금 더 가까이 당겨지는 날입니다. 평소 스쳐 지나쳤던 만남 속에서 뜻밖의 인연이 시작될 수도 있습니다.",
+]
+_Z_LOVE_INTRO_WARN = [
+    "오늘은 감정의 파도가 다소 높습니다. 사소한 말 한마디가 오해로 이어질 수 있으니, 중요한 대화는 충분히 생각한 뒤 꺼내는 것이 좋습니다.",
+    "연애운이 잠시 숨 고르기를 하는 날입니다. 상대에게 기대를 낮추고, 지금 이 관계의 현재를 있는 그대로 바라보는 시간을 가져 보세요.",
+    "오늘은 서로 다른 생각이 충돌하기 쉬운 날입니다. 내가 옳다는 확신보다 상대의 입장에서 한 번 더 생각해 보는 여유가 관계를 지켜줍니다.",
+]
+
+# ── 연애운 상세 조언 풀 ──
 _Z_LOVE_DETAIL_UP = [
-    "오늘은 예상 못한 연락이 올 수 있습니다. 특히 오후 2시~5시 사이 인간관계 변화 신호가 강합니다.",
-    "평소 마음에 두고 있던 사람과 자연스러운 대화 기회가 생길 수 있습니다. 먼저 다가가는 용기가 빛을 발합니다.",
-    "SNS나 메신저에서 뜻밖의 메시지가 도착할 수 있습니다. 가볍게 답하되 진심을 담아 보세요.",
-    "오늘 저녁 약속이 생긴다면 흘려 넘기지 마세요. 소중한 인연이 이어질 수 있는 자리입니다.",
+    "오늘은 예상 못한 연락이 올 수 있습니다. 특히 오후 2시~5시 사이 인간관계 변화 신호가 강합니다. 내일로 미루지 말고 오늘 답장을 보내세요.",
+    "평소 마음에 두고 있던 사람과 자연스러운 대화 기회가 생길 수 있습니다. 먼저 다가가는 용기가 빛을 발합니다. 부담 없는 가벼운 안부 한 마디가 큰 변화를 만들 수 있습니다.",
+    "SNS나 메신저에서 뜻밖의 메시지가 도착할 수 있습니다. 가볍게 답하되 진심을 담아 보세요. 오늘의 짧은 대화가 새로운 관계의 시작이 될 수 있습니다.",
+    "오늘 저녁 약속이 생긴다면 흘려 넘기지 마세요. 소중한 인연이 이어질 수 있는 자리입니다. 편안한 분위기에서 솔직한 대화를 나눠 보세요.",
 ]
 _Z_LOVE_DETAIL_WARN = [
-    "감정적으로 예민해지기 쉬운 날입니다. 중요한 대화는 감정이 가라앉은 저녁 이후로 미루세요.",
-    "가까운 사람의 말 한마디가 상처로 느껴질 수 있습니다. 오늘은 상대 의도를 먼저 확인해 보세요.",
-    "혼자만의 시간이 오히려 관계에 활력을 줄 수 있습니다. 무리해서 연락하기보다 여유를 가져 보세요.",
+    "감정적으로 예민해지기 쉬운 날입니다. 중요한 대화는 감정이 가라앉은 저녁 이후로 미루세요. 말하기 전에 '이 말이 필요한 말인가'를 한 번 더 생각해 보세요.",
+    "가까운 사람의 말 한마디가 상처로 느껴질 수 있습니다. 오늘은 상대 의도를 먼저 확인해 보세요. 오해에서 시작된 갈등은 빠를수록 해소하기 쉽습니다.",
+    "혼자만의 시간이 오히려 관계에 활력을 줄 수 있습니다. 무리해서 연락하기보다 여유를 가져 보세요. 잠시 거리를 두는 것이 더 깊은 연결로 이어지는 법입니다.",
 ]
+
+# ── 연애운 시간대 가이드 풀 ──
+_Z_LOVE_TIME_UP = [
+    "💬 오늘의 최적 대화 시간대: 오후 3시~6시 사이가 감수성이 열리는 시간입니다. 이 시간 안에 전하고 싶은 마음을 표현해 보세요.",
+    "💬 오늘 저녁 7시 이후에는 편안한 대화 에너지가 흐릅니다. 무거운 주제보다 가벼운 공감 대화부터 시작해 보세요.",
+    "💬 오전 중에 연락을 주고받는다면 오늘 하루 관계 에너지가 더 길게 지속됩니다. 짧은 안부 메시지 하나가 하루를 바꿀 수 있습니다.",
+]
+_Z_LOVE_TIME_WARN = [
+    "💬 오후 12시~3시 사이에는 감정 기복이 생기기 쉽습니다. 이 시간대에는 중요한 감정 대화를 피하고 저녁 이후로 미루는 것이 현명합니다.",
+    "💬 오늘은 저녁 이후에 오히려 마음이 안정됩니다. 하루 중 가장 솔직한 대화를 나눌 수 있는 시간대이니 참고하세요.",
+]
+
+# ── 연애운 마무리 풀 ──
+_Z_LOVE_CLOSE_UP = [
+    "오늘 하루, 당신의 진심은 분명히 상대에게 전달됩니다. 사랑은 타이밍이 전부가 아닙니다. 오늘 이 순간도 충분히 소중합니다. 💕",
+    "연애는 결국 작은 순간들이 쌓이는 과정입니다. 오늘의 작은 용기가 내일의 큰 행복이 되어 돌아옵니다. 자신을 믿어 보세요. 🌸",
+    "당신이 먼저 마음을 열면, 세상도 당신을 향해 마음을 엽니다. 오늘의 따뜻한 기운을 주변 사람들과 나눠 보세요. 💞",
+]
+_Z_LOVE_CLOSE_WARN = [
+    "지금 이 순간도 충분히 잘 하고 있습니다. 관계에 있어 완벽한 타이밍은 없습니다. 오늘 하루도 당신만의 속도로 나아가세요. 🌿",
+    "사랑은 서두를수록 멀어지는 법입니다. 오늘 하루 여유를 갖고, 상대방을 있는 그대로 바라봐 주세요. 그 여유가 관계를 더 깊게 만듭니다. 🌙",
+]
+
+# ── 금전운 서론 풀 ──
+_Z_MONEY_INTRO_UP = [
+    "오늘은 금전 흐름이 당신에게 유리하게 움직이는 날입니다. 오랫동안 막혀있던 수입의 물꼬가 트일 수 있는 시기입니다.",
+    "재물운의 흐름이 상승세를 타고 있습니다. 작은 것이라도 오늘 챙겨두면 나중에 큰 자산이 됩니다. 돈에 관련된 일은 오늘 안으로 처리하세요.",
+    "오늘은 경제활동에 있어 생각보다 좋은 하루입니다. 막연하게 기다려온 기회가 구체적인 형태로 나타날 수 있습니다.",
+]
+_Z_MONEY_INTRO_WARN = [
+    "오늘은 금전운이 다소 신중함을 요구하는 날입니다. 충동적인 결정보다는 하루를 관찰하고 내일 행동으로 옮기는 전략이 더 현명합니다.",
+    "오늘 금전적인 실수가 생기기 쉬운 흐름입니다. 평소보다 꼼꼼하게 지출을 점검하고, 큰 결정은 보류해 두세요.",
+]
+
+# ── 금전운 지수 해석 풀 ──
+_Z_MONEY_SCORE_UP = [
+    "오늘 경제활동 효율 지수는 높은 수준을 기록하고 있습니다. 오전 10시~오후 1시 사이에 금전 관련 협의나 결정을 내리면 가장 긍정적인 결과를 얻을 수 있습니다.",
+    "재물운 지수가 상위 30% 구간에 위치합니다. 놓쳤던 환급금이나 미수금을 오늘 확인해 보세요. 작은 액수라도 오늘의 흐름과 함께라면 의미 있는 수확이 됩니다.",
+    "금전운 수치가 이번 주 중 가장 활성화된 날입니다. 새로운 수입 루트나 부업 아이디어를 검토하기에 좋은 타이밍입니다.",
+]
+_Z_MONEY_SCORE_WARN = [
+    "오늘 금전 지수는 평균 이하 구간입니다. 이 구간에서 새로운 투자나 소비보다는 기존 자산을 점검하고 유지하는 것이 장기적으로 유리합니다.",
+    "금전운 지수가 낮은 날일수록 충동구매에 취약해집니다. 오늘 하루만큼은 지갑을 닫고 지출 내역을 확인하는 것으로 시작해 보세요.",
+]
+
+# ── 금전운 상세 조언 풀 ──
 _Z_MONEY_DETAIL_UP = [
-    "오늘 소소한 금전 이익이 발생할 수 있습니다. 적은 금액이라도 챙겨두면 나중에 큰 도움이 됩니다.",
-    "미뤄두었던 환급금이나 정산 내역을 오늘 확인해 보세요. 놓친 돈이 있을 수 있습니다.",
-    "오후 늦게 예상치 못한 수입 관련 연락이 올 수 있습니다. 꼼꼼히 검토하고 결정하세요.",
+    "오늘 소소한 금전 이익이 발생할 수 있습니다. 적은 금액이라도 챙겨두면 나중에 큰 도움이 됩니다. 정기 적금이나 자동 저축 설정을 오늘 검토해 보세요.",
+    "미뤄두었던 환급금이나 정산 내역을 오늘 확인해 보세요. 놓친 돈이 있을 수 있습니다. 모바일 앱을 통한 캐시백이나 포인트 전환도 오늘 해두면 좋습니다.",
+    "오후 늦게 예상치 못한 수입 관련 연락이 올 수 있습니다. 꼼꼼히 검토하고 결정하세요. 서두르지 않아도 기회는 오늘 하루 안에 있습니다.",
 ]
 _Z_MONEY_DETAIL_WARN = [
-    "오늘은 갑작스러운 지출이 생길 수 있습니다. 특히 오후 3시 이후 충동 구매를 주의하세요.",
-    "카드 결제·자동이체 내역을 오늘 한 번 점검하세요. 모르는 사이 새어나가는 돈이 있을 수 있습니다.",
-    "투자나 새로운 금전 계약은 오늘보다 2~3일 후로 미루는 것이 유리합니다.",
+    "오늘은 갑작스러운 지출이 생길 수 있습니다. 특히 오후 3시 이후 충동 구매를 주의하세요. 장바구니에 담아 두고 하루 뒤에 다시 확인하는 습관을 들여보세요.",
+    "카드 결제·자동이체 내역을 오늘 한 번 점검하세요. 모르는 사이 새어나가는 돈이 있을 수 있습니다. 가계부 앱을 통한 10분 점검이 한 달 지출을 바꿉니다.",
+    "투자나 새로운 금전 계약은 오늘보다 2~3일 후로 미루는 것이 유리합니다. 지금의 판단이 흐려지기 쉬운 날이니 문서 서명이나 큰 결제는 신중하게 검토하세요.",
 ]
+
+# ── 금전운 시간대 가이드 풀 ──
+_Z_MONEY_TIME_UP = [
+    "💰 오늘의 황금 시간대: 오전 10시~오후 1시 사이에 금전 관련 연락이나 결정을 마무리하세요. 이 시간대에 이루어진 금전 계획은 실행력이 높습니다.",
+    "💰 오늘 오후 2시~4시 사이가 수익 관련 아이디어가 가장 활발히 떠오르는 시간입니다. 생각이 떠오르면 바로 메모해 두세요.",
+]
+_Z_MONEY_TIME_WARN = [
+    "💰 오늘 오후 3시 이후에는 지출 충동이 커집니다. 이 시간대에는 쇼핑 앱 알림을 꺼두고, 불필요한 온라인 쇼핑은 내일로 미루세요.",
+    "💰 점심 이후부터 금전 판단력이 흐려질 수 있습니다. 중요한 계약이나 결제는 오전 안으로 처리하거나 다음 날로 넘기세요.",
+]
+
+# ── 금전운 마무리 풀 ──
+_Z_MONEY_CLOSE_UP = [
+    "재물은 한 번에 쌓이는 것이 아닙니다. 오늘 챙긴 작은 것들이 모여 당신의 단단한 경제 기반이 됩니다. 오늘 하루도 현명하게 마무리하세요. 💛",
+    "돈이 들어오는 흐름을 타고 있을 때, 지출도 함께 점검해야 진짜 부가 쌓입니다. 오늘의 좋은 금전 에너지를 낭비 없이 활용하세요. 🌟",
+]
+_Z_MONEY_CLOSE_WARN = [
+    "오늘의 신중함이 내일의 안정을 만듭니다. 금전 흐름이 좋지 않은 날에 무리하지 않는 것 자체가 최고의 재테크입니다. 💚",
+    "지금의 어려움은 일시적입니다. 오늘 하루 지출을 줄이고 내일을 위한 계획을 세워 보세요. 작은 결심 하나가 재정 흐름을 바꿉니다. 🌿",
+]
+
+# ── 직장운 서론 풀 ──
+_Z_WORK_INTRO_UP = [
+    "오늘은 직장에서 당신의 존재감이 빛날 수 있는 날입니다. 그동안 보이지 않는 곳에서 쌓아온 노력이 오늘 드디어 수면 위로 떠오르는 흐름입니다.",
+    "업무 흐름이 원활한 하루입니다. 평소 어렵게 느껴지던 일도 오늘은 생각보다 수월하게 풀릴 수 있습니다. 중요한 과제가 있다면 오늘 시작하세요.",
+    "오늘은 아이디어와 실행력이 모두 살아있는 날입니다. 머릿속에 맴돌던 계획을 오늘 꺼내 보세요. 생각보다 빠르게 진전될 수 있습니다.",
+]
+_Z_WORK_INTRO_WARN = [
+    "오늘은 직장에서 예상치 못한 변수가 생길 수 있는 날입니다. 계획을 꼼꼼하게 점검하고, 여유 시간을 확보해 두세요.",
+    "업무 집중력이 흐트러지기 쉬운 날입니다. 멀티태스킹보다는 한 가지에 집중하는 방식이 결과적으로 더 많은 것을 해냅니다.",
+]
+
+# ── 직장운 지수 해석 풀 ──
+_Z_WORK_SCORE_UP = [
+    "오늘의 업무 효율 지수는 높은 구간을 가리키고 있습니다. 집중력과 판단력이 동시에 살아있는 날이니, 핵심 업무를 오전 중에 처리하면 최상의 결과를 얻을 수 있습니다.",
+    "직장 에너지 지수가 이번 주 최고치에 가깝습니다. 팀워크가 필요한 업무나 대외 커뮤니케이션에서 평소보다 좋은 반응을 기대할 수 있습니다.",
+    "오늘의 성과 지수는 상위권에 위치합니다. 지금껏 해온 업무의 완성도를 점검하고, 놓친 부분을 보완하는 데 쓰면 큰 성취감을 느낄 수 있습니다.",
+]
+_Z_WORK_SCORE_WARN = [
+    "오늘의 업무 집중 지수는 평균 이하 구간입니다. 성과를 억지로 내려 하기보다 오늘 하루 기반을 다지는 작업에 집중하면 내일 더 좋은 결과로 이어집니다.",
+    "직장 에너지가 낮게 측정된 날입니다. 오늘 실수가 나와도 자신을 탓하지 마세요. 쉬면서 회복하는 것도 중요한 업무 능력입니다.",
+]
+
+# ── 직장운 상세 조언 풀 ──
 _Z_WORK_DETAIL_UP = [
-    "오늘 업무에서 작은 성과가 인정받을 수 있습니다. 평소 해온 노력이 드디어 빛을 발하는 시기입니다.",
-    "동료나 상사로부터 예상치 못한 긍정적인 피드백이 올 수 있습니다. 자신감을 갖고 임해 보세요.",
-    "새로운 아이디어가 떠오르기 쉬운 날입니다. 메모해 두면 나중에 큰 자산이 됩니다.",
+    "오늘 업무에서 작은 성과가 인정받을 수 있습니다. 평소 해온 노력이 드디어 빛을 발하는 시기입니다. 결과가 나왔을 때 겸손하게 팀과 공유하면 더 큰 신뢰를 얻습니다.",
+    "동료나 상사로부터 예상치 못한 긍정적인 피드백이 올 수 있습니다. 자신감을 갖고 임해 보세요. 칭찬을 받을 때 다음 목표도 함께 제시하면 인상이 더 깊어집니다.",
+    "새로운 아이디어가 떠오르기 쉬운 날입니다. 메모해 두면 나중에 큰 자산이 됩니다. 회의나 미팅에서 적극적으로 발언해 보세요. 오늘 당신의 말에 무게감이 있습니다.",
 ]
 _Z_WORK_DETAIL_WARN = [
-    "업무 중 세부 사항을 놓치기 쉬운 날입니다. 서두르지 말고 두 번 확인하는 습관을 발휘하세요.",
-    "동료와의 의견 충돌이 생길 수 있습니다. 내 입장만 고집하기보다 상대 의견도 충분히 들어보세요.",
-    "중요한 발표나 보고는 오늘보다 내일 진행하는 것이 더 좋은 결과를 가져올 수 있습니다.",
+    "업무 중 세부 사항을 놓치기 쉬운 날입니다. 서두르지 말고 두 번 확인하는 습관을 발휘하세요. 이메일이나 보고서는 발송 전 반드시 재검토하세요.",
+    "동료와의 의견 충돌이 생길 수 있습니다. 내 입장만 고집하기보다 상대 의견도 충분히 들어보세요. 오늘의 양보가 나중에 더 큰 신뢰로 돌아옵니다.",
+    "중요한 발표나 보고는 오늘보다 내일 진행하는 것이 더 좋은 결과를 가져올 수 있습니다. 준비가 조금 더 필요하다면 오늘 시간을 그 준비에 투자하세요.",
+]
+
+# ── 직장운 시간대 가이드 풀 ──
+_Z_WORK_TIME_UP = [
+    "💼 오늘의 골든타임: 오전 9시~11시 사이가 집중력이 가장 높은 시간대입니다. 중요한 업무와 핵심 판단을 이 시간 안에 마무리하세요.",
+    "💼 오후 2시~4시 사이에는 창의적인 아이디어가 활발히 떠오릅니다. 브레인스토밍이나 기획 작업은 이 시간대를 활용해 보세요.",
+    "💼 오전 집중 업무, 오후 협업·소통으로 나누면 오늘 하루 생산성이 극대화됩니다. 오늘은 그 패턴이 특히 잘 맞는 날입니다.",
+]
+_Z_WORK_TIME_WARN = [
+    "💼 오후 1시~3시 사이는 집중력이 가장 떨어지는 시간대입니다. 이 시간에는 단순 반복 업무나 정리 작업 위주로 배치하세요.",
+    "💼 오늘 오전 업무 리스트를 미리 작성해 두면 흐트러지는 집중력을 잡을 수 있습니다. 3개 이내로 핵심 과제만 뽑아서 하루를 시작하세요.",
+]
+
+# ── 직장운 마무리 풀 ──
+_Z_WORK_CLOSE_UP = [
+    "오늘 당신이 만들어낸 작은 성과 하나가 미래의 큰 기회를 여는 열쇠가 됩니다. 오늘 하루도 수고 많으셨습니다. 🌟",
+    "당신의 능력은 이미 충분합니다. 오늘 하루 그 능력을 마음껏 발휘하고, 저녁에는 스스로를 칭찬해 주세요. 💼",
+]
+_Z_WORK_CLOSE_WARN = [
+    "오늘 하루 버텨낸 것 자체가 대단한 일입니다. 쉽지 않은 날일수록 내일은 더 단단해집니다. 오늘도 정말 잘 하셨습니다. 🌿",
+    "모든 날이 빛날 수는 없습니다. 오늘 같은 날이 있기에 좋은 날의 가치가 더 빛납니다. 내일을 위해 오늘은 충분히 쉬어 가세요. 💙",
 ]
 _Z_AVOID_ACTIONS = [
     ["충동적인 큰 결정", "감정적인 메시지 전송", "불필요한 논쟁 시작"],
@@ -751,8 +1262,13 @@ def build_zodiac_post(z, today_str):
     today_dot  = kst_now.strftime("%Y년 %-m월 %-d일")   # 예: 2026년 4월 13일 (본문 표시용)
     today_sync = kst_now.strftime("%Y년 %m월 %d일")     # 예: 2026년 04월 13일 (index.html 매칭용 zero-pad)
 
-    # 운세 지수
-    total, money, health, love = pick_score(z['kr'])
+    # 운세 지수 (CSV 원본)
+    raw_total, raw_money, raw_health, raw_love = pick_score(z['kr'])
+
+    # ① 요일·월 보정 적용 → 최종 지수 + 계산 내역 카드
+    total, money, health, love, calc_html = _apply_adjustments(
+        raw_total, raw_money, raw_health, raw_love
+    )
 
     # SEO 신호 키워드 (제목 표시용)
     _, signal_kw = _zodiac_seo_title(z['kr'], today_dot, total, money, health, love)
@@ -766,58 +1282,102 @@ def build_zodiac_post(z, today_str):
     lucky_color  = pick_color()
     lucky_number = pick_number()
 
+    # ② 색상·아이템별 조건부 가이드 생성
+    color_guide = get_color_guide(lucky_color)
+    item_guide  = get_item_guide(lucky_item)
+
     # 원문 문단 분리 (섹션 배분용)
     paras = _split_fortune_sections(fortune_raw)
     def _para(idx, fallback=""):
         return paras[idx] if idx < len(paras) else (paras[-1] if paras else fallback)
 
-    # ── 1. 총운 (핵심 요약 2~3줄) ──
+    # ── 1. 총운 (5파트 구조) ──
     total_color, total_level = _zodiac_score_badge(total)
+    total_intro    = random.choice(_Z_TOTAL_INTRO_UP   if total >= 65 else _Z_TOTAL_INTRO_WARN)
+    total_score_c  = random.choice(_Z_TOTAL_SCORE_UP   if total >= 65 else _Z_TOTAL_SCORE_WARN)
+    total_cheer_c  = random.choice(_Z_CHEER)
     summary_html = f'''
 <div class="card" style="border-left:5px solid {total_color}">
   <span class="badge" style="background:#f0fdf4;color:{total_color}">🌟 오늘 총운 · {total}% {total_level}</span>
-  <p style="margin-top:10px;font-size:15px;line-height:1.9;color:#333;font-weight:500">{_para(0)}</p>
-  <p style="margin-top:8px;font-size:14px;line-height:1.85;color:#555">{_para(1)}</p>
+  <p style="margin-top:12px;font-size:15px;line-height:1.95;color:#333;font-weight:500">{total_intro}</p>
+  <p style="margin-top:10px;font-size:14px;line-height:1.9;color:#444">{_para(0)}</p>
+  <p style="margin-top:6px;font-size:14px;line-height:1.9;color:#444">{_para(1)}</p>
+  <div style="margin-top:12px;background:#f0fdf4;border-radius:10px;padding:12px 14px;
+              font-size:13px;color:#166534;line-height:1.8;border-left:3px solid {total_color}">
+    📊 {total_score_c}
+  </div>
+  <p style="margin-top:12px;font-size:13px;line-height:1.85;color:#666;font-style:italic">{total_cheer_c}</p>
 </div>'''
 
-    # ── 2. 연애운 ──
+    # ── 2. 연애운 (5파트 구조) ──
     love_color, love_level = _zodiac_score_badge(love)
-    love_detail = random.choice(_Z_LOVE_DETAIL_UP if love >= 70 else _Z_LOVE_DETAIL_WARN)
+    love_is_up   = love >= 70
+    love_intro   = random.choice(_Z_LOVE_INTRO_UP    if love_is_up else _Z_LOVE_INTRO_WARN)
+    love_detail  = random.choice(_Z_LOVE_DETAIL_UP   if love_is_up else _Z_LOVE_DETAIL_WARN)
+    love_time    = random.choice(_Z_LOVE_TIME_UP     if love_is_up else _Z_LOVE_TIME_WARN)
+    love_close   = random.choice(_Z_LOVE_CLOSE_UP    if love_is_up else _Z_LOVE_CLOSE_WARN)
     love_html = f'''
 <div class="card">
   <span class="badge" style="background:#fff0f3;color:#e11d48">❤️ 연애운 · {love}% {love_level}</span>
-  <p style="margin-top:10px;font-size:14px;line-height:1.85;color:#444">{_para(2)}</p>
-  <div style="margin-top:10px;background:#fff0f3;border-radius:10px;padding:12px 14px;
-              font-size:13px;color:#9f1239;line-height:1.75;border-left:3px solid #e11d48">
+  <p style="margin-top:12px;font-size:15px;line-height:1.95;color:#333;font-weight:500">{love_intro}</p>
+  <p style="margin-top:10px;font-size:14px;line-height:1.9;color:#444">{_para(2)}</p>
+  <div style="margin-top:12px;background:#fff0f3;border-radius:10px;padding:12px 14px;
+              font-size:13px;color:#9f1239;line-height:1.8;border-left:3px solid #e11d48">
     💡 {love_detail}
   </div>
+  <p style="margin-top:10px;font-size:13px;line-height:1.8;color:#555">{love_time}</p>
+  <p style="margin-top:10px;font-size:13px;line-height:1.85;color:#666;font-style:italic">{love_close}</p>
 </div>'''
 
-    # ── 3. 금전운 ──
+    # ── 3. 금전운 (5파트 구조) ──
     money_color, money_level = _zodiac_score_badge(money)
-    money_detail = random.choice(_Z_MONEY_DETAIL_UP if money >= 70 else _Z_MONEY_DETAIL_WARN)
+    money_is_up   = money >= 70
+    money_intro   = random.choice(_Z_MONEY_INTRO_UP   if money_is_up else _Z_MONEY_INTRO_WARN)
+    money_score_c = random.choice(_Z_MONEY_SCORE_UP   if money_is_up else _Z_MONEY_SCORE_WARN)
+    money_detail  = random.choice(_Z_MONEY_DETAIL_UP  if money_is_up else _Z_MONEY_DETAIL_WARN)
+    money_time    = random.choice(_Z_MONEY_TIME_UP    if money_is_up else _Z_MONEY_TIME_WARN)
+    money_close   = random.choice(_Z_MONEY_CLOSE_UP   if money_is_up else _Z_MONEY_CLOSE_WARN)
     money_html = f'''
 <div class="card">
   <span class="badge" style="background:#fefce8;color:#a16207">💰 금전운 · {money}% {money_level}</span>
-  <p style="margin-top:10px;font-size:14px;line-height:1.85;color:#444">{_para(3)}</p>
+  <p style="margin-top:12px;font-size:15px;line-height:1.95;color:#333;font-weight:500">{money_intro}</p>
+  <p style="margin-top:10px;font-size:14px;line-height:1.9;color:#444">{_para(3)}</p>
+  <div style="margin-top:12px;background:#fef9c3;border-radius:10px;padding:12px 14px;
+              font-size:13px;color:#78350f;line-height:1.8;border-left:3px solid #d97706">
+    📊 {money_score_c}
+  </div>
   <div style="margin-top:10px;background:#fefce8;border-radius:10px;padding:12px 14px;
-              font-size:13px;color:#92400e;line-height:1.75;border-left:3px solid #d97706">
+              font-size:13px;color:#92400e;line-height:1.8;border-left:3px solid #f59e0b">
     💡 {money_detail}
   </div>
+  <p style="margin-top:10px;font-size:13px;line-height:1.8;color:#555">{money_time}</p>
+  <p style="margin-top:10px;font-size:13px;line-height:1.85;color:#666;font-style:italic">{money_close}</p>
 </div>'''
 
-    # ── 4. 직장·사업운 ──
+    # ── 4. 직장·사업운 (5파트 구조) ──
     work_score = round((total + health) / 2)
     work_color, work_level = _zodiac_score_badge(work_score)
-    work_detail = random.choice(_Z_WORK_DETAIL_UP if work_score >= 70 else _Z_WORK_DETAIL_WARN)
+    work_is_up   = work_score >= 70
+    work_intro   = random.choice(_Z_WORK_INTRO_UP    if work_is_up else _Z_WORK_INTRO_WARN)
+    work_score_c = random.choice(_Z_WORK_SCORE_UP    if work_is_up else _Z_WORK_SCORE_WARN)
+    work_detail  = random.choice(_Z_WORK_DETAIL_UP   if work_is_up else _Z_WORK_DETAIL_WARN)
+    work_time    = random.choice(_Z_WORK_TIME_UP     if work_is_up else _Z_WORK_TIME_WARN)
+    work_close   = random.choice(_Z_WORK_CLOSE_UP    if work_is_up else _Z_WORK_CLOSE_WARN)
     work_html = f'''
 <div class="card">
   <span class="badge" style="background:#eff6ff;color:#1d4ed8">💼 직장·사업운 · {work_score}% {work_level}</span>
-  <p style="margin-top:10px;font-size:14px;line-height:1.85;color:#444">{_para(4)}</p>
+  <p style="margin-top:12px;font-size:15px;line-height:1.95;color:#333;font-weight:500">{work_intro}</p>
+  <p style="margin-top:10px;font-size:14px;line-height:1.9;color:#444">{_para(4)}</p>
+  <div style="margin-top:12px;background:#dbeafe;border-radius:10px;padding:12px 14px;
+              font-size:13px;color:#1e3a8a;line-height:1.8;border-left:3px solid #3b82f6">
+    📊 {work_score_c}
+  </div>
   <div style="margin-top:10px;background:#eff6ff;border-radius:10px;padding:12px 14px;
-              font-size:13px;color:#1e3a8a;line-height:1.75;border-left:3px solid #1d4ed8">
+              font-size:13px;color:#1e3a8a;line-height:1.8;border-left:3px solid #1d4ed8">
     💡 {work_detail}
   </div>
+  <p style="margin-top:10px;font-size:13px;line-height:1.8;color:#555">{work_time}</p>
+  <p style="margin-top:10px;font-size:13px;line-height:1.85;color:#666;font-style:italic">{work_close}</p>
 </div>'''
 
     # ── 5. 오늘 피해야 할 행동 ──
@@ -908,7 +1468,8 @@ def build_zodiac_post(z, today_str):
   <div class="fc-watermark">todayhoroscopelaboratory.blogspot.com · {today_str}</div>
 </div>'''
 
-    # ── SEO 키워드 태그 ──
+    # ── SEO 키워드 태그 (③ 별자리 정보·색상·보정 키워드 확장) ──
+    z_info = ZODIAC_INFO.get(z['kr'], {})
     kw_list = [
         z['kr'], f"{z['kr']} 오늘운세", f"{z['kr']} 운세",
         f"{z['kr']} 오늘의운세", f"{z['kr']} {today_dot}",
@@ -916,7 +1477,13 @@ def build_zodiac_post(z, today_str):
         f"{z['kr']} 직장운", f"{z['date']} 별자리",
         "오늘의운세", "별자리운세", "무료운세", "별자리오늘",
         "금전운 상승", "연애운 급변", "오늘 주의", "운세 반전",
+        f"{z['kr']} 특징", f"{z['kr']} 성격", f"{z['kr']} 궁합",
+        f"행운 색상 {lucky_color}", f"행운 아이템 {lucky_item}",
+        "운세 지수", "오늘 골든타임", f"{z['kr']} 조언",
     ]
+    if z_info.get("compatible"):
+        for comp in z_info["compatible"].replace(" ","").split(","):
+            kw_list.append(f"{z['kr']} {comp} 궁합")
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
 
     content = f"""{style()}
@@ -952,14 +1519,39 @@ def build_zodiac_post(z, today_str):
   <!-- 6. 응원 토닥 메시지 -->
   {cheer_html}
 
-  <!-- 운세 지수 -->
+  <!-- ① 운세 지수 계산 내역 카드 (요일·월 보정 근거) -->
+  {calc_html}
+
+  <!-- 운세 지수 바 -->
   {score_html}
+
+  <!-- ② 행운 색상·아이템 조건부 가이드 카드 -->
+  <div class="card" style="background:linear-gradient(135deg,#fffbeb,#fdf4ff);border-left:5px solid #f59e0b">
+    <span class="badge" style="background:#fef3c7;color:#92400e">🍀 오늘의 행운 아이템 & 색상 활용 가이드</span>
+    <div style="margin-top:14px;display:grid;gap:10px">
+      <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #fde68a;font-size:13px;line-height:1.85;color:#374151">
+        <div style="font-weight:700;color:#b45309;margin-bottom:6px">🎨 행운 색상: {lucky_color}</div>
+        {color_guide}
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #d1fae5;font-size:13px;line-height:1.85;color:#374151">
+        <div style="font-weight:700;color:#065f46;margin-bottom:6px">✨ 행운 아이템: {lucky_item}</div>
+        {item_guide}
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e7ff;font-size:13px;color:#374151">
+        <div style="font-weight:700;color:#4338ca;margin-bottom:4px">🔢 오늘의 행운 숫자: {lucky_number}</div>
+        <div style="line-height:1.8">오늘 중요한 결정이나 선택의 순간에 이 숫자를 떠올려 보세요. 비밀번호 힌트, 약속 시간, 좌석 번호 등 작은 선택에서도 의미를 찾을 수 있습니다.</div>
+      </div>
+    </div>
+  </div>
 
   <!-- 이미지 저장 카드 -->
   {image_card_html}
 
   <!-- 공유·저장 버튼 -->
   {share_buttons(card_id, f"{z['kr']}_운세_{today_dot}")}
+
+  <!-- ③ 별자리 배경 지식 카드 (SEO 고정 콘텐츠) -->
+  {zodiac_info_card(z['kr'], z['emoji'])}
 
   <!-- SEO 키워드 -->
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
