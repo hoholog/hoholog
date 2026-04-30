@@ -1,8 +1,222 @@
 <script>
         const RATINGS  = ['★★★☆☆','★★★★☆','★★★★★','★★☆☆☆','★★★★☆'];
-        const COLORS   = ['골드','라벤더','민트그린','스카이블루','코랄','퍼플','로즈핑크','버건디'];
+        const COLORS   = ['골드','라벤더','민트그린','스카이블루','코랄','퍼플','로즈핑크','버건디',
+                          '웜그레이','화이트','딥블루','오렌지','그린'];
         function rnd(a){return a[Math.floor(Math.random()*a.length)]}
         function rndN(){return Math.floor(Math.random()*99)+1}
+
+        // ════════════════════════════════════════════════════════
+        // ① 요일·월 보정값 (수치 계산 근거)
+        // ════════════════════════════════════════════════════════
+        const DOW_ADJUST = [
+            { total: 2, money:-3, health: 4, love: 1, golden:'오전 10시~12시 (월요일 집중력 황금타임)' },  // 월
+            { total: 4, money: 5, health: 2, love: 2, golden:'오후 2시~4시 (화요일 추진력 최고조)' },      // 화
+            { total:-2, money: 3, health:-1, love: 4, golden:'오전 9시~11시 (수요일 창의력 활성)' },       // 수
+            { total: 5, money: 4, health: 3, love: 3, golden:'오전 10시~오후 1시 (목요일 에너지 피크)' },  // 목
+            { total: 3, money: 6, health: 1, love: 5, golden:'오후 3시~6시 (금요일 연애·마무리 최적)' },   // 금
+            { total:-3, money:-4, health: 5, love: 3, golden:'오전 7시~10시 (토요일 이른 아침 충전)' },    // 토
+            { total:-1, money:-5, health: 6, love:-2, golden:'오후 4시~7시 (일요일 내일 준비 골든타임)' }, // 일
+        ];
+        const MON_ADJUST = [3,-2,4,2,5,1,-1,0,3,4,2,-3]; // 1월~12월 (index 0=1월)
+        const DOW_KR = ['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
+        const MON_KR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+        function applyAdjustments(total, money, health, love) {
+            const kst  = kstNow();
+            const dow  = (kst.getUTCDay() + 6) % 7; // JS 0=일 → 0=월 변환
+            const mon  = kst.getUTCMonth();           // 0-based
+            const da   = DOW_ADJUST[dow];
+            const ma   = MON_ADJUST[mon];
+            const clamp = v => Math.max(1, Math.min(100, v));
+
+            const adj = {
+                total:  clamp(total  + da.total  + ma),
+                money:  clamp(money  + da.money  + ma),
+                health: clamp(health + da.health + ma),
+                love:   clamp(love   + da.love   + ma),
+            };
+            const maSign = ma >= 0 ? '▲' : '▼';
+            const daSign = da.total >= 0 ? '▲' : '▼';
+
+            const calcHtml = `
+<div style="background:#f8faff;border:1px solid #c7d2fe;border-radius:14px;padding:16px;margin:14px 0">
+  <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:10px">📐 오늘의 운세 지수 계산 방식</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #e0e7ff;font-size:12px">
+      <div style="color:#6b7280;margin-bottom:3px">📅 요일 보정 (${DOW_KR[dow]})</div>
+      <div style="font-weight:700;color:#4f46e5">${daSign} 총운 ${da.total>0?'+':''}${da.total} · 금전 ${da.money>0?'+':''}${da.money} · 건강 ${da.health>0?'+':''}${da.health} · 연애 ${da.love>0?'+':''}${da.love}</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #ede9fe;font-size:12px">
+      <div style="color:#6b7280;margin-bottom:3px">🗓 월별 분위기 (${MON_KR[mon]})</div>
+      <div style="font-weight:700;color:#7c3aed">${maSign} 전체 지수 ${ma>0?'+':''}${ma}점 조정</div>
+    </div>
+  </div>
+  <div style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px">
+    <div style="color:#1e40af;font-weight:700;margin-bottom:6px">🔢 최종 보정 지수</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <span>🌟 종합 <b>${adj.total}점</b></span>
+      <span>💰 금전 <b>${adj.money}점</b></span>
+      <span>💪 건강 <b>${adj.health}점</b></span>
+      <span>❤️ 연애 <b>${adj.love}점</b></span>
+    </div>
+  </div>
+  <div style="font-size:12px;color:#374151">⏰ <b>오늘의 골든 타임:</b> ${da.golden}</div>
+</div>`;
+            return { ...adj, calcHtml };
+        }
+
+        // ════════════════════════════════════════════════════════
+        // ② 색상별·아이템별 조건부 가이드 매핑
+        // ════════════════════════════════════════════════════════
+        const COLOR_EFFECT = {
+            '골드':      { area:'자신감과 풍요로움', type:'금전·사업운', boost:18,
+                           items:'골드 시계·반지·명함케이스',
+                           usage:'중요한 미팅·협상 자리에 골드 소품을 하나 챙겨보세요. 자신감 있는 인상을 줍니다.' },
+            '라벤더':    { area:'차분함과 직관력',   type:'대인관계·연애운', boost:15,
+                           items:'라벤더 향수·스카프·쿠션',
+                           usage:'라벤더 계열 소품을 가까이 두면 마음이 안정되고 상대방에게도 편안한 인상을 줍니다.' },
+            '민트그린':  { area:'회복력과 신선함',   type:'건강·활력', boost:14,
+                           items:'민트 계열 텀블러·수첩·에코백',
+                           usage:'점심 후 무기력감이 올 때 민트 계열 음료나 소품으로 오후 에너지를 끌어올려 보세요.' },
+            '스카이블루': { area:'소통과 신뢰감',    type:'연애·대인관계운', boost:16,
+                           items:'하늘색 셔츠·파우치·손수건',
+                           usage:'오늘 말 한마디가 중요한 날입니다. 스카이블루 소품이 신뢰감 있는 이미지를 전달합니다.' },
+            '코랄':      { area:'활력과 긍정 에너지', type:'연애·사교운', boost:20,
+                           items:'코랄 립스틱·귀걸이·가방',
+                           usage:'활기찬 분위기를 만들고 싶은 날 코랄 컬러가 빛납니다. 새로운 만남 자리에 특히 효과적입니다.' },
+            '퍼플':      { area:'창의력과 직관',     type:'아이디어·예술운', boost:13,
+                           items:'보라색 다이어리·마스킹테이프',
+                           usage:'오늘 아이디어가 샘솟는 날입니다. 퍼플 소품을 책상에 두면 창의적 사고를 촉진합니다.' },
+            '로즈핑크':  { area:'사랑과 감수성',     type:'연애·감성운', boost:19,
+                           items:'로즈핑크 핸드크림·메모지·양말',
+                           usage:'소중한 사람에게 작은 선물이나 메시지를 전해보세요. 로즈핑크가 따뜻한 분위기를 만들어 줍니다.' },
+            '버건디':    { area:'깊이감과 카리스마', type:'직장·사업운', boost:17,
+                           items:'버건디 넥타이·머플러·다이어리',
+                           usage:'프레젠테이션·보고가 있는 날 버건디 소품은 신뢰감과 전문성을 높여줍니다.' },
+            '웜그레이':  { area:'집중력과 안정감',   type:'업무 효율·직장운', boost:12,
+                           items:'회색 계열 노트북 파우치·머그컵',
+                           usage:'집중이 필요한 업무가 있다면 웜그레이 소품으로 데스크를 정리해 보세요.' },
+            '화이트':    { area:'청결함과 새 시작',  type:'정신 건강·리셋', boost:11,
+                           items:'흰색 노트·손수건·텀블러',
+                           usage:'마음을 리셋하고 싶은 날 화이트 소품으로 주변을 정리해 보세요.' },
+            '딥블루':    { area:'집중과 냉철한 판단', type:'직장·금전 결정운', boost:15,
+                           items:'네이비 지갑·볼펜·파일',
+                           usage:'중요한 결정을 내려야 하는 날 딥블루 계열이 냉철한 판단력을 도와줍니다.' },
+            '오렌지':    { area:'열정과 도전',       type:'활동·도전운', boost:16,
+                           items:'오렌지 계열 파우치·케이스·양말',
+                           usage:'새로운 도전을 시작하기에 좋은 날입니다. 오렌지 소품이 행동력과 추진력을 더해줍니다.' },
+            '그린':      { area:'성장과 치유',       type:'건강·금전 성장운', boost:13,
+                           items:'초록색 화분·텀블러·에코백',
+                           usage:'자연의 기운이 필요한 날입니다. 작은 화분 하나를 책상에 두거나 그린 소품을 활용해 보세요.' },
+        };
+
+        const ITEM_USAGE = [
+            { keys:['수정','크리스탈','원석','자수정','로즈쿼츠','청금석','흑요석','호안석'],
+              usage:'오늘 왼손에 쥐거나 주머니에 넣어 다니세요. 부정적 에너지를 흡수하고 집중력을 높여주는 효과가 있습니다.' },
+            { keys:['동전','열쇠고리','금색'],
+              usage:'지갑 깊숙이 넣어 두세요. 돈이 들어오는 자리를 비워두지 않는다는 상징으로 금전운을 활성화합니다.' },
+            { keys:['꽃','식물','네잎클로버'],
+              usage:'곁에 두세요. 생명 에너지가 긍정적인 기운을 불러오고 공간 분위기를 밝게 바꿔줍니다.' },
+            { keys:['반지','팔찌','목걸이','귀걸이','핀'],
+              usage:'착용할 때 잠깐 눈을 감고 오늘 하루 좋은 일이 가득하길 마음속으로 빌어보세요. 의도를 담는 것이 중요합니다.' },
+            { keys:['향초','향','아로마','라벤더'],
+              usage:'아침 루틴에 5분간 사용해 보세요. 후각이 뇌를 자극해 하루 전체 에너지를 긍정적으로 세팅합니다.' },
+            { keys:['거울'],
+              usage:'외출 전 거울을 보며 자신에게 긍정적인 말을 한마디 건네보세요. 자기 확신이 오늘 하루 운세를 끌어올립니다.' },
+            { keys:['책','수첩','메모지','다이어리','책갈피'],
+              usage:'오늘 떠오르는 아이디어나 감정을 짧게라도 기록해 두세요. 이 아이템이 생각을 현실로 연결하는 통로가 됩니다.' },
+            { keys:['조약돌','돌','유리구슬'],
+              usage:'힘들 때 손으로 쥐어보세요. 자연의 안정 에너지가 마음을 차분하게 만들어줍니다.' },
+            { keys:['빗','나무'],
+              usage:'오늘 아침 정성껏 머리를 빗어 보세요. 단정한 시작이 하루 전체의 기운을 정돈해 줍니다.' },
+            { keys:['실','나침반'],
+              usage:'오늘 방향을 잃었다고 느껴질 때 이 아이템을 바라보며 본인이 가야 할 길을 떠올려 보세요.' },
+        ];
+
+        function getColorGuide(colorName) {
+            const info = COLOR_EFFECT[colorName];
+            if (!info) return `오늘의 행운 색상 <b>'${colorName}'</b>을 소품이나 의류에 활용해 보세요. 긍정적인 에너지를 끌어당깁니다.`;
+            return `오늘의 행운 색상 <b>'${colorName}'</b>은 <b>${info.area}</b>을 높여주는 컬러입니다.
+${info.items}을 착용하거나 곁에 두면 ${info.type} 지수가 최대 <b>${info.boost}% 상승</b>하는 효과를 기대할 수 있습니다.
+${info.usage}`;
+        }
+
+        function getItemGuide(itemName) {
+            for (const entry of ITEM_USAGE) {
+                if (entry.keys.some(k => itemName.includes(k))) return entry.usage;
+            }
+            return `오늘 '${itemName}'을 가까이 두거나 몸에 지니세요. 긍정적인 기운이 하루 전체에 흐릅니다.`;
+        }
+
+        function luckyGuideCard(color, item, number) {
+            return `
+<div style="background:linear-gradient(135deg,#fffbeb,#fdf4ff);border:1px solid #fde68a;border-radius:14px;padding:16px;margin:14px 0">
+  <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:12px">🍀 오늘의 행운 아이템 & 색상 활용 가이드</div>
+  <div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #fde68a;margin-bottom:8px;font-size:13px;line-height:1.85;color:#374151">
+    <div style="font-weight:700;color:#b45309;margin-bottom:5px">🎨 행운 색상: ${color}</div>
+    ${getColorGuide(color)}
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #d1fae5;margin-bottom:8px;font-size:13px;line-height:1.85;color:#374151">
+    <div style="font-weight:700;color:#065f46;margin-bottom:5px">✨ 행운 아이템: ${item}</div>
+    ${getItemGuide(item)}
+  </div>
+  <div style="background:#fff;border-radius:10px;padding:12px;border:1px solid #e0e7ff;font-size:13px;color:#374151">
+    <div style="font-weight:700;color:#4338ca;margin-bottom:4px">🔢 행운 숫자: ${number}</div>
+    오늘 중요한 선택의 순간에 이 숫자를 떠올려 보세요. 비밀번호 힌트, 약속 시간, 좌석 번호 등 작은 선택에서도 의미를 찾을 수 있습니다.
+  </div>
+</div>`;
+        }
+
+        // ════════════════════════════════════════════════════════
+        // ③ 별자리 배경 지식 데이터 & 카드 생성
+        // ════════════════════════════════════════════════════════
+        const ZODIAC_INFO = {
+            '양자리':    { element:'불 (Fire)',   ruling:'화성 (Mars)',       trait:'행동력과 추진력이 넘치는 리더형 별자리입니다.', strength:'결단력·열정·리더십·개척 정신', weakness:'성급함·지속력 부족·충동적 결정', compatible:'사자자리, 사수자리, 쌍둥이자리', stone:'다이아몬드, 루비',  color:'빨간색, 오렌지', number:'1, 9',  tip:'중요한 결정을 내리기 전에 3초만 멈추는 습관을 만들어 보세요. 당신의 직관은 훌륭하지만 한 박자 여유가 더 좋은 결과를 만듭니다.' },
+            '황소자리':  { element:'흙 (Earth)',  ruling:'금성 (Venus)',       trait:'안정과 신뢰를 중시하는 현실주의자입니다.', strength:'인내심·신뢰성·현실 감각·심미안', weakness:'고집스러움·변화 거부·소유욕', compatible:'처녀자리, 염소자리, 게자리', stone:'에메랄드, 로즈쿼츠', color:'초록색, 베이지', number:'2, 6',  tip:'오늘 새로운 방식을 한 가지만 시도해 보세요. 변화가 두렵더라도 작은 실험이 더 큰 안정을 만들어 줍니다.' },
+            '쌍둥이자리':{ element:'공기 (Air)', ruling:'수성 (Mercury)',      trait:'지적 호기심과 소통 능력이 뛰어난 다재다능한 별자리입니다.', strength:'적응력·커뮤니케이션·창의성·유머', weakness:'변덕·집중력 부족·우유부단함', compatible:'천칭자리, 물병자리, 양자리', stone:'아게이트, 시트린',   color:'노란색, 하늘색', number:'3, 5',  tip:'여러 가지에 손대기보다 딱 두 가지에만 집중해 보세요. 에너지를 모으면 훨씬 강력한 결과를 만들 수 있습니다.' },
+            '게자리':    { element:'물 (Water)',  ruling:'달 (Moon)',          trait:'감수성과 공감 능력이 풍부한 보살핌의 별자리입니다.', strength:'공감력·직관력·보살핌·기억력', weakness:'감정 기복·소극성·과도한 집착', compatible:'전갈자리, 물고기자리, 황소자리', stone:'문스톤, 진주',    color:'은색, 흰색',    number:'2, 7',  tip:'오늘 자신을 돌보는 시간을 꼭 만들어 보세요. 남을 챙기는 것만큼 자신을 챙기는 것도 중요합니다.' },
+            '사자자리':  { element:'불 (Fire)',   ruling:'태양 (Sun)',         trait:'카리스마와 자신감이 넘치는 무대의 주인공 별자리입니다.', strength:'카리스마·관대함·창의력·자신감', weakness:'자존심·인정 욕구·고집', compatible:'양자리, 사수자리, 쌍둥이자리', stone:'루비, 호박',     color:'금색, 주황색',  number:'1, 4',  tip:'다른 사람의 의견도 주인공처럼 들어주세요. 경청하는 리더가 더 오래, 더 멀리 갑니다.' },
+            '처녀자리':  { element:'흙 (Earth)',  ruling:'수성 (Mercury)',     trait:'분석력과 완벽주의적 성향을 지닌 세심한 별자리입니다.', strength:'분석력·성실함·실용성·정확성', weakness:'완벽주의·지나친 비판·걱정', compatible:'황소자리, 염소자리, 게자리', stone:'사파이어, 카넬리안', color:'네이비, 회색',  number:'5, 6',  tip:'오늘 80%면 충분하다는 마음을 가져보세요. 완벽함을 추구하다 정작 중요한 것을 놓치지 않도록 균형이 필요합니다.' },
+            '천칭자리':  { element:'공기 (Air)', ruling:'금성 (Venus)',        trait:'균형과 조화를 중시하는 외교적 별자리입니다.', strength:'균형 감각·외교력·심미안·협력', weakness:'우유부단함·갈등 회피·의존성', compatible:'쌍둥이자리, 물병자리, 사수자리', stone:'오팔, 로즈쿼츠',  color:'파스텔 핑크, 라벤더', number:'6, 9', tip:'결정을 미루고 싶어지는 순간 이것이 내가 원하는 것인가를 먼저 물어보세요. 당신의 직관은 생각보다 정확합니다.' },
+            '전갈자리':  { element:'물 (Water)',  ruling:'명왕성 (Pluto)',     trait:'깊이 있는 통찰력과 강인한 의지를 지닌 신비의 별자리입니다.', strength:'통찰력·집중력·강인함·변화 적응력', weakness:'집착·의심·복수심·비밀주의', compatible:'게자리, 물고기자리, 염소자리', stone:'토파즈, 옵시디언', color:'검정, 진홍색',  number:'8, 11', tip:'신뢰하는 사람에게 마음을 조금 열어보세요. 강인함 뒤에 숨겨진 따뜻함이 관계를 더 깊게 만들어 줍니다.' },
+            '사수자리':  { element:'불 (Fire)',   ruling:'목성 (Jupiter)',     trait:'자유와 모험을 사랑하는 낙관주의 별자리입니다.', strength:'낙관성·철학적 사고·모험심·솔직함', weakness:'무책임함·성급한 약속·무신경함', compatible:'양자리, 사자자리, 물병자리', stone:'터키석, 라피스라줄리', color:'보라색, 파란색', number:'3, 9', tip:'오늘 약속은 지킬 수 있는 것만 하세요. 솔직한 거절 한마디가 신뢰를 더 오래 지킵니다.' },
+            '염소자리':  { element:'흙 (Earth)',  ruling:'토성 (Saturn)',      trait:'책임감과 인내로 목표를 향해 묵묵히 나아가는 별자리입니다.', strength:'책임감·인내심·실용성·야망', weakness:'고집·지나친 실용주의·감정 억제', compatible:'황소자리, 처녀자리, 전갈자리', stone:'가넷, 호안석',   color:'갈색, 카키',    number:'8, 10', tip:'일에서 잠시 손을 떼고 쉬어가는 것도 전략입니다. 꾸준히 달리기 위해서는 페이스를 조절하는 지혜가 필요합니다.' },
+            '물병자리':  { element:'공기 (Air)', ruling:'천왕성 (Uranus)',     trait:'독창성과 혁신적 사고를 지닌 미래 지향적 별자리입니다.', strength:'독창성·인도주의·미래 지향·개방성', weakness:'감정 표현 어려움·고집·거리감', compatible:'쌍둥이자리, 천칭자리, 사수자리', stone:'아메시스트, 아쿠아마린', color:'일렉트릭 블루, 청록색', number:'4, 7', tip:'아이디어가 너무 앞서간다 싶으면 주변이 이해할 수 있게 설명하는 연습을 해보세요. 탁월한 생각도 전달되어야 빛납니다.' },
+            '물고기자리':{ element:'물 (Water)',  ruling:'해왕성 (Neptune)',   trait:'공감 능력이 탁월하고 예술적 감수성이 풍부한 별자리입니다.', strength:'직관력·창의성·공감력·헌신', weakness:'우유부단함·현실 도피·감정 기복', compatible:'게자리, 전갈자리, 황소자리', stone:'아쿠아마린, 문스톤', color:'바다색, 연보라', number:'7, 12', tip:'감정에 치우치지 않도록 하루 한 번 지금 내 감정이 사실인가를 점검하세요. 직관은 훌륭하지만 현실 확인이 함께할 때 더 빛납니다.' },
+        };
+
+        function zodiacInfoCard(name, emoji) {
+            const info = ZODIAC_INFO[name];
+            if (!info) return '';
+            return `
+<div style="background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:14px;padding:18px;margin:16px 0">
+  <div style="font-size:14px;font-weight:700;color:#5b21b6;margin-bottom:12px">${emoji} ${name} 기본 정보</div>
+  <div style="font-size:13px;color:#374151;line-height:1.85;margin-bottom:12px">${info.trait}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #ede9fe;font-size:12px">
+      <div style="color:#7c3aed;font-weight:700;margin-bottom:4px">🌿 원소 · 지배성</div>
+      <div>${info.element}</div><div>${info.ruling}</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #dbeafe;font-size:12px">
+      <div style="color:#1d4ed8;font-weight:700;margin-bottom:4px">💎 행운 스톤 · 숫자</div>
+      <div>${info.stone}</div><div>행운 숫자: ${info.number}</div>
+    </div>
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #d1fae5;margin-bottom:6px;font-size:12px">
+    <span style="color:#065f46;font-weight:700">✅ 강점</span> ${info.strength}
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fee2e2;margin-bottom:6px;font-size:12px">
+    <span style="color:#991b1b;font-weight:700">⚠️ 주의</span> ${info.weakness}
+  </div>
+  <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fef3c7;margin-bottom:8px;font-size:12px">
+    <span style="color:#92400e;font-weight:700">💑 궁합 좋은 별자리</span> ${info.compatible}
+  </div>
+  <div style="background:linear-gradient(135deg,#7c3aed15,#1d4ed815);border-radius:8px;padding:12px;border:1px solid #c4b5fd;font-size:13px;line-height:1.8;color:#374151">
+    <div style="color:#5b21b6;font-weight:700;margin-bottom:5px">💡 오늘의 ${name} 조언</div>
+    ${info.tip}
+  </div>
+</div>`;
+        }
 
         // ── 시드 기반 난수 (같은 시드 → 항상 같은 결과) ──
         function _seededHash(seed){
@@ -431,11 +645,15 @@
                 </div>`;
             }).join('');
         }
-        function luckyRow(){
+        function luckyRow(color, item, number){
+            color  = color  || rnd(COLORS);
+            item   = item   || rnd(LUCKY_ITEMS);
+            number = number || rndN();
             return `<div class="lucky-row">
-                <div class="lucky-item"><div class="lucky-label">🎨 행운의 색</div><div class="lucky-val">${rnd(COLORS)}</div></div>
-                <div class="lucky-item"><div class="lucky-label">🔢 행운의 숫자</div><div class="lucky-val">${rndN()}</div></div>
-            </div>`;
+                <div class="lucky-item"><div class="lucky-label">🎨 행운의 색</div><div class="lucky-val">${color}</div></div>
+                <div class="lucky-item"><div class="lucky-label">✨ 행운 아이템</div><div class="lucky-val" style="font-size:16px">${item}</div></div>
+                <div class="lucky-item"><div class="lucky-label">🔢 행운의 숫자</div><div class="lucky-val">${number}</div></div>
+            </div>${luckyGuideCard(color, item, number)}`;
         }
 
         // ═══════════════════════════════
@@ -920,9 +1138,21 @@
                 ];
             }
 
-            const rating = seededRnd(RATINGS, S('rating'));
-            const color  = seededRnd(COLORS,  S('color'));
-            const num    = seededRndN(S('num'));
+            const rating    = seededRnd(RATINGS,     S('rating'));
+            const color     = seededRnd(COLORS,      S('color'));
+            const num       = seededRndN(S('num'));
+            const luckyItem = seededRnd(LUCKY_ITEMS, S('item'));
+
+            // ① 요일·월 보정 적용 (today·tomorrow 탭만)
+            const rawScores = {
+                total:  _seededInt(S('총운'),  40)+55,
+                money:  _seededInt(S('금전'),  40)+55,
+                health: _seededInt(S('건강'),  40)+55,
+                love:   _seededInt(S('애정'),  40)+55,
+            };
+            const adj = (tab==='today' || tab==='tomorrow')
+                ? applyAdjustments(rawScores.total, rawScores.money, rawScores.health, rawScores.love)
+                : { ...rawScores, calcHtml: '' };
 
             let headerLabel = '';
             if(tab==='today')         headerLabel = '🌟 오늘의 운세';
@@ -964,6 +1194,9 @@
                         </button>
 
                     </div>
+                    ${adj.calcHtml}
+                    ${luckyRow(color, luckyItem, num)}
+                    ${zodiacInfoCard(zodiac.name, zodiac.emoji)}
                 </div>`;
         }
 
