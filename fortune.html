@@ -4362,20 +4362,37 @@
                 ? '<p style="font-size:12px;color:#a090dd;background:rgba(100,80,180,.08);border-left:2px solid rgba(160,120,220,.4);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin-top:10px">' + revNote + '</p>'
                 : '';
 
-            return '<div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:.8rem 1rem;margin-bottom:10px">'
-                + '<div style="font-size:11px;color:#c9a84c;font-weight:700;margin-bottom:6px">🃏 패턴 분석</div>'
-                + '<p style="line-height:1.9;font-size:12px;margin:0;color:#e8dfc8">' + patternM + '</p></div>'
-                + '<p style="margin-bottom:10px;line-height:1.95;color:#d4c8ee">' + empathy + '</p>'
-                + '<div style="border-left:2px solid rgba(201,168,76,.3);padding-left:.9rem;margin-bottom:10px">'
-                + '<div style="font-size:10px;color:#9b8fb0;margin-bottom:4px">🌱 과거 → 현재 흐름</div>'
-                + '<p style="line-height:2;font-size:13px;margin:0">' + flowParts.join(' ') + '</p></div>'
-                + '<div style="border-left:2px solid rgba(120,80,200,.4);padding-left:.9rem;margin-bottom:10px">'
-                + '<div style="font-size:10px;color:#9b8fb0;margin-bottom:4px">🌟 현재 → 미래 방향성 (가능성)</div>'
-                + '<p style="line-height:2;font-size:13px;margin:0;color:#c9b8e8">' + directionParts.join(' ') + '</p></div>'
-                + '<p style="margin-bottom:10px;line-height:1.95">' + detail + '</p>'
-                + '<p style="margin-bottom:10px;line-height:1.95;border-top:1px solid rgba(201,168,76,.2);padding-top:10px">' + mbtiConclusion + '</p>'
-                + '<p style="margin-bottom:0;font-size:12px;color:#9b8fb0;background:rgba(255,255,255,.04);border-radius:8px;padding:.6rem 1rem">' + actionAdvice + '</p>'
-                + revLine;
+            function mStageCard(emoji, step, label, accentColor, bgColor, borderColor, content) {
+                return '<div style="background:' + bgColor + ';border:1px solid ' + borderColor + ';border-radius:12px;padding:.85rem 1rem;margin-bottom:.7rem">'                    + '<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.5rem">'                    + '<span style="font-size:1.1rem">' + emoji + '</span>'                    + '<span style="font-size:.72rem;font-weight:700;color:' + accentColor + ';letter-spacing:.07em">' + step + '</span>'                    + '<span style="font-size:.75rem;color:#9b8fb0;margin-left:.1rem">· ' + label + '</span>'                    + '</div>'                    + '<p style="line-height:1.9;font-size:.88rem;margin:0;color:#e0d5f0">' + content + '</p>'                    + '</div>';
+            }
+
+            var suitColorsM = {wands:'#f97316', cups:'#60a5fa', swords:'#a78bfa', pentacles:'#4ade80'};
+            var suitEmojisM = {wands:'🔥', cups:'💧', swords:'⚡', pentacles:'🌿'};
+            var suitFocusM2 = {wands:'행동·열정·추진력', cups:'감정·관계·사랑', swords:'생각·갈등·스트레스', pentacles:'현실·돈·안정'};
+            var suitNamesM  = {wands:'완드', cups:'컵', swords:'소드', pentacles:'펜타클'};
+
+            var suitRows = [pC, cC, fC].map(function(c, i) {
+                var pos = ['과거','현재','미래'][i];
+                var s = getMbtiSuit(c);
+                if (s === 'major') return pos + ' — <strong style="color:#c9a84c">메이저 아르카나</strong> (' + (c.nameKo||c.card_name_ko||'') + ') : 삶의 큰 흐름';
+                return pos + ' — <strong style="color:' + (suitColorsM[s]||'#fff') + '">' + (suitEmojisM[s]||'') + ' ' + (suitNamesM[s]||s) + '</strong> (' + (c.nameKo||c.card_name_ko||'') + ') : ' + (suitFocusM2[s]||'');
+            }).join('<br>');
+
+            var fateM = (function() {
+                if (majorCntM >= 2) return '⚠️ 메이저 카드 ' + majorCntM + '장 — <strong style="color:#c9a84c">운명적 흐름</strong>이 작동 중이에요. 전체 패턴이 중요한 시기입니다.';
+                if (domSuit[1] >= 3) return '⚠️ ' + (suitNamesM[domSuit[0]]||domSuit[0]) + ' 3장 집중 — <strong style="color:#c9a84c">강한 단일 흐름</strong>이에요. ' + (suitFocusM2[domSuit[0]]||'') + ' 영역에 에너지가 집중되어 있어요.';
+                var mixed = Object.values(suitCntM).filter(function(v){return v>0;}).length + (majorCntM > 0 ? 1 : 0);
+                return mixed >= 3
+                    ? '🔀 여러 영역이 혼합 — <strong style="color:#a78bfa">복잡한 상태</strong>예요. 한 가지에 집중하는 것이 중요합니다.'
+                    : '⚖️ 균형 잡힌 흐름 — <strong style="color:#60a5fa">전반적인 방향</strong>을 읽으며 유연하게 대응하세요.';
+            })();
+
+            return mStageCard('⚡','1단계 · 현재 에너지','Current Energy','#f97316','rgba(249,115,22,.08)','rgba(249,115,22,.25)', empathy)
+                 + mStageCard('🃏','2단계 · 슈트 패턴','Suit Pattern','#60a5fa','rgba(96,165,250,.08)','rgba(96,165,250,.25)', suitRows + '<br><br>' + patternM)
+                 + mStageCard('🌌','3단계 · 메이저 비율','Major Arcana Ratio','#c9a84c','rgba(201,168,76,.08)','rgba(201,168,76,.28)', '<strong style="color:#c9a84c">메이저 아르카나 ' + majorCntM + '장 / 3장</strong><br>' + majorLineM)
+                 + mStageCard('🌊','4단계 · 전체 흐름 × ' + mbti,'Flow × MBTI','#a78bfa','rgba(167,139,250,.08)','rgba(167,139,250,.28)', flowParts.join(' ') + '<br><br><span style="color:#c9b8e8">' + directionParts.join(' ') + '</span><br><br>' + detail)
+                 + mStageCard('🎯','5단계 · 흐름 판단','Pattern Conclusion','#4ade80','rgba(74,222,128,.08)','rgba(74,222,128,.28)', fateM + '<br><br><span style="border-top:1px solid rgba(201,168,76,.2);display:block;padding-top:.7rem">' + mbtiConclusion + '</span><br>' + actionAdvice)
+                 + revLine;
         }
 
         var synthBlock =
