@@ -1567,87 +1567,275 @@ def build_chinese_post(c, today_str):
     card_id = f"fc-{c['en']}"
 
     kst_now    = now_kst()
-    today_dot  = kst_now.strftime("%Y년 %-m월 %-d일")  # 본문 표시용
-    today_sync = kst_now.strftime("%Y년 %m월 %d일")    # index.html 매칭용 zero-pad
-    total, money, health, love = pick_score(c['kr'])
+    today_dot  = kst_now.strftime("%Y년 %-m월 %-d일")
+    today_sync = kst_now.strftime("%Y년 %m월 %d일")
 
-    # ── 제목: 신호 키워드 자동 선택 ──
-    _SIG_UP   = ["재물운 상승 신호", "금전운 상승 중", "운세 상승 흐름", "행운 상승 감지"]
-    _SIG_WARN = ["오늘 주의 필요", "신중함이 필요한 날", "주의 신호 감지", "한 발 물러서기"]
-    _SIG_REV  = ["반전의 하루", "예상 밖 반전 운세", "충격적 변화 예고", "흐름이 바뀌는 날"]
-    _SIG_MID  = ["안정적인 하루", "균형 잡힌 운세", "차분한 에너지의 날"]
-    avg = (total + money) / 2
-    if avg >= 80:                signal = random.choice(_SIG_UP)
-    elif avg <= 55:              signal = random.choice(_SIG_WARN)
-    elif abs(total-money) >= 30: signal = random.choice(_SIG_REV)
-    else:                        signal = random.choice(_SIG_MID)
-
-    # 제목: index.html fetchChinesePost() 필수 키워드 고정 포함
-    # 검색조건: [띠명, "YYYY년", "MM월", "DD일", "띠운세"] ALL 포함 필수
-    title = f"{c['kr']} {today_sync} 오늘의 띠운세 | {signal}"
-
-    # ── 현실 디테일 문장 (지수 기반) ──
-    _DET_MONEY_UP   = ["오늘 예상치 못한 소액 수입이 들어올 수 있습니다. 작은 금액이라도 놓치지 마세요.",
-                       "미뤄두었던 환급금이나 정산 내역을 오늘 확인해 보세요."]
-    _DET_MONEY_WARN = ["오늘은 갑작스러운 지출이 생길 수 있습니다. 특히 오후 3시 이후 충동 구매를 주의하세요.",
-                       "카드 결제·자동이체 내역을 오늘 한 번 점검하세요."]
-    _DET_HEALTH_UP  = ["오늘은 가벼운 스트레칭이나 산책이 에너지를 끌어올려 줍니다.",
-                       "수분 섭취를 늘리면 오후 피로감이 크게 줄어들 것입니다."]
-    _DET_HEALTH_WARN= ["피로가 누적되기 쉬운 날입니다. 점심 후 짧은 휴식을 꼭 챙기세요.",
-                       "오늘은 과식이나 자극적인 음식을 피하면 소화 불편을 예방할 수 있습니다."]
-    _DET_LOVE_UP    = ["오늘 주변 사람에게 먼저 따뜻한 말 한마디를 건네면 관계가 깊어집니다.",
-                       "소개나 만남 자리가 생긴다면 적극적으로 참여해 보세요."]
-    _DET_LOVE_WARN  = ["오늘은 감정적으로 예민해질 수 있습니다. 중요한 대화는 저녁 이후로 미루세요.",
-                       "가까운 사람과의 오해가 생길 수 있습니다. 말보다 먼저 상대 입장을 들어보세요."]
-    _DET_CAUTION    = ["오늘은 서류·계약 관련 사항은 꼼꼼히 재확인 후 진행하세요.",
-                       "중요한 결정은 오늘보다 하루 이틀 여유를 두고 내리는 것이 유리합니다."]
-
-    detail_lines = [
-        random.choice(_DET_MONEY_UP   if money  >= 70 else _DET_MONEY_WARN),
-        random.choice(_DET_HEALTH_UP  if health >= 70 else _DET_HEALTH_WARN),
-        random.choice(_DET_LOVE_UP    if love   >= 70 else _DET_LOVE_WARN),
-        random.choice(_DET_CAUTION),
-    ]
-    detail_html = "".join(
-        f'<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f3f0ff;'
-        f'font-size:13px;color:#444;line-height:1.7">'
-        f'<span style="flex-shrink:0;color:#7c3aed">▸</span><span>{line}</span></div>'
-        for line in detail_lines
+    # ── 운세 지수 (요일·월 보정 적용) ──
+    raw_total, raw_money, raw_health, raw_love = pick_score(c['kr'])
+    total, money, health, love, calc_html = _apply_adjustments(
+        raw_total, raw_money, raw_health, raw_love
     )
 
-    # ── 주의점 본문 추출 ──
-    caution_kws = ["주의", "조심", "피하", "삼가", "무리하지", "충동", "서두르지"]
-    plain_fortune = str(fortune).replace('\n', ' ').strip()
-    caution_sentence = next(
-        (s.strip() for s in plain_fortune.split('. ')
-         if any(k in s for k in caution_kws) and len(s.strip()) > 10), ""
-    )
-    caution_html = f'''
-<div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:10px;
-            padding:14px 16px;margin-bottom:16px">
-  <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">⚠️ 오늘의 주의점</div>
-  <div style="font-size:14px;color:#555;line-height:1.75">{caution_sentence}</div>
-</div>''' if caution_sentence else ""
+    # ── 행운 색상·아이템 (② 조건부 가이드 포함) ──
+    lucky_color  = pick_color()
+    lucky_item   = pick_lucky_item(c['kr']) or random.choice([
+        '수정 팔찌','흰 조약돌','파란 볼펜','노란 메모지','향초','작은 수첩'
+    ])
+    lucky_number = pick_number()
+    color_guide  = get_color_guide(lucky_color)
+    item_guide   = get_item_guide(lucky_item)
 
-    # ── 운세 지수 ──
-    def _sc(v): return ("#16a34a","상승 ↑") if v>=80 else (("#d97706","보통") if v>=65 else ("#dc2626","주의 ⚠"))
-    def _bar(label, emoji, pct):
-        c2,lv = _sc(pct); f2=round(pct/10)
-        return (f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">'
-                f'<span style="min-width:65px;font-size:12px">{emoji} {label}</span>'
-                f'<span style="font-family:monospace;color:{c2};font-size:13px">{"█"*f2}{"░"*(10-f2)}</span>'
-                f'<span style="font-size:12px;font-weight:700;color:{c2};min-width:28px">{pct}%</span>'
-                f'<span style="font-size:11px;color:{c2}">{lv}</span></div>')
-    score_html = f'''<div class="card" style="background:#f8f0ff">
-  <span class="badge">📊 오늘의 운세 지수 · <strong style="color:#6c3483">{signal}</strong></span>
-  <div style="margin-top:12px">
-    {_bar("종합운","🌟",total)}{_bar("금전운","💰",money)}{_bar("건강운","💪",health)}{_bar("애정운","❤️",love)}
+    # ══════════════════════════════════════════════
+    # ① 출생연도별 맞춤 키워드 데이터 (엑셀 VLOOKUP 대체)
+    # ══════════════════════════════════════════════
+    # 연도대별 특성 → 맞춤 조언 매핑 (40년대~20년대)
+    _YEAR_PROFILE = {
+        range(1940,1950): ("40년대생", "경험과 연륜이 빛나는 시기입니다. 오늘은 주변의 조언을 귀담아 들어보세요.",
+                           "된장찌개·두부요리 등 발효식품", "5, 8", "번화한 시장이나 혼잡한 교통"),
+        range(1950,1960): ("50년대생", "안정적인 흐름 속에 작은 기회가 숨어 있습니다. 천천히 살피세요.",
+                           "제철 나물·현미밥 등 담백한 식단", "3, 6", "급경사 계단이나 미끄러운 바닥"),
+        range(1960,1970): ("60년대생", "오랜 경험이 오늘 빛을 발합니다. 자신의 직관을 믿어보세요.",
+                           "등푸른 생선·견과류 등 오메가3 식품", "1, 7", "소음이 심한 공사 현장 근처"),
+        range(1970,1980): ("70년대생", "균형 잡힌 판단력이 돋보이는 날입니다. 중요한 결정에 자신감을 가져보세요.",
+                           "고구마·브로콜리 등 항산화 식품", "2, 9", "밀폐된 실내나 환기가 안 되는 공간"),
+        range(1980,1990): ("80년대생", "에너지가 풍부한 시기입니다. 오늘 미루던 일을 하나만 처리해 보세요.",
+                           "닭가슴살·달걀 등 고단백 식품", "4, 6", "충동적인 온라인 쇼핑 사이트"),
+        range(1990,2000): ("90년대생", "새로운 변화를 받아들이기 좋은 날입니다. 두려움보다 설렘으로 임해보세요.",
+                           "아보카도·블루베리 등 슈퍼푸드", "3, 7", "인파가 너무 많은 핫플레이스"),
+        range(2000,2010): ("00년대생", "잠재력이 폭발하는 시기입니다. 오늘 아이디어를 바로 실행에 옮겨 보세요.",
+                           "바나나·아몬드 등 에너지 식품", "1, 5", "집중이 필요한데 소음이 많은 장소"),
+        range(2010,2020): ("10년대생", "호기심과 탐구심이 빛나는 날입니다. 오늘 새로운 것을 한 가지 배워보세요.",
+                           "치즈·우유 등 칼슘 풍부한 식품", "2, 8", "불필요한 경쟁 심리가 생기는 장소"),
+    }
+    def _get_year_profile(year_int):
+        for yr_range, profile in _YEAR_PROFILE.items():
+            if year_int in yr_range:
+                return profile
+        return ("", "오늘 하루도 당신만의 속도로 나아가세요.", "균형 잡힌 식사", "7", "혼잡한 장소")
+
+    # ══════════════════════════════════════════════
+    # ④ 띠별 궁합 데이터 (오늘의 찰떡궁합·거리두기)
+    # ══════════════════════════════════════════════
+    _CHINESE_COMPAT = {
+        '쥐띠':    {'best': ('용띠','🐲','창의력과 행동력이 만나 시너지가 폭발합니다'),
+                   'avoid':('말띠','🐴','서로 방향이 달라 오해가 생기기 쉽습니다')},
+        '소띠':    {'best': ('닭띠','🐓','꼼꼼함과 책임감이 공명해 신뢰가 쌓입니다'),
+                   'avoid':('양띠','🐑','속도와 방식이 달라 갈등이 생길 수 있습니다')},
+        '호랑이띠':{'best': ('말띠','🐴','두 에너지가 합쳐져 무한한 추진력이 됩니다'),
+                   'avoid':('원숭이띠','🐵','주도권 다툼으로 긴장감이 높아집니다')},
+        '토끼띠':  {'best': ('양띠','🐑','감성과 공감이 통해 편안한 관계가 됩니다'),
+                   'avoid':('닭띠','🐓','논리와 감성이 충돌하기 쉬운 조합입니다')},
+        '용띠':    {'best': ('쥐띠','🐭','쥐띠의 지혜가 용띠의 힘을 빛나게 합니다'),
+                   'avoid':('개띠','🐶','원칙과 자유로움이 부딪히는 조합입니다')},
+        '뱀띠':    {'best': ('닭띠','🐓','지성과 직관이 만나 완벽한 조화를 이룹니다'),
+                   'avoid':('돼지띠','🐷','서로 다른 가치관이 충돌하기 쉽습니다')},
+        '말띠':    {'best': ('호랑이띠','🐯','열정과 용기가 서로를 끌어올립니다'),
+                   'avoid':('쥐띠','🐭','세밀함과 큰 그림이 엇갈리기 쉽습니다')},
+        '양띠':    {'best': ('토끼띠','🐰','따뜻한 감성으로 서로를 위로합니다'),
+                   'avoid':('소띠','🐮','원칙과 유연함이 마찰을 일으킵니다')},
+        '원숭이띠':{'best': ('쥐띠','🐭','재치와 지략이 만나 최강의 팀이 됩니다'),
+                   'avoid':('호랑이띠','🐯','리더십 충돌로 긴장감이 생깁니다')},
+        '닭띠':    {'best': ('소띠','🐮','성실함과 책임감이 공명합니다'),
+                   'avoid':('토끼띠','🐰','속도와 방식의 차이가 스트레스를 줍니다')},
+        '개띠':    {'best': ('호랑이띠','🐯','의리와 용기가 함께해 든든합니다'),
+                   'avoid':('용띠','🐲','자존심 충돌이 관계를 어렵게 합니다')},
+        '돼지띠':  {'best': ('토끼띠','🐰','넉넉함과 온화함이 서로를 행복하게 합니다'),
+                   'avoid':('뱀띠','🐍','사소한 의심이 오해로 커질 수 있습니다')},
+    }
+    compat = _CHINESE_COMPAT.get(c['kr'], {})
+    best_compat   = compat.get('best',  ('', '', '오늘 주변 사람들과 좋은 에너지를 나눠보세요'))
+    avoid_compat  = compat.get('avoid', ('', '', '감정적인 충돌은 오늘 잠시 보류하세요'))
+
+    compat_html = f'''
+<div class="card" style="background:linear-gradient(135deg,#fff7ed,#fef3c7);border-left:5px solid #f59e0b">
+  <span class="badge" style="background:#fef3c7;color:#92400e">💑 오늘의 띠별 궁합</span>
+  <div style="margin-top:14px;display:grid;gap:10px">
+    <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #d1fae5">
+      <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:6px">
+        🟢 오늘의 찰떡궁합: {best_compat[1]} {best_compat[0]}
+      </div>
+      <div style="font-size:13px;color:#374151;line-height:1.8">{best_compat[2]}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:6px">
+        오늘 {best_compat[0]}와 함께하는 시간이 있다면 적극적으로 협력해 보세요.
+        두 에너지가 만나 혼자일 때보다 훨씬 좋은 결과를 만들어 낼 수 있습니다.
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #fee2e2">
+      <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">
+        🔴 오늘의 거리두기: {avoid_compat[1]} {avoid_compat[0]}
+      </div>
+      <div style="font-size:13px;color:#374151;line-height:1.8">{avoid_compat[2]}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:6px">
+        오늘은 {avoid_compat[0]}와의 중요한 결정이나 논쟁을 피하고,
+        감정이 차분해진 내일 이후로 미루는 것이 현명합니다.
+      </div>
+    </div>
   </div>
 </div>'''
 
-    # ── 출생연도별 (이미지 카드 내부) ──
+    # ══════════════════════════════════════════════
+    # ② 시간대별 운세 흐름 지수 (수식 기반 자동 계산)
+    # ══════════════════════════════════════════════
+    def _time_score(base, morning_mod, afternoon_mod, evening_mod):
+        clamp = lambda v: max(1, min(100, v))
+        return (clamp(base + morning_mod),
+                clamp(base + afternoon_mod),
+                clamp(base + evening_mod))
+
+    # 총운 기반 시간대별 분배 (요일 특성 반영)
+    dow = now_kst().weekday()  # 0=월 … 6=일
+    _TIME_MOD = {  # (오전, 오후, 저녁) 모디파이어
+        0: ( 8, -12,  4),   # 월: 오전 집중, 오후 하락
+        1: ( 5,   3,  7),   # 화: 오후·저녁 고루 좋음
+        2: (10,  -8,  6),   # 수: 오전 강세, 오후 주의
+        3: ( 7,   5, 10),   # 목: 저녁 최고
+        4: ( 3,   8, 12),   # 금: 오후~저녁 상승
+        5: (-5,   2, 10),   # 토: 저녁 강세
+        6: ( 2,  -5,  8),   # 일: 오전·저녁 무난
+    }
+    tm, ta, te = _TIME_MOD[dow]
+    am_score, pm_score, ev_score = _time_score(total, tm, ta, te)
+
+    def _time_label(score):
+        if score >= 80: return ("#16a34a", "최적 ★", "적극 활용하세요")
+        if score >= 65: return ("#d97706", "보통 ◐", "무난하게 진행 가능")
+        return ("#dc2626", "주의 ▼", "중요한 일은 피하세요")
+
+    am_c, am_lv, am_tip = _time_label(am_score)
+    pm_c, pm_lv, pm_tip = _time_label(pm_score)
+    ev_c, ev_lv, ev_tip = _time_label(ev_score)
+
+    time_flow_html = f'''
+<div class="card" style="background:#f8faff;border-left:5px solid #3b82f6">
+  <span class="badge" style="background:#dbeafe;color:#1d4ed8">⏰ 시간대별 운세 흐름</span>
+  <div style="margin-top:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#eff6ff">
+          <th style="padding:10px 8px;text-align:left;color:#1e40af;font-weight:700;border-radius:8px 0 0 0">시간대</th>
+          <th style="padding:10px 8px;text-align:center;color:#1e40af;font-weight:700">지수</th>
+          <th style="padding:10px 8px;text-align:center;color:#1e40af;font-weight:700">평가</th>
+          <th style="padding:10px 8px;text-align:left;color:#1e40af;font-weight:700;border-radius:0 8px 0 0">추천 행동</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #e0e7ff">
+          <td style="padding:10px 8px;font-weight:700">🌅 오전<br><span style="font-size:11px;color:#6b7280;font-weight:400">06:00~12:00</span></td>
+          <td style="padding:10px 8px;text-align:center;font-weight:900;color:{am_c};font-size:16px">{am_score}점</td>
+          <td style="padding:10px 8px;text-align:center;color:{am_c};font-weight:700">{am_lv}</td>
+          <td style="padding:10px 8px;color:#374151;line-height:1.6">{am_tip}<br><span style="font-size:11px;color:#6b7280">집중력이 필요한 핵심 업무 배치 권장</span></td>
+        </tr>
+        <tr style="border-bottom:1px solid #e0e7ff">
+          <td style="padding:10px 8px;font-weight:700">☀️ 오후<br><span style="font-size:11px;color:#6b7280;font-weight:400">12:00~18:00</span></td>
+          <td style="padding:10px 8px;text-align:center;font-weight:900;color:{pm_c};font-size:16px">{pm_score}점</td>
+          <td style="padding:10px 8px;text-align:center;color:{pm_c};font-weight:700">{pm_lv}</td>
+          <td style="padding:10px 8px;color:#374151;line-height:1.6">{pm_tip}<br><span style="font-size:11px;color:#6b7280">소통·협업·회의 등 대인 활동 배치 권장</span></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 8px;font-weight:700">🌙 저녁<br><span style="font-size:11px;color:#6b7280;font-weight:400">18:00~24:00</span></td>
+          <td style="padding:10px 8px;text-align:center;font-weight:900;color:{ev_c};font-size:16px">{ev_score}점</td>
+          <td style="padding:10px 8px;text-align:center;color:{ev_c};font-weight:700">{ev_lv}</td>
+          <td style="padding:10px 8px;color:#374151;line-height:1.6">{ev_tip}<br><span style="font-size:11px;color:#6b7280">감성적 대화·자기 계발·가족과의 시간 적합</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>'''
+
+    # ══════════════════════════════════════════════
+    # ③ 실전 체크포인트 (IF 조건문 기반 정교화)
+    # ══════════════════════════════════════════════
+    checkpoints = []
+    # 금전운 조건
+    if money < 60:
+        checkpoints.append(("💰", "#dc2626",
+            f"금전 경보 (지수 {money}점)",
+            "오늘은 충동구매 위험이 큽니다. 장바구니에 담아둔 물건은 내일 결제하세요.",
+            "카드·현금 지출을 오전 중에 마무리하고, 오후 3시 이후 쇼핑 앱은 잠시 꺼두세요."))
+    elif money >= 85:
+        checkpoints.append(("💰", "#16a34a",
+            f"금전 기회 포착 (지수 {money}점)",
+            "오늘 재정 관련 결정에 유리한 흐름입니다. 놓쳤던 환급금·정산을 확인하세요.",
+            "오전 10시~오후 1시 사이가 금전 처리의 최적 타임입니다. 적금·투자 계획 검토도 추천합니다."))
+    else:
+        checkpoints.append(("💰", "#d97706",
+            f"금전 안정 관리 (지수 {money}점)",
+            "평이한 흐름입니다. 지출 내역을 한 번 점검하고 불필요한 자동결제를 정리해 보세요.",
+            "오늘 하루 지출 목표를 아침에 미리 정해두면 충동 소비를 효과적으로 막을 수 있습니다."))
+
+    # 건강운 조건
+    if health >= 90:
+        checkpoints.append(("💪", "#16a34a",
+            f"신체 에너지 최상 (지수 {health}점)",
+            "미뤄둔 고강도 운동이나 등산을 추천합니다. 몸이 에너지를 받아들이기 최적인 날입니다.",
+            "운동 전 충분한 준비운동과 수분 보충을 잊지 마세요. 새로운 스포츠 도전도 오늘이 적기입니다."))
+    elif health < 60:
+        checkpoints.append(("💪", "#dc2626",
+            f"건강 주의 신호 (지수 {health}점)",
+            "무리한 야근·과음·자극적인 식사를 피하세요. 몸이 보내는 신호를 무시하지 마세요.",
+            "점심 식사 후 10분 낮잠 또는 가벼운 스트레칭으로 오후 체력을 보충하세요."))
+    else:
+        checkpoints.append(("💪", "#d97706",
+            f"건강 관리 권장 (지수 {health}점)",
+            "평소보다 체력 소모가 빠를 수 있습니다. 수분을 충분히 섭취하고 규칙적인 식사를 지켜주세요.",
+            "오후 3시경 비타민 C가 풍부한 과일이나 견과류를 간식으로 챙기면 집중력 유지에 도움이 됩니다."))
+
+    # 연애운 조건
+    if love >= 80:
+        checkpoints.append(("❤️", "#e11d48",
+            f"연애 에너지 상승 (지수 {love}점)",
+            "소중한 사람에게 먼저 연락해보세요. 오늘 당신의 진심은 분명히 전달됩니다.",
+            f"오후 3시~6시 사이가 감성 대화의 최적 타임입니다. 오늘 {lucky_color} 컬러 소품이 연애 에너지를 높여줍니다."))
+    elif love < 55:
+        checkpoints.append(("❤️", "#6b7280",
+            f"감정 정비 필요 (지수 {love}점)",
+            "오늘은 중요한 감정 대화를 피하고 서로 여유를 주는 것이 좋습니다.",
+            "혼자만의 시간이 오히려 관계에 활력을 줄 수 있습니다. 독서·취미 활동으로 내면을 채워보세요."))
+
+    # 총운 기반 종합 조언
+    if total >= 85:
+        checkpoints.append(("🌟", "#7c3aed",
+            f"오늘의 종합 지수 {total}점 — 행동 적기",
+            "오늘은 미루던 중요한 결정을 내리기에 최적입니다. 긍정적인 에너지를 최대한 활용하세요.",
+            f"골든 타임 {_DOW_GOLDEN_TIME[dow]}을 활용해 핵심 과제를 처리하면 최상의 결과를 기대할 수 있습니다."))
+    elif total < 55:
+        checkpoints.append(("🌟", "#6b7280",
+            f"오늘의 종합 지수 {total}점 — 신중 모드",
+            "오늘은 새로운 시작보다 기존 일을 점검하고 마무리하는 데 집중하세요.",
+            "결과에 집착하기보다 과정에 충실한 하루로 삼으면, 2~3일 후 좋은 흐름으로 반전됩니다."))
+
+    checkpoint_html_rows = ""
+    for icon, color, title_cp, main, detail_cp in checkpoints:
+        checkpoint_html_rows += f'''
+        <tr style="border-bottom:1px solid #f3f0ff">
+          <td style="padding:12px 8px;vertical-align:top">
+            <span style="font-size:20px">{icon}</span>
+          </td>
+          <td style="padding:12px 8px">
+            <div style="font-size:13px;font-weight:700;color:{color};margin-bottom:4px">{title_cp}</div>
+            <div style="font-size:13px;color:#374151;line-height:1.8;margin-bottom:6px">{main}</div>
+            <div style="font-size:12px;color:#6b7280;background:#f9fafb;border-radius:6px;
+                        padding:8px;line-height:1.7;border-left:3px solid {color}">
+              💡 {detail_cp}
+            </div>
+          </td>
+        </tr>'''
+
+    checkpoint_section = f'''
+<div class="card">
+  <span class="badge">✅ 오늘 실전 체크포인트 (지수 연동 자동 분석)</span>
+  <table style="width:100%;border-collapse:collapse;margin-top:12px">
+    {checkpoint_html_rows}
+  </table>
+</div>'''
+
+    # ══════════════════════════════════════════════
+    # ① 출생연도별 맞춤 운세 섹션 (본문 카드)
+    # ══════════════════════════════════════════════
     current_year = kst_now.year
     years = [y for y in c['year'].split(',') if int(y) <= current_year]
+
+    # 이미지 카드용 (간략)
     year_rows_in_card = ""
     for y in years:
         yr_fortune = chinese_fortune(c['en'])
@@ -1663,14 +1851,150 @@ def build_chinese_post(c, today_str):
             f'</div>'
         )
 
-    # ── SEO 키워드 ──
-    years_tags = [f"{y}년생 {c['kr']}" for y in years[:4]]
+    # 본문용 연도별 맞춤 카드
+    year_detail_rows = ""
+    for y in years:
+        yr_int = int(y)
+        _, yr_advice, yr_food, yr_num, yr_avoid = _get_year_profile(yr_int)
+        yr_fortune_text = chinese_fortune(c['en'])
+        plain = str(yr_fortune_text).replace('\n', ' ').strip()
+        year_detail_rows += f'''
+        <tr style="border-bottom:1px solid #fef3c7">
+          <td style="padding:12px 8px;vertical-align:top;min-width:70px">
+            <div style="background:#f59e0b;color:#fff;border-radius:8px;padding:5px 8px;
+                        text-align:center;font-size:12px;font-weight:700">{y}년생</div>
+          </td>
+          <td style="padding:12px 8px">
+            <div style="font-size:13px;color:#374151;line-height:1.8;margin-bottom:8px">{yr_advice}</div>
+            <div style="font-size:12px;background:#fff7ed;border-radius:8px;padding:8px;
+                        border-left:3px solid #f59e0b;color:#78350f;line-height:1.7">
+              🍽 추천 음식: <b>{yr_food}</b><br>
+              🔢 행운의 숫자: <b>{yr_num}</b>&nbsp;&nbsp;
+              🚫 조심할 장소: {yr_avoid}
+            </div>
+          </td>
+        </tr>'''
+
+    year_section_html = f'''
+<div class="card" style="background:linear-gradient(135deg,#fffbeb,#fff7ed);border-left:5px solid #f59e0b">
+  <span class="badge" style="background:#fef3c7;color:#92400e">📅 출생연도별 오늘 맞춤 운세</span>
+  <p style="font-size:13px;color:#78350f;margin:10px 0 14px;line-height:1.8">
+    같은 {c['kr']}라도 출생연도에 따라 오늘의 기운과 에너지가 미묘하게 다르게 나타납니다.
+    아래에서 본인의 출생연도를 찾아 맞춤 운세를 확인해 보세요.
+  </p>
+  <table style="width:100%;border-collapse:collapse">
+    {year_detail_rows}
+  </table>
+</div>'''
+
+    # ── 주의점 본문 추출 ──
+    caution_kws = ["주의", "조심", "피하", "삼가", "무리하지", "충동", "서두르지"]
+    plain_fortune = str(fortune).replace('\n', ' ').strip()
+    caution_sentence = next(
+        (s.strip() for s in plain_fortune.split('. ')
+         if any(k in s for k in caution_kws) and len(s.strip()) > 10), ""
+    )
+    caution_html = f'''
+<div style="background:#fff8e1;border-left:4px solid #f59e0b;border-radius:10px;
+            padding:14px 16px;margin-bottom:16px">
+  <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:6px">⚠️ 오늘의 주의점</div>
+  <div style="font-size:14px;color:#555;line-height:1.75">{caution_sentence}</div>
+</div>''' if caution_sentence else ""
+
+    # ── 운세 지수 바 차트 ──
+    def _sc(v): return ("#16a34a","상승 ↑") if v>=80 else (("#d97706","보통") if v>=65 else ("#dc2626","주의 ⚠"))
+    def _bar(label, emoji, pct):
+        c2, lv = _sc(pct); f2 = round(pct/10)
+        return (f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">'
+                f'<span style="min-width:65px;font-size:12px">{emoji} {label}</span>'
+                f'<span style="font-family:monospace;color:{c2};font-size:13px">{"█"*f2}{"░"*(10-f2)}</span>'
+                f'<span style="font-size:12px;font-weight:700;color:{c2};min-width:28px">{pct}%</span>'
+                f'<span style="font-size:11px;color:{c2}">{lv}</span></div>')
+
+    # ── 제목: 4가지 패턴 순환 (날짜 홀짝 + 점수 조건 조합) ──
+    kst_day  = kst_now.day
+    kst_mon  = kst_now.month
+    year_abbr = ",".join(y[-2:]+"년" for y in years[:5])  # 예: 47·59·71·83·95년
+    # 점수 기반 접두어 (③ IF 로직)
+    if money < 60:   score_prefix = f"[금전운 주의] "
+    elif total >= 85: score_prefix = f"[오늘 최고의 날] "
+    elif health < 60: score_prefix = f"[건강 관리 필요] "
+    else:             score_prefix = ""
+    # 제목 4종 순환
+    _TITLE_PATTERNS = [
+        # 패턴1: 종합 지수 노출
+        f"{c['kr']} {today_sync} 오늘의 띠운세 | 종합 지수 {total}% {score_prefix.strip()}",
+        # 패턴2: 출생연도 타겟팅
+        f"오늘의 {c['kr']} 운세 ({year_abbr}생) {kst_mon}월 {kst_day}일 핵심 요약",
+        # 패턴3: 액션 가이드형
+        f"{score_prefix}{c['kr']} {kst_mon}월 {kst_day}일 반드시 체크할 포인트 | 지수 {total}%",
+        # 패턴4: SEO 앞배치형 (띠+운세 먼저)
+        f"오늘의 {c['kr']} 운세 {today_sync} | 행운 색상·실전 체크포인트 포함",
+    ]
+    # index.html 매칭 필수 키워드 보존: 띠명, YYYY년, MM월, DD일, 띠운세
+    # → 패턴1·4만 "띠운세" 포함 → 짝수/홀수 날짜로 순환
+    # 홀수 날짜: 패턴1(지수 노출) / 짝수 날짜: 패턴4(SEO 앞배치)
+    # 단, fetchChinesePost() 매칭을 위해 기본 패턴은 유지하되 suffix 변경
+    if kst_day % 4 == 0:   signal_title = _TITLE_PATTERNS[3]
+    elif kst_day % 4 == 1: signal_title = _TITLE_PATTERNS[0]
+    elif kst_day % 4 == 2: signal_title = _TITLE_PATTERNS[1]
+    else:                  signal_title = _TITLE_PATTERNS[2]
+
+    # index.html fetchChinesePost() 매칭 필수: [띠명, YYYY년, MM월, DD일, 띠운세] 포함 보장
+    title = f"{c['kr']} {today_sync} 오늘의 띠운세 | {signal_title.split('|')[-1].strip()}"
+
+    # ── 신호 키워드 (score_html·hero용) ──
+    avg = (total + money) / 2
+    _SIG_UP   = ["재물운 상승 신호", "금전운 상승 중", "운세 상승 흐름"]
+    _SIG_WARN = ["오늘 주의 필요", "신중함이 필요한 날", "주의 신호 감지"]
+    _SIG_REV  = ["반전의 하루", "예상 밖 반전 운세", "흐름이 바뀌는 날"]
+    _SIG_MID  = ["안정적인 하루", "균형 잡힌 운세", "차분한 에너지의 날"]
+    if avg >= 80:                signal = random.choice(_SIG_UP)
+    elif avg <= 55:              signal = random.choice(_SIG_WARN)
+    elif abs(total-money) >= 30: signal = random.choice(_SIG_REV)
+    else:                        signal = random.choice(_SIG_MID)
+
+    score_html = f'''<div class="card" style="background:#f8f0ff">
+  <span class="badge">📊 오늘의 운세 지수 · <strong style="color:#6c3483">{signal}</strong></span>
+  <div style="margin-top:12px">
+    {_bar("종합운","🌟",total)}{_bar("금전운","💰",money)}{_bar("건강운","💪",health)}{_bar("애정운","❤️",love)}
+  </div>
+</div>'''
+
+    # ── 행운 가이드 카드 ──
+    lucky_guide_html = f'''
+<div class="card" style="background:linear-gradient(135deg,#fffbeb,#fdf4ff);border-left:5px solid #f59e0b">
+  <span class="badge" style="background:#fef3c7;color:#92400e">🍀 오늘의 행운 아이템 & 색상 활용 가이드</span>
+  <div style="margin-top:14px;display:grid;gap:10px">
+    <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #fde68a;
+                font-size:13px;line-height:1.85;color:#374151">
+      <div style="font-weight:700;color:#b45309;margin-bottom:6px">🎨 행운 색상: {lucky_color}</div>
+      {color_guide}
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #d1fae5;
+                font-size:13px;line-height:1.85;color:#374151">
+      <div style="font-weight:700;color:#065f46;margin-bottom:6px">✨ 행운 아이템: {lucky_item}</div>
+      {item_guide}
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e7ff;font-size:13px;color:#374151">
+      <div style="font-weight:700;color:#4338ca;margin-bottom:4px">🔢 행운 숫자: {lucky_number}</div>
+      오늘 중요한 선택의 순간에 이 숫자를 떠올려 보세요. 비밀번호, 약속 시간, 좌석 번호 등 작은 선택에서도 의미를 찾을 수 있습니다.
+    </div>
+  </div>
+</div>'''
+
+    # ── SEO 키워드 (확장) ──
+    years_tags = [f"{y}년생 {c['kr']}" for y in years]
     kw_list = [
         c['kr'], f"{c['kr']} 오늘운세", f"{c['kr']} 오늘의운세",
         f"{c['kr']} 띠운세", f"{c['kr']} {today_dot}",
         f"{c['kr']} 재물운", f"{c['kr']} 건강운", f"{c['kr']} 애정운",
         "띠운세 오늘", "오늘의운세", "무료운세", f"운세 {today_dot[:4]}",
         "재물운 상승", "오늘 주의", "띠별운세",
+        f"{c['kr']} 시간대별 운세", f"{c['kr']} 출생연도별 운세",
+        f"{c['kr']} 궁합", f"오늘 찰떡궁합 {best_compat[0]}",
+        f"행운 색상 {lucky_color}", f"행운 아이템 {lucky_item}",
+        "운세 지수", "오늘 골든타임",
     ] + years_tags
     tag_html = "".join(f'<span class="tag">{t}</span>' for t in kw_list)
 
@@ -1678,16 +2002,23 @@ def build_chinese_post(c, today_str):
 <div class="wrap">
   <div class="hero" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
     <h1>{c['emoji']} {c['kr']} 오늘의 운세</h1>
-    <p>{today_str}</p>
+    <p>{today_str} · 종합 지수 {total}%</p>
     <div style="margin-top:8px;display:inline-block;background:rgba(0,0,0,0.18);
-                padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700">{signal}</div>
+                padding:3px 14px;border-radius:20px;font-size:12px;font-weight:700">{signal}</div>
   </div>
 
-  <!-- 이미지 저장 카드: 메인 운세 + 출생연도별 통합 -->
+  <!-- 운세 지수 바 + 계산 내역 -->
+  {score_html}
+  {calc_html}
+
+  <!-- 시간대별 운세 흐름 표 -->
+  {time_flow_html}
+
+  <!-- 이미지 저장 카드 -->
   <div id="{card_id}" class="fortune-card" style="background:linear-gradient(135deg,#f59e0b,#92400e)">
     <div class="fc-emoji">{c['emoji']}</div>
     <div class="fc-title">{c['kr']}</div>
-    <div class="fc-sub">{today_str}</div>
+    <div class="fc-sub">{today_str} · 종합 {total}%</div>
     <div class="fc-stars">{rating}</div>
     <div class="fc-text">{fortune}</div>
     <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.3);padding-top:12px">
@@ -1702,12 +2033,20 @@ def build_chinese_post(c, today_str):
   <!-- 대표 이미지 -->
   {post_img("chinese")}
 
-  {score_html}
+  <!-- 출생연도별 맞춤 운세 (본문 상세) -->
+  {year_section_html}
+
+  <!-- 실전 체크포인트 (지수 연동) -->
+  {checkpoint_section}
+
   {caution_html}
-  <div class="card">
-    <span class="badge">💡 오늘 실전 체크포인트</span>
-    <div style="margin-top:8px">{detail_html}</div>
-  </div>
+
+  <!-- 띠별 궁합 -->
+  {compat_html}
+
+  <!-- 행운 아이템·색상 가이드 -->
+  {lucky_guide_html}
+
   <div class="card"><span class="badge">🔍 관련 키워드</span><div class="tag-cloud">{tag_html}</div></div>
   <div class="meta"><p>{c['kr']} 출생연도: {c['year']}</p><p>※ 재미로 보는 운세 콘텐츠입니다</p></div>
   {site_link()}
