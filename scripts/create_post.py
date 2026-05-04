@@ -2446,8 +2446,8 @@ def build_sns_chinese_post(today_str):
 
 # ─────────────────────────────────────────
 # ⑧  별자리가 만나는 시간 — 옴니버스 스토리텔링 (매일 1개)
-# 라벨: 별자리가만나는시간
-# URL: /search/label/별자리가만나는시간
+# 라벨: 별과띠가만나는시간
+# URL: /search/label/별과띠가만나는시간
 # ─────────────────────────────────────────
 
 # 스토리 연결 구조: (별자리A, 별자리B) → (기운 키워드, 연결 메시지)
@@ -2580,7 +2580,7 @@ def _plain(text: str, max_len: int = 90) -> str:
 def build_omnibus_post(today_str: str) -> tuple:
     """
     '별자리가 만나는 시간' — 12쌍 연결 스토리텔링 포스트
-    라벨: 별자리가만나는시간
+    라벨: 별과띠가만나는시간
     """
     kst_dt   = now_kst()
     season   = _season_backdrop(kst_dt)
@@ -2648,7 +2648,7 @@ def build_omnibus_post(today_str: str) -> tuple:
     </div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
-    {''.join(f'<span style="background:#f3f4f6;border-radius:20px;padding:2px 9px;font-size:11px;color:#6b7280">#{tag}</span>' for tag in [z_kr, c_kr, theme, "오늘운세", "별자리가만나는시간"])}
+    {''.join(f'<span style="background:#f3f4f6;border-radius:20px;padding:2px 9px;font-size:11px;color:#6b7280">#{tag}</span>' for tag in [z_kr, c_kr, theme, "오늘운세", "별과띠가만나는시간"])}
   </div>
 </div>""")
 
@@ -2685,7 +2685,7 @@ def build_omnibus_post(today_str: str) -> tuple:
 
     # ── SEO 키워드 태그 ──
     kw_tags = (
-        ["별자리가만나는시간", "오늘운세", "별자리운세", "띠운세", today_str,
+        ["별과띠가만나는시간", "오늘운세", "별자리운세", "띠운세", today_str,
          "별자리와띠", "운세스토리", "오늘의운세", "무료운세", "운세2026"]
         + [z['kr'] for z in ZODIACS]
         + [c['kr'] for c in CHINESE]
@@ -2739,7 +2739,7 @@ def build_omnibus_post(today_str: str) -> tuple:
     <p style="font-size:14px;line-height:1.9">{closing}</p>
   </div>
 
-  {share_buttons(card_id, f"별자리가만나는시간_{today_str}")}
+  {share_buttons(card_id, f"별과띠가만나는시간_{today_str}")}
 
   <!-- 키워드 -->
   <div class="card">
@@ -2751,7 +2751,7 @@ def build_omnibus_post(today_str: str) -> tuple:
   <div class="meta">※ 재미로 보는 운세 콘텐츠입니다 · 매일 업데이트</div>
 </div>"""
 
-    labels = ["별자리가만나는시간", "별자리운세", "띠운세", "운세", "오늘운세"]
+    labels = ["별과띠가만나는시간", "별자리운세", "띠운세", "운세", "오늘운세"]
     return title, content_html, labels
 
 
@@ -2805,7 +2805,7 @@ def main():
     monthly = " + 띠별월간 12"   if kst_now.day == 1        else ""
     count   = 28 + (12 if kst_now.weekday() == 0 else 0) + (12 if kst_now.day == 1 else 0)
     print(f"\n🌟 {today_str} 운세 포스팅 시작 — 총 {total}개\n")
-    print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12 + SNS통합 2 + 별자리가만나는시간 1{weekly}{monthly} = {count}개\n")
+    print(f"구성: 오늘의명언 1 + 별자리 12 + 띠 12 + SNS통합 2 + 별과띠가만나는시간 1{weekly}{monthly} = {count}개\n")
 
     success = 0
     for i, (title, content, labels) in enumerate(posts, 1):
